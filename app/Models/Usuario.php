@@ -85,11 +85,10 @@ class Usuario extends Model
     /**
      * Eliminar usuario
      */
-    public static function deleteUsuario(int $id): bool
+    public static function eliminar(int $id): bool
     {
         $db = Database::getInstance();
-        $query = "DELETE FROM usuarios WHERE id = ?";
-        return $db->execute($query, [$id]) > 0;
+        return $db->delete('usuarios', ['id' => $id]) > 0;
     }
 
     /**
@@ -221,7 +220,7 @@ class Usuario extends Model
                 case 'eliminar':
                     $usuario = self::findById($id);
                     if ($usuario && $usuario['rol'] !== 'superadmin') {
-                        $query = "DELETE FROM usuarios WHERE id = ?"; $db->execute($query, [$id]);
+                        $db->delete('usuarios', ['id' => $id]);
                         $afectados++;
                     }
                     break;
@@ -273,5 +272,34 @@ class Usuario extends Model
             'solicitudes' => $solicitudes,
             'logs' => $logs
         ];
+    }
+
+    /**
+     * Verificar credenciales de usuario
+     */
+    public static function verifyCredentials(string $email, string $password): ?array
+    {
+        $user = self::findByEmail($email);
+        
+        if (!$user) {
+            return null;
+        }
+        
+        if (!password_verify($password, $user['password'])) {
+            return null;
+        }
+        
+        unset($user['password']);
+        return $user;
+    }
+
+    /**
+     * Actualizar último acceso del usuario
+     */
+    public static function updateLastAccess(int $userId): bool
+    {
+        $db = Database::getInstance();
+        $query = "UPDATE usuarios SET ultimo_acceso = NOW() WHERE id = ?";
+        return $db->update($query, [$userId]) > 0;
     }
 }
