@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Super Admin - Especialistas en Casa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body class="bg-gray-50" x-data="dashboardApp()" x-init="init()">
+    
+    <!-- Navbar -->
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <svg class="h-8 w-8 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+                            <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
+                        </svg>
+                        <span class="text-xl font-bold text-gray-900">Especialistas en Casa</span>
+                    </div>
+                    <span class="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded-full">SUPER ADMIN</span>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-gray-600" x-text="'Bienvenido, ' + (usuario.nombre || 'Admin')"></span>
+                    <button @click="logout()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        Salir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Navigation Menu -->
+    <div class="bg-white border-b border-gray-200 sticky top-16 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex space-x-8 overflow-x-auto py-4">
+                <a href="/superadmin/dashboard" class="flex items-center space-x-2 px-3 py-2 rounded-lg bg-indigo-50 text-indigo-700 font-medium whitespace-nowrap">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+                    </svg>
+                    <span>Dashboard</span>
+                </a>
+                <a href="/superadmin/usuarios" class="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700 font-medium whitespace-nowrap">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
+                    </svg>
+                    <span>Usuarios</span>
+                </a>
+                <a href="/superadmin/finanzas" class="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700 font-medium whitespace-nowrap">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"/>
+                    </svg>
+                    <span>Finanzas</span>
+                </a>
+                <a href="/superadmin/seguridad" class="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700 font-medium whitespace-nowrap">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944zM11 14a1 1 0 11-2 0 1 1 0 012 0zm0-7a1 1 0 10-2 0v3a1 1 0 102 0V7z" clip-rule="evenodd"/>
+                    </svg>
+                    <span>Seguridad</span>
+                </a>
+                <a href="/superadmin/configuracion" class="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700 font-medium whitespace-nowrap">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
+                    </svg>
+                    <span>Configuración</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Loading -->
+        <div x-show="loading" class="flex justify-center items-center py-12">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        </div>
+
+        <!-- Mensajes -->
+        <div x-show="message" x-transition class="mb-6 p-4 rounded-lg shadow-lg" :class="messageType === 'success' ? 'bg-green-50 text-green-800 border-l-4 border-green-500' : 'bg-red-50 text-red-800 border-l-4 border-red-500'">
+            <div class="flex items-center">
+                <svg x-show="messageType === 'success'" class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+                <svg x-show="messageType === 'error'" class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                </svg>
+                <p x-text="message" class="font-medium"></p>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" x-show="!loading">
+            <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition-transform duration-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-100 text-sm font-medium">Total Usuarios</p>
+                        <p class="text-4xl font-bold mt-2" x-text="stats.totalUsuarios || 0">0</p>
+                    </div>
+                    <div class="bg-blue-400 bg-opacity-30 rounded-full p-4">
+                        <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition-transform duration-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-green-100 text-sm font-medium">Servicios Activos</p>
+                        <p class="text-4xl font-bold mt-2" x-text="stats.serviciosActivos || 0">0</p>
+                    </div>
+                    <div class="bg-green-400 bg-opacity-30 rounded-full p-4">
+                        <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition-transform duration-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-yellow-100 text-sm font-medium">Pendientes</p>
+                        <p class="text-4xl font-bold mt-2" x-text="stats.solicitudesPendientes || 0">0</p>
+                    </div>
+                    <div class="bg-yellow-400 bg-opacity-30 rounded-full p-4">
+                        <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition-transform duration-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-purple-100 text-sm font-medium">Ingresos Mes</p>
+                        <p class="text-3xl font-bold mt-2">$<span x-text="formatNumber(stats.ingresosMes || 0)">0</span></p>
+                    </div>
+                    <div class="bg-purple-400 bg-opacity-30 rounded-full p-4">
+                        <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8" x-show="!loading">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-lg font-semibold mb-4 text-gray-800">Ingresos Mensuales (12 meses)</h3>
+                <canvas id="ingresosChart" height="250"></canvas>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-lg font-semibold mb-4 text-gray-800">Servicios Por Tipo</h3>
+                <canvas id="serviciosChart" height="250"></canvas>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-lg font-semibold mb-4 text-gray-800">Usuarios Por Rol</h3>
+                <canvas id="usuariosChart" height="250"></canvas>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-lg font-semibold mb-4 text-gray-800">Solicitudes Por Estado</h3>
+                <canvas id="solicitudesChart" height="250"></canvas>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6 lg:col-span-2">
+                <h3 class="text-lg font-semibold mb-4 text-gray-800">Tendencia Semanal (Últimos 30 días)</h3>
+                <canvas id="tendenciaChart" height="150"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+<script>
+function dashboardApp() {
+    return {
+        loading: false,
+        message: '',
+        messageType: 'success',
+        currentTab: 'dashboard',
+        usuario: {},
+        stats: {
+            totalUsuarios: 0,
+            serviciosActivos: 0,
+            solicitudesPendientes: 0,
+            ingresosMes: 0
+        },
+        charts: {},
+
+        async init() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.php';
+                return;
+            }
+
+            const userData = JSON.parse(localStorage.getItem('usuario') || '{}');
+            this.usuario = userData;
+
+            if (userData.rol !== 'superadmin') {
+                this.showMessage('Acceso denegado', 'error');
+                setTimeout(() => window.location.href = '/login.php', 2000);
+                return;
+            }
+
+            await this.loadDashboardData();
+            await this.loadChartData();
+        },
+
+        async loadDashboardData() {
+            this.loading = true;
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/superadmin/dashboard', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    this.stats = data.data || data;
+                }
+            } catch (error) {
+                console.error('Error cargando dashboard:', error);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async loadChartData() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/analytics/charts', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    const data = result.data || result;
+                    this.renderCharts(data);
+                }
+            } catch (error) {
+                console.error('Error cargando gráficos:', error);
+            }
+        },
+
+        renderCharts(data) {
+            // Ingresos Mensuales - Line Chart
+            if (data.ingresos_mensuales && data.ingresos_mensuales.length > 0) {
+                const ctx = document.getElementById('ingresosChart');
+                if (ctx) {
+                    if (this.charts.ingresos) this.charts.ingresos.destroy();
+                    this.charts.ingresos = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: data.ingresos_mensuales.map(d => d.mes),
+                            datasets: [{
+                                label: 'Ingresos ($)',
+                                data: data.ingresos_mensuales.map(d => parseFloat(d.total)),
+                                borderColor: 'rgb(99, 102, 241)',
+                                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                                tension: 0.4,
+                                fill: true
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                y: { beginAtZero: true }
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Servicios Por Tipo - Pie Chart
+            if (data.servicios_por_tipo && data.servicios_por_tipo.length > 0) {
+                const ctx = document.getElementById('serviciosChart');
+                if (ctx) {
+                    if (this.charts.servicios) this.charts.servicios.destroy();
+                    this.charts.servicios = new Chart(ctx, {
+                        type: 'pie',
+                        data: {
+                            labels: data.servicios_por_tipo.map(d => d.tipo),
+                            datasets: [{
+                                data: data.servicios_por_tipo.map(d => parseInt(d.cantidad)),
+                                backgroundColor: [
+                                    'rgb(59, 130, 246)',
+                                    'rgb(16, 185, 129)',
+                                    'rgb(251, 191, 36)',
+                                    'rgb(239, 68, 68)',
+                                    'rgb(139, 92, 246)',
+                                    'rgb(236, 72, 153)',
+                                    'rgb(20, 184, 166)',
+                                    'rgb(249, 115, 22)',
+                                    'rgb(156, 163, 175)',
+                                    'rgb(14, 165, 233)'
+                                ]
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'right' }
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Usuarios Por Rol - Doughnut Chart
+            if (data.usuarios_por_rol && data.usuarios_por_rol.length > 0) {
+                const ctx = document.getElementById('usuariosChart');
+                if (ctx) {
+                    if (this.charts.usuarios) this.charts.usuarios.destroy();
+                    this.charts.usuarios = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: data.usuarios_por_rol.map(d => d.rol),
+                            datasets: [{
+                                data: data.usuarios_por_rol.map(d => parseInt(d.cantidad)),
+                                backgroundColor: [
+                                    'rgb(139, 92, 246)',
+                                    'rgb(59, 130, 246)',
+                                    'rgb(16, 185, 129)',
+                                    'rgb(251, 191, 36)'
+                                ]
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'right' }
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Solicitudes Por Estado - Bar Chart
+            if (data.solicitudes_por_estado && data.solicitudes_por_estado.length > 0) {
+                const ctx = document.getElementById('solicitudesChart');
+                if (ctx) {
+                    if (this.charts.solicitudes) this.charts.solicitudes.destroy();
+                    this.charts.solicitudes = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: data.solicitudes_por_estado.map(d => d.estado),
+                            datasets: [{
+                                label: 'Cantidad',
+                                data: data.solicitudes_por_estado.map(d => parseInt(d.cantidad)),
+                                backgroundColor: [
+                                    'rgb(251, 191, 36)',
+                                    'rgb(59, 130, 246)',
+                                    'rgb(16, 185, 129)',
+                                    'rgb(239, 68, 68)',
+                                    'rgb(156, 163, 175)'
+                                ]
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                y: { beginAtZero: true }
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Tendencia Semanal - Line Chart
+            if (data.tendencia_semanal && data.tendencia_semanal.length > 0) {
+                const ctx = document.getElementById('tendenciaChart');
+                if (ctx) {
+                    if (this.charts.tendencia) this.charts.tendencia.destroy();
+                    this.charts.tendencia = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: data.tendencia_semanal.map(d => d.fecha),
+                            datasets: [{
+                                label: 'Solicitudes',
+                                data: data.tendencia_semanal.map(d => parseInt(d.cantidad)),
+                                borderColor: 'rgb(16, 185, 129)',
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                tension: 0.4,
+                                fill: true
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                y: { beginAtZero: true }
+                            }
+                        }
+                    });
+                }
+            }
+        },
+
+        formatNumber(num) {
+            return new Intl.NumberFormat('es-CO').format(num);
+        },
+
+        showMessage(msg, type = 'success') {
+            this.message = msg;
+            this.messageType = type;
+            setTimeout(() => {
+                this.message = '';
+            }, 5000);
+        },
+
+        logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('usuario');
+            window.location.href = '/login.php';
+        }
+    }
+}
+</script>
+
+</body>
+</html>

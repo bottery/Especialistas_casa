@@ -1,0 +1,271 @@
+<?php
+
+namespace App\Services;
+
+use PDO;
+use PDOException;
+
+/**
+ * Clase Database
+ * Maneja la conexión a la base de datos usando PDO
+ */
+class Database
+{
+    private static $instance = null;
+    private $connection;
+    private $config;
+
+    private function __construct()
+    {
+        $this->config = require __DIR__ . '/../../config/database.php';
+        $this->connect();
+    }
+
+    /**
+     * Obtener instancia única (Singleton)
+     */
+    public static function getInstance(): self
+    {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+        return self::$instance;
+    }
+
+    /**
+     * Establecer conexión a la base de datos
+     */
+    private function connect(): void
+    {
+        $dbConfig = $this->config['connections'][$this->config['default']];
+
+        try {
+            $dsn = sprintf(
+                "%s:host=%s;port=%s;dbname=%s;charset=%s",
+                $dbConfig['driver'],
+                $dbConfig['host'],
+                $dbConfig['port'],
+                $dbConfig['database'],
+                $dbConfig['charset']
+            );
+
+            $this->connection = new PDO(
+                $dsn,
+                $dbConfig['username'],
+                $dbConfig['password'],
+                $dbConfig['options']
+            );
+        } catch (PDOException $e) {
+            error_log("Error de conexión a la base de datos: " . $e->getMessage());
+            
+            // Si estamos en desarrollo, mostrar página de instalación
+            if (env('APP_ENV') === 'development') {
+                $this->showInstallationPage($e->getMessage());
+            }
+            
+            throw new \Exception("No se pudo conectar a la base de datos");
+        }
+    }
+
+    /**
+     * Obtener la conexión PDO
+     */
+    public function getConnection(): PDO
+    {
+        return $this->connection;
+    }
+
+    /**
+     * Ejecutar una consulta SELECT
+     */
+    public function select(string $query, array $params = []): array
+    {
+        try {
+            $stmt = $this->connection->prepare($query);
+            $stmt->execute($params);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error en SELECT: " . $e->getMessage());
+            throw new \Exception("Error al ejecutar la consulta");
+        }
+    }
+
+    /**
+     * Ejecutar una consulta SELECT y devolver un solo registro
+     */
+    public function selectOne(string $query, array $params = []): ?array
+    {
+        try {
+            $stmt = $this->connection->prepare($query);
+            $stmt->execute($params);
+            $result = $stmt->fetch();
+            return $result ?: null;
+        } catch (PDOException $e) {
+            error_log("Error en SELECT ONE: " . $e->getMessage());
+            throw new \Exception("Error al ejecutar la consulta");
+        }
+    }
+
+    /**
+     * Ejecutar una consulta INSERT
+     */
+    public function insert(string $query, array $params = []): int
+    {
+        try {
+            $stmt = $this->connection->prepare($query);
+            $stmt->execute($params);
+            return (int) $this->connection->lastInsertId();
+        } catch (PDOException $e) {
+            error_log("Error en INSERT: " . $e->getMessage());
+            throw new \Exception("Error al insertar el registro");
+        }
+    }
+
+    /**
+     * Ejecutar una consulta UPDATE
+     */
+    public function update(string $query, array $params = []): int
+    {
+        try {
+            $stmt = $this->connection->prepare($query);
+            $stmt->execute($params);
+            return $stmt->rowCount();
+        } catch (PDOException $e) {
+            error_log("Error en UPDATE: " . $e->getMessage());
+            throw new \Exception("Error al actualizar el registro");
+        }
+    }
+
+    /**
+     * Ejecutar una consulta DELETE
+     */
+    public function delete(string $query, array $params = []): int
+    {
+        try {
+            $stmt = $this->connection->prepare($query);
+            $stmt->execute($params);
+            return $stmt->rowCount();
+        } catch (PDOException $e) {
+            error_log("Error en DELETE: " . $e->getMessage());
+            throw new \Exception("Error al eliminar el registro");
+        }
+    }
+
+    /**
+     * Iniciar transacción
+     */
+    public function beginTransaction(): bool
+    {
+        return $this->connection->beginTransaction();
+    }
+
+    /**
+     * Confirmar transacción
+     */
+    public function commit(): bool
+    {
+        return $this->connection->commit();
+    }
+
+    /**
+     * Revertir transacción
+     */
+    public function rollback(): bool
+    {
+        return $this->connection->rollback();
+    }
+
+    /**
+     * Prevenir clonación del objeto
+     */
+    private function __clone() {}
+
+    /**
+     * Prevenir deserialización del objeto
+     */
+    private function __wakeup() {}
+    
+    /**
+     * Mostrar página de instalación cuando la BD no está disponible
+     */
+    private function showInstallationPage(string $error): void
+    {
+        http_response_code(503);
+        header('Content-Type: text/html; charset=UTF-8');
+        
+        echo '<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instalación Requerida - Especialistas en Casa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="max-w-2xl w-full bg-white rounded-lg shadow-xl p-8">
+            <div class="text-center mb-8">
+                <div class="inline-block p-3 bg-yellow-100 rounded-full mb-4">
+                    <svg class="w-16 h-16 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Base de Datos No Configurada</h1>
+                <p class="text-gray-600">La aplicación necesita que configures la base de datos MySQL</p>
+            </div>
+            
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <p class="text-sm text-red-800 font-mono">' . htmlspecialchars($error) . '</p>
+            </div>
+            
+            <div class="space-y-6">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-4">📋 Pasos de Instalación</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="font-semibold text-gray-900 mb-2">1. Verifica que MySQL esté corriendo:</h3>
+                            <pre class="bg-gray-800 text-green-400 p-3 rounded text-sm overflow-x-auto">brew services start mysql</pre>
+                        </div>
+                        
+                        <div>
+                            <h3 class="font-semibold text-gray-900 mb-2">2. Crea la base de datos:</h3>
+                            <pre class="bg-gray-800 text-green-400 p-3 rounded text-sm overflow-x-auto">mysql -u root -e "CREATE DATABASE especialistas_casa CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"</pre>
+                        </div>
+                        
+                        <div>
+                            <h3 class="font-semibold text-gray-900 mb-2">3. Importa el esquema:</h3>
+                            <pre class="bg-gray-800 text-green-400 p-3 rounded text-sm overflow-x-auto">mysql -u root especialistas_casa < database/schema.sql</pre>
+                        </div>
+                        
+                        <div>
+                            <h3 class="font-semibold text-gray-900 mb-2">4. Configura las credenciales en .env:</h3>
+                            <pre class="bg-gray-800 text-green-400 p-3 rounded text-sm overflow-x-auto">DB_HOST=localhost
+DB_PORT=3306
+DB_DATABASE=especialistas_casa
+DB_USERNAME=root
+DB_PASSWORD=</pre>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center">
+                    <button onclick="location.reload()" class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition font-semibold">
+                        ✓ Verificar Conexión
+                    </button>
+                </div>
+                
+                <div class="text-center text-sm text-gray-500">
+                    <p>¿Necesitas ayuda? Consulta <code class="bg-gray-100 px-2 py-1 rounded">QUICKSTART.md</code></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>';
+        exit;
+    }
+    {
+        throw new \Exception("No se puede deserializar un singleton");
+    }
+}

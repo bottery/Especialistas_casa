@@ -1,0 +1,13 @@
+{
+    "name": "especialistas-en-casa",
+    "version": "1.0.0",
+    "description": "Sistema de gestión de servicios médicos especializados",
+    "scripts": {
+        "dev": "echo 'Servidor de desarrollo iniciado'",
+        "build": "echo 'Proyecto construido'",
+        "setup": "bash setup.sh"
+    },
+    "keywords": ["medical", "healthcare", "telemedicine", "php"],
+    "author": "Especialistas en Casa",
+    "license": "Proprietary"
+}
