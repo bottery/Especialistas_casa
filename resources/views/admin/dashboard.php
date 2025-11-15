@@ -6,6 +6,10 @@
     <title>Panel Administrador - Especialistas en Casa</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/css/skeleton.css">
+    <link rel="stylesheet" href="/css/dark-mode.css">
+    <script src="/js/dark-mode.js"></script>
+    <script src="/js/keyboard-shortcuts.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="bg-gray-50" x-data="adminDashboard()">
@@ -21,7 +25,7 @@
                 <div class="flex items-center space-x-4">
                     <div class="relative">
                         <button @click="notificacionesAbiertas = !notificacionesAbiertas" 
-                                class="relative p-2 text-gray-600 hover:text-gray-900 transition">
+                                class="relative p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
                             </svg>
@@ -30,7 +34,18 @@
                                   x-text="stats.pendientes_asignacion"></span>
                         </button>
                     </div>
-                    <span class="text-gray-700 font-medium"><?= htmlspecialchars($_SESSION['user']->nombre ?? '') ?></span>
+                    
+                    <!-- Toggle Dark Mode -->
+                    <button @click="window.darkMode.toggle()" class="p-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition" title="Cambiar tema">
+                        <svg x-show="!window.darkMode.isDark()" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                        </svg>
+                        <svg x-show="window.darkMode.isDark()" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                    </button>
+                    
+                    <span class="text-gray-700 dark:text-gray-300 font-medium"><?= htmlspecialchars($_SESSION['user']->nombre ?? '') ?></span>
                     <a href="/logout" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition">
                         Cerrar Sesión
                     </a>
@@ -108,6 +123,21 @@
                         </svg>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Gráficas de Estadísticas -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Gráfica de Solicitudes por Día -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">📊 Solicitudes por Día</h3>
+                <canvas id="solicitudesChart" height="200"></canvas>
+            </div>
+
+            <!-- Gráfica de Servicios Más Solicitados -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">🎯 Servicios Más Solicitados</h3>
+                <canvas id="serviciosChart" height="200"></canvas>
             </div>
         </div>
 
@@ -367,9 +397,80 @@
                         if (response.ok) {
                             const data = await response.json();
                             this.stats = data;
+                            this.inicializarGraficas();
                         }
                     } catch (error) {
                         console.error('Error al cargar estadísticas:', error);
+                    }
+                },
+
+                inicializarGraficas() {
+                    // Gráfica de Solicitudes por Día
+                    const ctx1 = document.getElementById('solicitudesChart');
+                    if (ctx1) {
+                        new Chart(ctx1, {
+                            type: 'line',
+                            data: {
+                                labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+                                datasets: [{
+                                    label: 'Solicitudes',
+                                    data: [12, 19, 15, 25, 22, 18, 10],
+                                    borderColor: 'rgb(79, 70, 229)',
+                                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                                    tension: 0.4,
+                                    fill: true
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        display: false
+                                    }
+                                },
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        ticks: {
+                                            precision: 0
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+
+                    // Gráfica de Servicios
+                    const ctx2 = document.getElementById('serviciosChart');
+                    if (ctx2) {
+                        new Chart(ctx2, {
+                            type: 'doughnut',
+                            data: {
+                                labels: ['Médico', 'Enfermería', 'Veterinario', 'Laboratorio', 'Ambulancia'],
+                                datasets: [{
+                                    data: [35, 25, 20, 12, 8],
+                                    backgroundColor: [
+                                        'rgba(59, 130, 246, 0.8)',
+                                        'rgba(16, 185, 129, 0.8)',
+                                        'rgba(245, 158, 11, 0.8)',
+                                        'rgba(139, 92, 246, 0.8)',
+                                        'rgba(239, 68, 68, 0.8)'
+                                    ],
+                                    borderWidth: 2,
+                                    borderColor: '#fff'
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom'
+                                    }
+                                }
+                            }
+                        });
                     }
                 },
 

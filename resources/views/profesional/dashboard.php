@@ -8,6 +8,9 @@
     <link rel="stylesheet" href="/css/skeleton.css">
     <link rel="stylesheet" href="/css/breadcrumbs.css">
     <link rel="stylesheet" href="/css/progress.css">
+    <link rel="stylesheet" href="/css/dark-mode.css">
+    <script src="/js/dark-mode.js"></script>
+    <script src="/js/keyboard-shortcuts.js"></script>
     <script src="/js/confirmation-modal.js"></script>
 <script>
 window.profesionalDashboard = function() {
@@ -420,13 +423,23 @@ window.profesionalDashboard = function() {
                         </button>
                     </div>
                     
-                    <button @click="window.location.href='/profesional/dashboard'" class="text-gray-600 hover:text-green-600 transition" title="Inicio">
+                    <!-- Toggle Dark Mode -->
+                    <button @click="window.darkMode.toggle()" class="text-gray-600 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 transition" title="Cambiar tema">
+                        <svg x-show="!window.darkMode.isDark()" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                        </svg>
+                        <svg x-show="window.darkMode.isDark()" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                    </button>
+                    
+                    <button @click="window.location.href='/profesional/dashboard'" class="text-gray-600 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 transition" title="Inicio">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                         </svg>
                     </button>
                     
-                    <button @click="logout()" class="text-gray-600 hover:text-red-600 transition" title="Cerrar sesión">
+                    <button @click="logout()" class="text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition" title="Cerrar sesión">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                         </svg>
