@@ -597,3 +597,108 @@ if ($path === '/seguridad/ip/desbloquear' && $method === 'DELETE') {
     $controller->desbloquearIP();
     exit;
 }
+
+// ============================================
+// RUTAS DE NOTIFICACIONES EN TIEMPO REAL
+// ============================================
+if ($path === '/notifications' && $method === 'GET') {
+    $controller = new \App\Controllers\NotificationsController();
+    $controller->index();
+    exit;
+}
+
+if (preg_match('#^/notifications/(\d+)/read$#', $path, $matches) && $method === 'POST') {
+    $controller = new \App\Controllers\NotificationsController();
+    $controller->markAsRead($matches[1]);
+    exit;
+}
+
+if ($path === '/notifications/read-all' && $method === 'POST') {
+    $controller = new \App\Controllers\NotificationsController();
+    $controller->markAllAsRead();
+    exit;
+}
+
+// ============================================
+// RUTAS DE CHAT EN TIEMPO REAL
+// ============================================
+if ($path === '/chat/start' && $method === 'POST') {
+    $controller = new \App\Controllers\ChatController();
+    $controller->start();
+    exit;
+}
+
+if (preg_match('#^/chat/(\d+)/messages$#', $path, $matches) && $method === 'GET') {
+    $controller = new \App\Controllers\ChatController();
+    $controller->getMessages($matches[1]);
+    exit;
+}
+
+if ($path === '/chat/send' && $method === 'POST') {
+    $controller = new \App\Controllers\ChatController();
+    $controller->send();
+    exit;
+}
+
+if (preg_match('#^/chat/(\d+)/poll$#', $path, $matches) && $method === 'GET') {
+    $controller = new \App\Controllers\ChatController();
+    $controller->poll($matches[1]);
+    exit;
+}
+
+if (preg_match('#^/chat/(\d+)/typing$#', $path, $matches) && $method === 'POST') {
+    $controller = new \App\Controllers\ChatController();
+    $controller->typing($matches[1]);
+    exit;
+}
+
+// ============================================
+// RUTAS DE CALENDARIO / CITAS
+// ============================================
+if ($path === '/citas' && $method === 'GET') {
+    require_once __DIR__ . '/../app/Models/SolicitudServicio.php';
+    $solicitudModel = new App\Models\SolicitudServicio();
+    $userId = $_SESSION['user']->id ?? null;
+    
+    // Obtener solicitudes con fecha programada
+    $citas = $solicitudModel->query(
+        "SELECT s.id, s.servicio_id, sv.nombre as servicio, s.paciente_id, 
+                u_pac.nombre as paciente_nombre, s.profesional_id, 
+                u_prof.nombre as profesional_nombre, s.estado, s.direccion, 
+                s.notas, s.fecha_programada, s.duracion_estimada, s.fecha_servicio
+         FROM solicitudes_servicio s
+         LEFT JOIN servicios sv ON s.servicio_id = sv.id
+         LEFT JOIN usuarios u_pac ON s.paciente_id = u_pac.id
+         LEFT JOIN usuarios u_prof ON s.profesional_id = u_prof.id
+         WHERE (s.paciente_id = ? OR s.profesional_id = ?)
+         AND s.fecha_programada IS NOT NULL
+         ORDER BY s.fecha_programada",
+        [$userId, $userId]
+    );
+    
+    header('Content-Type: application/json');
+    echo json_encode(['success' => true, 'citas' => $citas]);
+    exit;
+}
+
+if (preg_match('#^/citas/(\d+)/reschedule$#', $path, $matches) && $method === 'PUT') {
+    require_once __DIR__ . '/../app/Models/SolicitudServicio.php';
+    $solicitudModel = new App\Models\SolicitudServicio();
+    
+    $data = json_decode(file_get_contents('php://input'), true);
+    $fechaProgramada = $data['fecha_programada'] ?? null;
+    
+    if ($fechaProgramada) {
+        $solicitudModel->update($matches[1], [
+            'fecha_programada' => $fechaProgramada
+        ]);
+        
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'message' => 'Cita reprogramada']);
+    } else {
+        http_response_code(400);
+        echo json_encode(['error' => 'Fecha requerida']);
+    }
+    exit;
+}
+
