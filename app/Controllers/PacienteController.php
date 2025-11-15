@@ -99,6 +99,7 @@ class PacienteController
 
             // Validaciones específicas por tipo de servicio
             $tipo = $data['servicio_tipo'] ?? $servicio['tipo'];
+            
             $validationError = $this->validateServiceType($tipo, $data);
             if ($validationError) {
                 $this->sendError($validationError, 400);
@@ -257,7 +258,7 @@ class PacienteController
                 
             case 'ambulancia':
                 if (empty($data['origen']) || empty($data['destino'])) {
-                    return "Las direcciones de origen y destino son requeridas";
+                    return "Las direcciones de origen y destino son requeridas para el servicio de ambulancia";
                 }
                 if (empty($data['condicion_paciente'])) {
                     return "La condición del paciente es requerida";

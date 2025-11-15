@@ -227,7 +227,7 @@ window.nuevaSolicitudApp = function() {
                     ToastNotification.warning('Selecciona fecha y hora para la ambulancia');
                     return false;
                 }
-                if (!this.formData.direccion_origen || !this.formData.direccion_destino) {
+                if (!this.formData.origen || !this.formData.destino) {
                     ToastNotification.warning('Ingresa dirección de origen y destino');
                     return false;
                 }
