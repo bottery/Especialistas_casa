@@ -1,11 +1,11 @@
--- Migración: Tablas para notificaciones en tiempo real, chat y calendario
+-- Migración SAFE: Verificar y crear solo lo que no existe
 
--- Tabla de notificaciones
+-- Crear tabla notificaciones
 CREATE TABLE IF NOT EXISTS `notificaciones` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `user_id` INT UNSIGNED NOT NULL,
     `from_user_id` INT UNSIGNED NULL,
-    `type` VARCHAR(50) NOT NULL COMMENT 'nueva_solicitud, asignacion, completado, cancelado, mensaje, etc',
+    `type` VARCHAR(50) NOT NULL,
     `title` VARCHAR(255) NOT NULL,
     `message` TEXT NOT NULL,
     `action_url` VARCHAR(255) NULL,
@@ -17,9 +17,9 @@ CREATE TABLE IF NOT EXISTS `notificaciones` (
     INDEX `idx_created` (`created_at`),
     FOREIGN KEY (`user_id`) REFERENCES `usuarios`(`id`) ON DELETE CASCADE,
     FOREIGN KEY (`from_user_id`) REFERENCES `usuarios`(`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Tabla de chats
+-- Crear tabla chats
 CREATE TABLE IF NOT EXISTS `chats` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `solicitud_id` INT UNSIGNED NOT NULL,
@@ -34,9 +34,9 @@ CREATE TABLE IF NOT EXISTS `chats` (
     FOREIGN KEY (`user1_id`) REFERENCES `usuarios`(`id`) ON DELETE CASCADE,
     FOREIGN KEY (`user2_id`) REFERENCES `usuarios`(`id`) ON DELETE CASCADE,
     UNIQUE KEY `unique_chat` (`solicitud_id`, `user1_id`, `user2_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Tabla de mensajes de chat
+-- Crear tabla chat_messages
 CREATE TABLE IF NOT EXISTS `chat_messages` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `chat_id` INT UNSIGNED NOT NULL,
@@ -50,9 +50,9 @@ CREATE TABLE IF NOT EXISTS `chat_messages` (
     INDEX `idx_created` (`created_at`),
     FOREIGN KEY (`chat_id`) REFERENCES `chats`(`id`) ON DELETE CASCADE,
     FOREIGN KEY (`user_id`) REFERENCES `usuarios`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Tabla de indicador de escritura
+-- Crear tabla chat_typing
 CREATE TABLE IF NOT EXISTS `chat_typing` (
     `chat_id` INT UNSIGNED NOT NULL,
     `user_id` INT UNSIGNED NOT NULL,
@@ -62,20 +62,6 @@ CREATE TABLE IF NOT EXISTS `chat_typing` (
     INDEX `idx_updated` (`updated_at`),
     FOREIGN KEY (`chat_id`) REFERENCES `chats`(`id`) ON DELETE CASCADE,
     FOREIGN KEY (`user_id`) REFERENCES `usuarios`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Añadir campos a solicitudes para calendario (ignorar si ya existen)
-ALTER TABLE `solicitudes` 
-ADD COLUMN `fecha_programada` DATETIME NULL COMMENT 'Fecha y hora programada para el servicio',
-ADD COLUMN `duracion_estimada` INT NULL COMMENT 'Duración estimada en minutos';
-
-ALTER TABLE `solicitudes` 
-ADD INDEX `idx_fecha_programada` (`fecha_programada`);
-
--- Insertar notificaciones de ejemplo para testing
-INSERT INTO `notificaciones` (`user_id`, `type`, `title`, `message`, `created_at`) VALUES
-(1, 'nueva_solicitud', 'Nueva solicitud recibida', 'Tienes una nueva solicitud de servicio médico', NOW()),
-(2, 'asignacion', 'Solicitud asignada', 'Se te ha asignado una nueva solicitud', NOW());
-
--- Commit
-COMMIT;
+SELECT 'Tablas creadas correctamente' AS status;

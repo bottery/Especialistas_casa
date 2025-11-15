@@ -10,6 +10,9 @@ use App\Controllers\PacienteController;
 use App\Controllers\ProfesionalController;
 use App\Controllers\MedicoController;
 use App\Controllers\AdminController;
+use App\Controllers\ConfiguracionPagosController;
+use App\Controllers\PagosTransferenciaController;
+use App\Controllers\AsignacionProfesionalController;
 
 // Obtener ruta y método
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -685,6 +688,7 @@ if (preg_match('#^/citas/(\d+)/reschedule$#', $path, $matches) && $method === 'P
     require_once __DIR__ . '/../app/Models/SolicitudServicio.php';
     $solicitudModel = new App\Models\SolicitudServicio();
     
+    
     $data = json_decode(file_get_contents('php://input'), true);
     $fechaProgramada = $data['fecha_programada'] ?? null;
     
@@ -701,4 +705,108 @@ if (preg_match('#^/citas/(\d+)/reschedule$#', $path, $matches) && $method === 'P
     }
     exit;
 }
+
+// ============================================
+// RUTAS DE CONFIGURACIÓN DE PAGOS (Superadmin)
+// ============================================
+
+// GET /api/admin/configuracion-pagos - Obtener configuración
+if ($path === '/admin/configuracion-pagos' && $method === 'GET') {
+    $controller = new ConfiguracionPagosController();
+    $controller->getConfiguracion();
+    exit;
+}
+
+// PUT /api/admin/configuracion-pagos - Actualizar configuración
+if ($path === '/admin/configuracion-pagos' && $method === 'PUT') {
+    $controller = new ConfiguracionPagosController();
+    $controller->updateConfiguracion();
+    exit;
+}
+
+// POST /api/admin/configuracion-pagos/qr - Subir QR
+if ($path === '/admin/configuracion-pagos/qr' && $method === 'POST') {
+    $controller = new ConfiguracionPagosController();
+    $controller->uploadQR();
+    exit;
+}
+
+// DELETE /api/admin/configuracion-pagos/qr - Eliminar QR
+if ($path === '/admin/configuracion-pagos/qr' && $method === 'DELETE') {
+    $controller = new ConfiguracionPagosController();
+    $controller->deleteQR();
+    exit;
+}
+
+// ============================================
+// RUTAS DE PAGOS POR TRANSFERENCIA (Admin/Paciente)
+// ============================================
+
+// GET /api/admin/pagos/pendientes - Listar pagos pendientes
+if ($path === '/admin/pagos/pendientes' && $method === 'GET') {
+    $controller = new PagosTransferenciaController();
+    $controller->getPagosPendientes();
+    exit;
+}
+
+// GET /api/admin/pagos/{id} - Detalle de pago
+if (preg_match('#^/admin/pagos/(\d+)$#', $path, $matches) && $method === 'GET') {
+    $controller = new PagosTransferenciaController();
+    $controller->getDetallePago((int)$matches[1]);
+    exit;
+}
+
+// POST /api/admin/pagos/{id}/aprobar - Aprobar pago
+if (preg_match('#^/admin/pagos/(\d+)/aprobar$#', $path, $matches) && $method === 'POST') {
+    $controller = new PagosTransferenciaController();
+    $controller->aprobarPago((int)$matches[1]);
+    exit;
+}
+
+// POST /api/admin/pagos/{id}/rechazar - Rechazar pago
+if (preg_match('#^/admin/pagos/(\d+)/rechazar$#', $path, $matches) && $method === 'POST') {
+    $controller = new PagosTransferenciaController();
+    $controller->rechazarPago((int)$matches[1]);
+    exit;
+}
+
+// POST /api/pagos/{id}/comprobante - Subir comprobante (Paciente)
+if (preg_match('#^/pagos/(\d+)/comprobante$#', $path, $matches) && $method === 'POST') {
+    $controller = new PagosTransferenciaController();
+    $controller->uploadComprobante((int)$matches[1]);
+    exit;
+}
+
+// ============================================
+// RUTAS DE ASIGNACIÓN DE PROFESIONALES (Admin)
+// ============================================
+
+// GET /api/admin/solicitudes/pendientes - Solicitudes sin asignar
+if ($path === '/admin/solicitudes/pendientes' && $method === 'GET') {
+    $controller = new AsignacionProfesionalController();
+    $controller->getSolicitudesPendientes();
+    exit;
+}
+
+// GET /api/admin/profesionales/disponibles - Profesionales ordenados por calificación
+if ($path === '/admin/profesionales/disponibles' && $method === 'GET') {
+    $controller = new AsignacionProfesionalController();
+    $controller->getProfesionalesDisponibles();
+    exit;
+}
+
+// POST /api/admin/solicitudes/{id}/asignar - Asignar profesional
+if (preg_match('#^/admin/solicitudes/(\d+)/asignar$#', $path, $matches) && $method === 'POST') {
+    $controller = new AsignacionProfesionalController();
+    $controller->asignarProfesional((int)$matches[1]);
+    exit;
+}
+
+// POST /api/admin/solicitudes/{id}/reasignar - Reasignar profesional
+if (preg_match('#^/admin/solicitudes/(\d+)/reasignar$#', $path, $matches) && $method === 'POST') {
+    $controller = new AsignacionProfesionalController();
+    $controller->reasignarProfesional((int)$matches[1]);
+    exit;
+}
+
 

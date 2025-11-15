@@ -116,8 +116,8 @@ class PacienteController
                 'sintomas' => $data['sintomas'] ?? null,
                 'observaciones' => $data['observaciones'] ?? null,
                 'monto_total' => $servicio['precio_base'],
-                // Inicia en pendiente_asignacion, esperando que admin asigne profesional
-                'estado' => 'pendiente_asignacion',
+                // Si es transferencia: pendiente_confirmacion_pago, si es PSE: pendiente (listo para asignar)
+                'estado' => $data['metodo_pago_preferido'] === 'transferencia' ? 'pendiente_confirmacion_pago' : 'pendiente',
                 'pagado' => $data['metodo_pago_preferido'] === 'pse' ? true : false,
                 
                 // Información de contacto
@@ -194,21 +194,46 @@ class PacienteController
             $solicitudId = $this->solicitudModel->createRequest($solicitudData);
             
             // Si es transferencia, crear registro de pago pendiente
+            $pagoId = null;
             if ($data['metodo_pago_preferido'] === 'transferencia') {
-                $this->createPendingPayment($solicitudId, $servicio['precio_base']);
+                $pagoId = $this->createPendingPayment($solicitudId, $servicio['precio_base']);
+            }
+
+            // Obtener configuración de pagos para mostrar QR
+            $configPagos = null;
+            if ($data['metodo_pago_preferido'] === 'transferencia') {
+                global $pdo;
+                $stmt = $pdo->query("SELECT * FROM configuracion_pagos WHERE id = 1 LIMIT 1");
+                $configPagos = $stmt->fetch(\PDO::FETCH_ASSOC);
             }
 
             // Mensaje personalizado según tipo y método de pago
             $mensaje = $this->getSuccessMessage($tipo, $data['metodo_pago_preferido'], $data['requiere_aprobacion'] ?? false);
 
-            $this->sendSuccess([
+            $response = [
                 'message' => $mensaje,
                 'solicitud_id' => $solicitudId,
                 'monto_total' => $servicio['precio_base'],
                 'estado' => $solicitudData['estado'],
                 'metodo_pago' => $data['metodo_pago_preferido'],
                 'requiere_confirmacion_pago' => $data['metodo_pago_preferido'] === 'transferencia'
-            ], 201);
+            ];
+            
+            // Agregar info de transferencia si aplica
+            if ($data['metodo_pago_preferido'] === 'transferencia' && $configPagos) {
+                $response['pago_id'] = $pagoId;
+                $response['datos_transferencia'] = [
+                    'qr_imagen' => $configPagos['qr_imagen_path'],
+                    'banco_nombre' => $configPagos['banco_nombre'],
+                    'banco_cuenta' => $configPagos['banco_cuenta'],
+                    'banco_tipo_cuenta' => $configPagos['banco_tipo_cuenta'],
+                    'banco_titular' => $configPagos['banco_titular'],
+                    'instrucciones' => $configPagos['instrucciones_transferencia'],
+                    'whatsapp_contacto' => $configPagos['whatsapp_contacto']
+                ];
+            }
+
+            $this->sendSuccess($response, 201);
         } catch (\Exception $e) {
             error_log("Error al crear solicitud: " . $e->getMessage());
             $this->sendError("Error al crear solicitud: " . $e->getMessage(), 500);
@@ -280,13 +305,12 @@ class PacienteController
     {
         // Mensaje especial para transferencia
         if ($metodoPago === 'transferencia') {
-            return "Solicitud creada exitosamente. Por favor realiza la transferencia y envía el comprobante al WhatsApp +57 300 123 4567 para confirmar tu pago. Tu solicitud quedará activa una vez se verifique el pago.";
+            return "Solicitud creada exitosamente. Por favor realiza la transferencia según los datos bancarios mostrados y sube tu comprobante de pago. Tu solicitud será activada una vez confirmemos el pago.";
         }
         
         // Mensaje especial para PSE
         if ($metodoPago === 'pse') {
-            return "Solicitud creada y pago procesado exitosamente con PSE. " . 
-                   ($requiereAprobacion ? "El profesional revisará tu solicitud en las próximas horas." : "Recibirás confirmación del profesional pronto.");
+            return "Solicitud creada y pago procesado exitosamente con PSE. Un administrador asignará un profesional pronto y serás notificado.";
         }
         
         if ($requiereAprobacion) {
@@ -309,8 +333,9 @@ class PacienteController
     
     /**
      * Crear registro de pago pendiente para transferencias
+     * Retorna el ID del pago creado
      */
-    private function createPendingPayment(int $solicitudId, float $monto): void
+    private function createPendingPayment(int $solicitudId, float $monto): int
     {
         try {
             global $pdo;
@@ -318,7 +343,7 @@ class PacienteController
             $stmt = $pdo->prepare("
                 INSERT INTO pagos (solicitud_id, usuario_id, metodo_pago, monto, estado, notas)
                 VALUES (:solicitud_id, :usuario_id, 'transferencia', :monto, 'pendiente', 
-                        'Pendiente de envío de comprobante al WhatsApp +57 300 123 4567')
+                        'Esperando comprobante de transferencia del usuario')
             ");
             
             $stmt->execute([
@@ -326,8 +351,11 @@ class PacienteController
                 'usuario_id' => $this->user->id,
                 'monto' => $monto
             ]);
+            
+            return (int)$pdo->lastInsertId();
         } catch (\Exception $e) {
             error_log("Error al crear pago pendiente: " . $e->getMessage());
+            throw $e;
         }
     }
 
