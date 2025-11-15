@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="/css/skeleton.css">
     <link rel="stylesheet" href="/css/timeline.css">
     <link rel="stylesheet" href="/css/breadcrumbs.css">
+    <link rel="stylesheet" href="/css/progress.css">
 <script>
 window.pacienteDashboard = function() {
     return {

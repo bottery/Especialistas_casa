@@ -8,6 +8,7 @@
     <script src="/js/validator.js"></script>
     <script src="/js/toast.js"></script>
     <link rel="stylesheet" href="/css/breadcrumbs.css">
+    <link rel="stylesheet" href="/css/progress.css">
 <script>
 window.nuevaSolicitudApp = function() {
     return {
@@ -364,8 +365,53 @@ window.nuevaSolicitudApp = function() {
     </nav>
 
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Indicador de pasos -->
-        <div class="mb-8">
+        <!-- Indicador de pasos mejorado -->
+        <div class="progress-steps mb-8">
+            <div class="progress-step" :class="paso === 1 ? 'active' : paso > 1 ? 'completed' : ''">
+                <div class="progress-step-circle">
+                    <template x-if="paso > 1">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                    </template>
+                    <template x-if="paso <= 1">
+                        <span>1</span>
+                    </template>
+                </div>
+                <div class="progress-step-label">Seleccionar Servicio</div>
+            </div>
+
+            <div class="progress-step" :class="paso === 2 ? 'active' : paso > 2 ? 'completed' : ''">
+                <div class="progress-step-circle">
+                    <template x-if="paso > 2">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                    </template>
+                    <template x-if="paso <= 2">
+                        <span>2</span>
+                    </template>
+                </div>
+                <div class="progress-step-label">Detalles</div>
+            </div>
+
+            <div class="progress-step" :class="paso === 3 ? 'active' : paso > 3 ? 'completed' : ''">
+                <div class="progress-step-circle">
+                    <template x-if="paso > 3">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                    </template>
+                    <template x-if="paso <= 3">
+                        <span>3</span>
+                    </template>
+                </div>
+                <div class="progress-step-label">Confirmar</div>
+            </div>
+        </div>
+
+        <!-- Antiguo indicador (oculto) -->
+        <div class="mb-8 hidden">
             <div class="flex items-center justify-center">
                 <div class="flex items-center">
                     <div class="flex items-center relative">
