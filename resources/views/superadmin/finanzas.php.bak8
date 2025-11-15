@@ -6,264 +6,6 @@
     <title>Dashboard Financiero - Especialistas en Casa</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script>
-window.finanzasApp = function() {
-    return {
-        loading: false,
-        message: '',
-        messageType: 'success',
-        periodo: 'mes',
-        resumen: {},
-        pagos: [],
-        retiros: [],
-        transacciones: [],
-        metodos: [],
-        modalRetiros: false,
-        charts: {},
-
-        async init() {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                window.location.href = '/login';
-                return;
-            }
-            await this.cargarDatos();
-        },
-
-        async cargarDatos() {
-            this.loading = true;
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`/api/finanzas/dashboard?periodo=${this.periodo}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    this.resumen = data.resumen || {};
-                    this.pagos = data.pagos_recientes || [];
-                    this.retiros = data.retiros_pendientes || [];
-                    this.transacciones = data.transacciones_diarias || [];
-                    this.metodos = data.metodos_pago || [];
-                    
-                    setTimeout(() => this.renderCharts(), 100);
-                }
-            } catch (error) {
-                console.error('Error:', error);
-            } finally {
-                this.loading = false;
-            }
-        },
-
-        renderCharts() {
-            // Transacciones diarias
-            const ctx1 = document.getElementById('transaccionesChart');
-            if (ctx1 && this.transacciones.length > 0) {
-                if (this.charts.transacciones) this.charts.transacciones.destroy();
-                this.charts.transacciones = new Chart(ctx1, {
-                    type: 'line',
-                    data: {
-                        labels: this.transacciones.map(t => {
-                            const fecha = new Date(t.fecha);
-                            return fecha.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
-                        }),
-                        datasets: [{
-                            label: 'Ingresos',
-                            data: this.transacciones.map(t => parseFloat(t.total)),
-                            borderColor: 'rgb(59, 130, 246)',
-                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                            borderWidth: 3,
-                            tension: 0.4,
-                            fill: true,
-                            pointRadius: 4,
-                            pointHoverRadius: 6,
-                            pointBackgroundColor: 'rgb(59, 130, 246)',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'top',
-                                labels: {
-                                    usePointStyle: true,
-                                    padding: 15,
-                                    font: { size: 12, weight: '500' }
-                                }
-                            },
-                            tooltip: {
-                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                                padding: 12,
-                                titleFont: { size: 13 },
-                                bodyFont: { size: 12 },
-                                callbacks: {
-                                    label: function(context) {
-                                        return 'Ingresos: $' + context.parsed.y.toLocaleString('es-CO');
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    callback: function(value) {
-                                        return '$' + value.toLocaleString('es-CO');
-                                    }
-                                },
-                                grid: { color: 'rgba(0, 0, 0, 0.05)' }
-                            },
-                            x: {
-                                grid: { display: false }
-                            }
-                        }
-                    }
-                });
-            }
-
-            // Métodos de pago
-            const ctx2 = document.getElementById('metodosChart');
-            if (ctx2 && this.metodos.length > 0) {
-                if (this.charts.metodos) this.charts.metodos.destroy();
-                this.charts.metodos = new Chart(ctx2, {
-                    type: 'doughnut',
-                    data: {
-                        labels: this.metodos.map(m => m.metodo_pago.toUpperCase()),
-                        datasets: [{
-                            data: this.metodos.map(m => parseFloat(m.total)),
-                            backgroundColor: [
-                                'rgb(59, 130, 246)',
-                                'rgb(139, 92, 246)',
-                                'rgb(236, 72, 153)',
-                                'rgb(34, 197, 94)'
-                            ],
-                            borderWidth: 3,
-                            borderColor: '#fff'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: {
-                                    padding: 20,
-                                    font: { size: 12, weight: '500' },
-                                    usePointStyle: true
-                                }
-                            },
-                            tooltip: {
-                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                                padding: 12,
-                                callbacks: {
-                                    label: function(context) {
-                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                        const porcentaje = ((context.parsed / total) * 100).toFixed(1);
-                                        return context.label + ': $' + context.parsed.toLocaleString('es-CO') + ' (' + porcentaje + '%)';
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-        },
-                        plugins: { legend: { position: 'bottom' } }
-                    }
-                });
-            }
-        },
-
-        async actualizarEstado(id, estado) {
-            if (!confirm(`¿${estado === 'aprobado' ? 'Aprobar' : 'Rechazar'} este pago?`)) return;
-
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch('/api/finanzas/actualizar-pago', {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ id, estado })
-                });
-
-                if (response.ok) {
-                    this.showMessage('Estado actualizado', 'success');
-                    await this.cargarDatos();
-                } else {
-                    this.showMessage('Error al actualizar', 'error');
-                }
-            } catch (error) {
-                this.showMessage('Error al actualizar', 'error');
-            }
-        },
-
-        async procesarRetiro(profesionalId, monto) {
-            if (!confirm(`¿Procesar retiro de $${this.formatNumber(monto)}?`)) return;
-
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch('/api/finanzas/procesar-retiro', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ profesional_id: profesionalId, monto, metodo: 'transferencia' })
-                });
-
-                if (response.ok) {
-                    this.showMessage('Retiro procesado correctamente', 'success');
-                    this.modalRetiros = false;
-                    await this.cargarDatos();
-                } else {
-                    this.showMessage('Error al procesar retiro', 'error');
-                }
-            } catch (error) {
-                this.showMessage('Error al procesar retiro', 'error');
-            }
-        },
-
-        exportarReporte(formato) {
-            const params = new URLSearchParams({ formato, periodo: this.periodo });
-            window.location.href = `/api/finanzas/exportar?${params}`;
-        },
-
-        formatNumber(num) {
-            return new Intl.NumberFormat('es-CO').format(num || 0);
-        },
-
-        formatDate(dateStr) {
-            return new Date(dateStr).toLocaleDateString('es-CO', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        },
-
-        showMessage(msg, type = 'success') {
-            this.message = msg;
-            this.messageType = type;
-            setTimeout(() => { this.message = ''; }, 5000);
-        },
-
-        logout() {
-            localStorage.removeItem('token');
-            localStorage.removeItem('usuario');
-            window.location.href = '/login';
-        }
-    }
-}
-</script>
-
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="bg-gray-50" x-data="finanzasApp()" x-init="init()">
@@ -568,5 +310,262 @@ window.finanzasApp = function() {
     </div>
 
 <script>
+window.finanzasApp = function() {
+    return {
+        loading: false,
+        message: '',
+        messageType: 'success',
+        periodo: 'mes',
+        resumen: {},
+        pagos: [],
+        retiros: [],
+        transacciones: [],
+        metodos: [],
+        modalRetiros: false,
+        charts: {},
+
+        async init() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+            await this.cargarDatos();
+        },
+
+        async cargarDatos() {
+            this.loading = true;
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/finanzas/dashboard?periodo=${this.periodo}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    this.resumen = data.resumen || {};
+                    this.pagos = data.pagos_recientes || [];
+                    this.retiros = data.retiros_pendientes || [];
+                    this.transacciones = data.transacciones_diarias || [];
+                    this.metodos = data.metodos_pago || [];
+                    
+                    setTimeout(() => this.renderCharts(), 100);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        renderCharts() {
+            // Transacciones diarias
+            const ctx1 = document.getElementById('transaccionesChart');
+            if (ctx1 && this.transacciones.length > 0) {
+                if (this.charts.transacciones) this.charts.transacciones.destroy();
+                this.charts.transacciones = new Chart(ctx1, {
+                    type: 'line',
+                    data: {
+                        labels: this.transacciones.map(t => {
+                            const fecha = new Date(t.fecha);
+                            return fecha.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
+                        }),
+                        datasets: [{
+                            label: 'Ingresos',
+                            data: this.transacciones.map(t => parseFloat(t.total)),
+                            borderColor: 'rgb(59, 130, 246)',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            borderWidth: 3,
+                            tension: 0.4,
+                            fill: true,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: 'rgb(59, 130, 246)',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                labels: {
+                                    usePointStyle: true,
+                                    padding: 15,
+                                    font: { size: 12, weight: '500' }
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                padding: 12,
+                                titleFont: { size: 13 },
+                                bodyFont: { size: 12 },
+                                callbacks: {
+                                    label: function(context) {
+                                        return 'Ingresos: $' + context.parsed.y.toLocaleString('es-CO');
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '$' + value.toLocaleString('es-CO');
+                                    }
+                                },
+                                grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                            },
+                            x: {
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Métodos de pago
+            const ctx2 = document.getElementById('metodosChart');
+            if (ctx2 && this.metodos.length > 0) {
+                if (this.charts.metodos) this.charts.metodos.destroy();
+                this.charts.metodos = new Chart(ctx2, {
+                    type: 'doughnut',
+                    data: {
+                        labels: this.metodos.map(m => m.metodo_pago.toUpperCase()),
+                        datasets: [{
+                            data: this.metodos.map(m => parseFloat(m.total)),
+                            backgroundColor: [
+                                'rgb(59, 130, 246)',
+                                'rgb(139, 92, 246)',
+                                'rgb(236, 72, 153)',
+                                'rgb(34, 197, 94)'
+                            ],
+                            borderWidth: 3,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 20,
+                                    font: { size: 12, weight: '500' },
+                                    usePointStyle: true
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                padding: 12,
+                                callbacks: {
+                                    label: function(context) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const porcentaje = ((context.parsed / total) * 100).toFixed(1);
+                                        return context.label + ': $' + context.parsed.toLocaleString('es-CO') + ' (' + porcentaje + '%)';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        },
+                        plugins: { legend: { position: 'bottom' } }
+                    }
+                });
+            }
+        },
+
+        async actualizarEstado(id, estado) {
+            if (!confirm(`¿${estado === 'aprobado' ? 'Aprobar' : 'Rechazar'} este pago?`)) return;
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/finanzas/actualizar-pago', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ id, estado })
+                });
+
+                if (response.ok) {
+                    this.showMessage('Estado actualizado', 'success');
+                    await this.cargarDatos();
+                } else {
+                    this.showMessage('Error al actualizar', 'error');
+                }
+            } catch (error) {
+                this.showMessage('Error al actualizar', 'error');
+            }
+        },
+
+        async procesarRetiro(profesionalId, monto) {
+            if (!confirm(`¿Procesar retiro de $${this.formatNumber(monto)}?`)) return;
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/finanzas/procesar-retiro', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ profesional_id: profesionalId, monto, metodo: 'transferencia' })
+                });
+
+                if (response.ok) {
+                    this.showMessage('Retiro procesado correctamente', 'success');
+                    this.modalRetiros = false;
+                    await this.cargarDatos();
+                } else {
+                    this.showMessage('Error al procesar retiro', 'error');
+                }
+            } catch (error) {
+                this.showMessage('Error al procesar retiro', 'error');
+            }
+        },
+
+        exportarReporte(formato) {
+            const params = new URLSearchParams({ formato, periodo: this.periodo });
+            window.location.href = `/api/finanzas/exportar?${params}`;
+        },
+
+        formatNumber(num) {
+            return new Intl.NumberFormat('es-CO').format(num || 0);
+        },
+
+        formatDate(dateStr) {
+            return new Date(dateStr).toLocaleDateString('es-CO', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        },
+
+        showMessage(msg, type = 'success') {
+            this.message = msg;
+            this.messageType = type;
+            setTimeout(() => { this.message = ''; }, 5000);
+        },
+
+        logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('usuario');
+            window.location.href = '/login';
+        }
+    }
+}
+</script>
+
 </body>
 </html>
