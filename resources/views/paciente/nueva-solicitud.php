@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="/js/validator.js"></script>
     <script src="/js/toast.js"></script>
+    <link rel="stylesheet" href="/css/breadcrumbs.css">
 <script>
 window.nuevaSolicitudApp = function() {
     return {
@@ -317,6 +318,32 @@ window.nuevaSolicitudApp = function() {
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
+                    <h1 class="text-xl font-bold text-gray-900">Nueva Solicitud</h1>
+                </div>
+                <div class="flex items-center">
+                    <button @click="window.location.href='/paciente/dashboard'" class="text-gray-600 hover:text-gray-900">
+                        Volver al Dashboard
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Breadcrumbs -->
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <nav class="breadcrumb">
+            <div class="breadcrumb-item">
+                <svg class="breadcrumb-icon" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+                </svg>
+                <a href="/paciente/dashboard">Inicio</a>
+            </div>
+            <span class="breadcrumb-separator">/</span>
+            <div class="breadcrumb-item active">Nueva Solicitud</div>
+        </nav>
+    </div>
+
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <button @click="volver()" class="text-gray-600 hover:text-gray-900 mr-4" title="Volver">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>

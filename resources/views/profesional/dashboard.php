@@ -6,6 +6,7 @@
     <title>Dashboard Profesional - Especialistas en Casa</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/css/skeleton.css">
+    <link rel="stylesheet" href="/css/breadcrumbs.css">
     <script src="/js/confirmation-modal.js"></script>
 <script>
 window.profesionalDashboard = function() {
@@ -436,6 +437,18 @@ window.profesionalDashboard = function() {
     </nav>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Breadcrumbs -->
+        <nav class="breadcrumb mb-6">
+            <div class="breadcrumb-item">
+                <svg class="breadcrumb-icon" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+                </svg>
+                <a href="/profesional/dashboard">Inicio</a>
+            </div>
+            <span class="breadcrumb-separator">/</span>
+            <div class="breadcrumb-item active">Dashboard Profesional</div>
+        </nav>
+
         <!-- Skeletons para estadísticas -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8" x-show="loading">
             <div class="skeleton-stat-card"></div>
