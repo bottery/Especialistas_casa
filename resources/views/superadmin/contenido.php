@@ -372,7 +372,7 @@
     </div>
 
 <script>
-function contenidoApp() {
+window.contenidoApp = function() {
     return {
         tab: 'servicios',
         message: '',

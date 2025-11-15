@@ -370,7 +370,7 @@
     </div>
 
 <script>
-function seguridadApp() {
+window.seguridadApp = function() {
     return {
         tab: 'notificaciones',
         message: '',

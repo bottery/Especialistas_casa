@@ -369,7 +369,7 @@
     </div>
 
 <script>
-function usuariosApp() {
+window.usuariosApp = function() {
     return {
         loading: false,
         loadingDetalle: false,

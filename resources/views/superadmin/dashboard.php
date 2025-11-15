@@ -186,7 +186,7 @@
     </div>
 
 <script>
-function dashboardApp() {
+window.dashboardApp = function() {
     return {
         loading: false,
         message: '',
