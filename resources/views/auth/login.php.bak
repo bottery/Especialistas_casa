@@ -107,9 +107,9 @@
 
                         if (data.success) {
                             // Guardar token
-                            localStorage.setItem('token', data.access_token);
+                            localStorage.setItem('access_token', data.access_token);
                             localStorage.setItem('refresh_token', data.refresh_token);
-                            localStorage.setItem('usuario', JSON.stringify(data.user));
+                            localStorage.setItem('user', JSON.stringify(data.user));
 
                             this.success = true;
                             this.message = 'Inicio de sesión exitoso. Redirigiendo...';

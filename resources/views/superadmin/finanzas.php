@@ -325,7 +325,7 @@ function finanzasApp() {
         async init() {
             const token = localStorage.getItem('token');
             if (!token) {
-                window.location.href = '/login.php';
+                window.location.href = '/login';
                 return;
             }
             await this.cargarDatos();
@@ -484,7 +484,7 @@ function finanzasApp() {
         logout() {
             localStorage.removeItem('token');
             localStorage.removeItem('usuario');
-            window.location.href = '/login.php';
+            window.location.href = '/login';
         }
     }
 }

@@ -204,7 +204,7 @@ function dashboardApp() {
         async init() {
             const token = localStorage.getItem('token');
             if (!token) {
-                window.location.href = '/login.php';
+                window.location.href = '/login';
                 return;
             }
 
@@ -213,7 +213,7 @@ function dashboardApp() {
 
             if (userData.rol !== 'superadmin') {
                 this.showMessage('Acceso denegado', 'error');
-                setTimeout(() => window.location.href = '/login.php', 2000);
+                setTimeout(() => window.location.href = '/login', 2000);
                 return;
             }
 
@@ -447,7 +447,7 @@ function dashboardApp() {
         logout() {
             localStorage.removeItem('token');
             localStorage.removeItem('usuario');
-            window.location.href = '/login.php';
+            window.location.href = '/login';
         }
     }
 }
