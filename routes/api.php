@@ -7,6 +7,7 @@
 
 use App\Controllers\AuthController;
 use App\Controllers\PacienteController;
+use App\Controllers\ProfesionalController;
 use App\Controllers\MedicoController;
 use App\Controllers\AdminController;
 
@@ -149,7 +150,48 @@ if (strpos($path, '/paciente/') === 0) {
 }
 
 // ============================================
-// RUTAS DE MÉDICO/PROFESIONAL (Autenticadas)
+// RUTAS DE PROFESIONAL (Autenticadas)
+// ============================================
+if (strpos($path, '/profesional/') === 0) {
+    if ($path === '/profesional/stats' && $method === 'GET') {
+        $controller = new ProfesionalController();
+        $controller->getStats();
+        exit;
+    }
+    
+    if ($path === '/profesional/solicitudes' && $method === 'GET') {
+        $controller = new ProfesionalController();
+        $controller->getSolicitudes();
+        exit;
+    }
+    
+    if (preg_match('#^/profesional/solicitudes/(\d+)/aceptar$#', $path, $matches) && $method === 'POST') {
+        $controller = new ProfesionalController();
+        $controller->aceptarSolicitud((int)$matches[1]);
+        exit;
+    }
+    
+    if (preg_match('#^/profesional/solicitudes/(\d+)/rechazar$#', $path, $matches) && $method === 'POST') {
+        $controller = new ProfesionalController();
+        $controller->rechazarSolicitud((int)$matches[1]);
+        exit;
+    }
+    
+    if (preg_match('#^/profesional/solicitudes/(\d+)/iniciar$#', $path, $matches) && $method === 'POST') {
+        $controller = new ProfesionalController();
+        $controller->iniciarServicio((int)$matches[1]);
+        exit;
+    }
+    
+    if (preg_match('#^/profesional/solicitudes/(\d+)/completar$#', $path, $matches) && $method === 'POST') {
+        $controller = new ProfesionalController();
+        $controller->completarServicio((int)$matches[1]);
+        exit;
+    }
+}
+
+// ============================================
+// RUTAS DE MÉDICO/PROFESIONAL (Autenticadas - LEGACY)
 // ============================================
 if (strpos($path, '/medico/') === 0) {
     if ($path === '/medico/servicios' && $method === 'GET') {

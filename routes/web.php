@@ -60,6 +60,10 @@ if ($path === '/paciente/historial') {
 // ============================================
 // RUTAS DE MÉDICO/PROFESIONAL
 // ============================================
+if ($path === '/profesional/dashboard') {
+    view('profesional/dashboard');
+}
+
 if ($path === '/medico/dashboard') {
     view('medico/dashboard');
 }
