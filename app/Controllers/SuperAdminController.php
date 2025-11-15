@@ -30,15 +30,19 @@ class SuperAdminController
                 'totalUsuarios' => $this->getTotalUsuarios(),
                 'serviciosActivos' => $this->getServiciosActivos(),
                 'solicitudesPendientes' => $this->getSolicitudesPendientes(),
-                'ingresosMes' => $this->getIngresosMes()
+                'ingresosMes' => $this->getIngresosMes(),
+                'solicitudesCompletadas' => $this->getSolicitudesCompletadas(),
+                'pagosHoy' => $this->getPagosHoy(),
+                'nuevosUsuariosHoy' => $this->getNuevosUsuariosHoy(),
+                'profesionalesActivos' => $this->getProfesionalesActivos()
             ];
 
-            // Obtener todos los usuarios
-            $usuarios = $this->usuarioModel->getAll();
+            // Obtener actividad reciente
+            $actividadReciente = $this->getActividadReciente();
 
             $this->sendSuccess([
                 'stats' => $stats,
-                'usuarios' => $usuarios
+                'actividad_reciente' => $actividadReciente
             ]);
         } catch (\Exception $e) {
             $this->sendError($e->getMessage(), 500);
@@ -241,11 +245,61 @@ class SuperAdminController
         $result = $this->db->selectOne("
             SELECT SUM(monto) as total 
             FROM pagos 
-            WHERE estado = 'completado' 
+            WHERE estado IN ('completado', 'aprobado') 
             AND MONTH(created_at) = MONTH(CURRENT_DATE())
             AND YEAR(created_at) = YEAR(CURRENT_DATE())
         ");
         return (float) ($result['total'] ?? 0);
+    }
+
+    private function getSolicitudesCompletadas(): int
+    {
+        $result = $this->db->selectOne("SELECT COUNT(*) as total FROM solicitudes WHERE estado = 'completada'");
+        return (int) ($result['total'] ?? 0);
+    }
+
+    private function getPagosHoy(): int
+    {
+        $result = $this->db->selectOne("SELECT COUNT(*) as total FROM pagos WHERE DATE(created_at) = CURRENT_DATE()");
+        return (int) ($result['total'] ?? 0);
+    }
+
+    private function getNuevosUsuariosHoy(): int
+    {
+        $result = $this->db->selectOne("SELECT COUNT(*) as total FROM usuarios WHERE DATE(created_at) = CURRENT_DATE()");
+        return (int) ($result['total'] ?? 0);
+    }
+
+    private function getProfesionalesActivos(): int
+    {
+        $result = $this->db->selectOne("SELECT COUNT(*) as total FROM usuarios WHERE rol = 'profesional' AND estado = 'activo'");
+        return (int) ($result['total'] ?? 0);
+    }
+
+    private function getActividadReciente(): array
+    {
+        // Últimas 10 solicitudes
+        $solicitudes = $this->db->select("
+            SELECT s.*, u.nombre as cliente_nombre, u.email as cliente_email
+            FROM solicitudes s
+            JOIN usuarios u ON s.usuario_id = u.id
+            ORDER BY s.created_at DESC
+            LIMIT 10
+        ");
+
+        // Últimos 10 pagos
+        $pagos = $this->db->select("
+            SELECT p.*, u.nombre as usuario_nombre
+            FROM pagos p
+            JOIN usuarios u ON p.usuario_id = u.id
+            ORDER BY p.created_at DESC
+            LIMIT 10
+        ");
+
+        return [
+            'solicitudes' => $solicitudes ?? [],
+            'pagos' => $pagos ?? []
+        ];
     }
 
     private function sendSuccess($data, int $status = 200): void

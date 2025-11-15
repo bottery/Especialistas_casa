@@ -155,6 +155,65 @@
             </div>
         </div>
 
+        <!-- Segunda fila de estadísticas -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" x-show="!loading">
+            <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-green-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">Completadas</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-2" x-text="stats.solicitudesCompletadas || 0">0</p>
+                    </div>
+                    <div class="bg-green-100 rounded-full p-3">
+                        <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">Pagos Hoy</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-2" x-text="stats.pagosHoy || 0">0</p>
+                    </div>
+                    <div class="bg-blue-100 rounded-full p-3">
+                        <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-indigo-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">Nuevos Hoy</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-2" x-text="stats.nuevosUsuariosHoy || 0">0</p>
+                    </div>
+                    <div class="bg-indigo-100 rounded-full p-3">
+                        <svg class="w-6 h-6 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-purple-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">Profesionales</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-2" x-text="stats.profesionalesActivos || 0">0</p>
+                    </div>
+                    <div class="bg-purple-100 rounded-full p-3">
+                        <svg class="w-6 h-6 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Charts -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8" x-show="!loading">
             <div class="bg-white rounded-xl shadow-lg p-6">
@@ -197,7 +256,15 @@ window.dashboardApp = function() {
             totalUsuarios: 0,
             serviciosActivos: 0,
             solicitudesPendientes: 0,
-            ingresosMes: 0
+            ingresosMes: 0,
+            solicitudesCompletadas: 0,
+            pagosHoy: 0,
+            nuevosUsuariosHoy: 0,
+            profesionalesActivos: 0
+        },
+        actividadReciente: {
+            solicitudes: [],
+            pagos: []
         },
         charts: {},
 
@@ -235,7 +302,8 @@ window.dashboardApp = function() {
 
                 if (response.ok) {
                     const data = await response.json();
-                    this.stats = data.data || data;
+                    this.stats = data.stats || data.data || data;
+                    this.actividadReciente = data.actividad_reciente || { solicitudes: [], pagos: [] };
                 }
             } catch (error) {
                 console.error('Error cargando dashboard:', error);
