@@ -29,7 +29,41 @@ window.configuracionApp = function() {
             smtp_port: 587,
             smtp_user: '',
             smtp_password: '',
-            smtp_encryption: 'tls'
+            smtp_encryption: 'tls',
+            // OneSignal
+            onesignal_app_id: '',
+            onesignal_api_key: '',
+            onesignal_safari_web_id: '',
+            onesignal_enabled: false,
+            // Google Maps
+            google_maps_api_key: '',
+            google_maps_enabled: false,
+            // Google Analytics
+            google_analytics_id: '',
+            google_analytics_enabled: false,
+            // Facebook Pixel
+            facebook_pixel_id: '',
+            facebook_pixel_enabled: false,
+            // Mercado Pago
+            mercadopago_public_key: '',
+            mercadopago_access_token: '',
+            mercadopago_enabled: false,
+            // PayPal
+            paypal_client_id: '',
+            paypal_secret: '',
+            paypal_mode: 'sandbox',
+            paypal_enabled: false,
+            // Twilio (SMS)
+            twilio_account_sid: '',
+            twilio_auth_token: '',
+            twilio_phone_number: '',
+            twilio_enabled: false,
+            // AWS S3
+            aws_access_key: '',
+            aws_secret_key: '',
+            aws_bucket: '',
+            aws_region: 'us-east-1',
+            aws_enabled: false
         },
 
         async init() {
@@ -149,6 +183,26 @@ window.configuracionApp = function() {
                         :class="activeTab === 'seguridad' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                         class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
                     Seguridad
+                </button>
+                <button @click="activeTab = 'notificaciones'" 
+                        :class="activeTab === 'notificaciones' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                    Notificaciones
+                </button>
+                <button @click="activeTab = 'mapas'" 
+                        :class="activeTab === 'mapas' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                    Mapas & Analytics
+                </button>
+                <button @click="activeTab = 'pasarelas'" 
+                        :class="activeTab === 'pasarelas' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                    Pasarelas de Pago
+                </button>
+                <button @click="activeTab = 'almacenamiento'" 
+                        :class="activeTab === 'almacenamiento' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                    Almacenamiento
                 </button>
             </nav>
         </div>
@@ -299,6 +353,275 @@ window.configuracionApp = function() {
                 <div class="space-y-4">
                     <div class="p-4 bg-blue-50 rounded-lg">
                         <p class="text-sm text-blue-800">Las opciones de seguridad avanzadas estarán disponibles próximamente.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Notificaciones (OneSignal) -->
+            <div x-show="activeTab === 'notificaciones'" class="bg-white rounded-lg shadow-sm p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 class="text-xl font-semibold">OneSignal - Push Notifications</h2>
+                        <p class="text-sm text-gray-500 mt-1">Configuración para notificaciones push en web y móvil</p>
+                    </div>
+                    <label class="flex items-center">
+                        <input type="checkbox" x-model="config.onesignal_enabled" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                        <span class="ml-2 text-sm font-medium text-gray-700">Activar</span>
+                    </label>
+                </div>
+                
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">App ID</label>
+                        <input type="text" x-model="config.onesignal_app_id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono text-sm">
+                        <p class="mt-1 text-xs text-gray-500">Obtén tu App ID desde <a href="https://onesignal.com" target="_blank" class="text-indigo-600 hover:underline">OneSignal Dashboard</a></p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">REST API Key</label>
+                        <input type="password" x-model="config.onesignal_api_key" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono text-sm">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Safari Web ID (Opcional)</label>
+                        <input type="text" x-model="config.onesignal_safari_web_id" placeholder="web.onesignal.auto.xxxxxxxx" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono text-sm">
+                    </div>
+
+                    <div class="p-4 bg-yellow-50 rounded-lg">
+                        <h4 class="text-sm font-medium text-yellow-800 mb-2">📱 Configuración Adicional</h4>
+                        <ul class="text-xs text-yellow-700 space-y-1">
+                            <li>• Agrega el SDK de OneSignal a tu sitio web y aplicaciones móviles</li>
+                            <li>• Configura los iconos de notificación en el dashboard de OneSignal</li>
+                            <li>• Personaliza los mensajes de bienvenida y suscripción</li>
+                        </ul>
+                    </div>
+
+                    <!-- Twilio SMS -->
+                    <div class="border-t pt-6 mt-8">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="text-lg font-semibold">Twilio - SMS Notifications</h3>
+                                <p class="text-sm text-gray-500 mt-1">Envía notificaciones por SMS</p>
+                            </div>
+                            <label class="flex items-center">
+                                <input type="checkbox" x-model="config.twilio_enabled" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2 text-sm font-medium text-gray-700">Activar</span>
+                            </label>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Account SID</label>
+                                <input type="text" x-model="config.twilio_account_sid" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono text-sm">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Auth Token</label>
+                                <input type="password" x-model="config.twilio_auth_token" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono text-sm">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Número de Teléfono</label>
+                                <input type="text" x-model="config.twilio_phone_number" placeholder="+57 3XX XXX XXXX" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Mapas & Analytics -->
+            <div x-show="activeTab === 'mapas'" class="bg-white rounded-lg shadow-sm p-6">
+                <div class="space-y-8">
+                    <!-- Google Maps -->
+                    <div>
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <h2 class="text-xl font-semibold">Google Maps</h2>
+                                <p class="text-sm text-gray-500 mt-1">API de mapas para localización de profesionales</p>
+                            </div>
+                            <label class="flex items-center">
+                                <input type="checkbox" x-model="config.google_maps_enabled" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2 text-sm font-medium text-gray-700">Activar</span>
+                            </label>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">API Key</label>
+                            <input type="text" x-model="config.google_maps_api_key" placeholder="AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono text-sm">
+                            <p class="mt-1 text-xs text-gray-500">Obtén tu API key desde <a href="https://console.cloud.google.com/google/maps-apis" target="_blank" class="text-indigo-600 hover:underline">Google Cloud Console</a></p>
+                        </div>
+
+                        <div class="mt-4 p-4 bg-blue-50 rounded-lg">
+                            <h4 class="text-sm font-medium text-blue-800 mb-2">🗺️ APIs Necesarias</h4>
+                            <ul class="text-xs text-blue-700 space-y-1">
+                                <li>• Maps JavaScript API</li>
+                                <li>• Places API</li>
+                                <li>• Geocoding API</li>
+                                <li>• Distance Matrix API</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Google Analytics -->
+                    <div class="border-t pt-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <h2 class="text-xl font-semibold">Google Analytics</h2>
+                                <p class="text-sm text-gray-500 mt-1">Seguimiento y análisis de tráfico web</p>
+                            </div>
+                            <label class="flex items-center">
+                                <input type="checkbox" x-model="config.google_analytics_enabled" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2 text-sm font-medium text-gray-700">Activar</span>
+                            </label>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Measurement ID</label>
+                            <input type="text" x-model="config.google_analytics_id" placeholder="G-XXXXXXXXXX o UA-XXXXXXXXX-X" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono text-sm">
+                        </div>
+                    </div>
+
+                    <!-- Facebook Pixel -->
+                    <div class="border-t pt-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <h2 class="text-xl font-semibold">Facebook Pixel</h2>
+                                <p class="text-sm text-gray-500 mt-1">Tracking de conversiones y retargeting</p>
+                            </div>
+                            <label class="flex items-center">
+                                <input type="checkbox" x-model="config.facebook_pixel_enabled" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2 text-sm font-medium text-gray-700">Activar</span>
+                            </label>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Pixel ID</label>
+                            <input type="text" x-model="config.facebook_pixel_id" placeholder="XXXXXXXXXXXXXXX" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono text-sm">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Pasarelas de Pago -->
+            <div x-show="activeTab === 'pasarelas'" class="bg-white rounded-lg shadow-sm p-6">
+                <div class="space-y-8">
+                    <!-- Mercado Pago -->
+                    <div>
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <h2 class="text-xl font-semibold">Mercado Pago</h2>
+                                <p class="text-sm text-gray-500 mt-1">Procesamiento de pagos en Latinoamérica</p>
+                            </div>
+                            <label class="flex items-center">
+                                <input type="checkbox" x-model="config.mercadopago_enabled" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2 text-sm font-medium text-gray-700">Activar</span>
+                            </label>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Public Key</label>
+                                <input type="text" x-model="config.mercadopago_public_key" placeholder="TEST-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono text-sm">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Access Token</label>
+                                <input type="password" x-model="config.mercadopago_access_token" placeholder="TEST-xxxxxxxxxxxx-xxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-xxxxxxxx" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono text-sm">
+                            </div>
+                        </div>
+
+                        <div class="mt-4 p-4 bg-green-50 rounded-lg">
+                            <p class="text-xs text-green-700">💳 Usa las credenciales de TEST para desarrollo y las de PROD para producción</p>
+                        </div>
+                    </div>
+
+                    <!-- PayPal -->
+                    <div class="border-t pt-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <h2 class="text-xl font-semibold">PayPal</h2>
+                                <p class="text-sm text-gray-500 mt-1">Pagos internacionales con PayPal</p>
+                            </div>
+                            <label class="flex items-center">
+                                <input type="checkbox" x-model="config.paypal_enabled" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                <span class="ml-2 text-sm font-medium text-gray-700">Activar</span>
+                            </label>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Client ID</label>
+                                <input type="text" x-model="config.paypal_client_id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono text-sm">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Secret</label>
+                                <input type="password" x-model="config.paypal_secret" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono text-sm">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Modo</label>
+                                <select x-model="config.paypal_mode" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                    <option value="sandbox">Sandbox (Pruebas)</option>
+                                    <option value="live">Live (Producción)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Almacenamiento (AWS S3) -->
+            <div x-show="activeTab === 'almacenamiento'" class="bg-white rounded-lg shadow-sm p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 class="text-xl font-semibold">Amazon S3</h2>
+                        <p class="text-sm text-gray-500 mt-1">Almacenamiento de archivos e imágenes en la nube</p>
+                    </div>
+                    <label class="flex items-center">
+                        <input type="checkbox" x-model="config.aws_enabled" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                        <span class="ml-2 text-sm font-medium text-gray-700">Activar</span>
+                    </label>
+                </div>
+                
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Access Key ID</label>
+                        <input type="text" x-model="config.aws_access_key" placeholder="AKIAIOSFODNN7EXAMPLE" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono text-sm">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Secret Access Key</label>
+                        <input type="password" x-model="config.aws_secret_key" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono text-sm">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Bucket Name</label>
+                        <input type="text" x-model="config.aws_bucket" placeholder="mi-bucket-especialistas" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Región</label>
+                        <select x-model="config.aws_region" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                            <option value="us-east-1">US East (N. Virginia)</option>
+                            <option value="us-west-2">US West (Oregon)</option>
+                            <option value="sa-east-1">South America (São Paulo)</option>
+                            <option value="eu-west-1">Europe (Ireland)</option>
+                            <option value="ap-southeast-1">Asia Pacific (Singapore)</option>
+                        </select>
+                    </div>
+
+                    <div class="p-4 bg-blue-50 rounded-lg">
+                        <h4 class="text-sm font-medium text-blue-800 mb-2">☁️ Configuración IAM</h4>
+                        <ul class="text-xs text-blue-700 space-y-1">
+                            <li>• Crea un usuario IAM con permisos S3</li>
+                            <li>• Configura políticas de acceso público si es necesario</li>
+                            <li>• Habilita CORS en el bucket para uploads desde el navegador</li>
+                        </ul>
+                    </div>
+
+                    <div class="p-4 bg-yellow-50 rounded-lg">
+                        <p class="text-xs text-yellow-700"><strong>Alternativa local:</strong> Si no activas S3, los archivos se guardarán en el servidor local en <code class="bg-yellow-100 px-1 py-0.5 rounded">/storage/uploads</code></p>
                     </div>
                 </div>
             </div>
