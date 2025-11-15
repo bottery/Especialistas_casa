@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Profesional - Especialistas en Casa</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/skeleton.css">
 <script>
 window.profesionalDashboard = function() {
     return {
@@ -344,8 +345,16 @@ window.profesionalDashboard = function() {
     </nav>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Skeletons para estadísticas -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8" x-show="loading">
+            <div class="skeleton-stat-card"></div>
+            <div class="skeleton-stat-card"></div>
+            <div class="skeleton-stat-card"></div>
+            <div class="skeleton-stat-card"></div>
+        </div>
+
         <!-- Tarjetas de estadísticas -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8" x-show="!loading">
             <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-yellow-500">
                 <div class="flex items-center justify-between">
                     <div>
@@ -429,9 +438,12 @@ window.profesionalDashboard = function() {
             </div>
         </div>
 
-        <!-- Loading -->
-        <div x-show="loading" class="flex justify-center py-12">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+        <!-- Skeleton para lista de solicitudes -->
+        <div x-show="loading" class="space-y-4">
+            <div class="skeleton-list-item"></div>
+            <div class="skeleton-list-item"></div>
+            <div class="skeleton-list-item"></div>
+            <div class="skeleton-list-item"></div>
         </div>
 
         <!-- Solicitudes Pendientes -->

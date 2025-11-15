@@ -6,6 +6,7 @@
     <title>Mi Panel - Especialistas en Casa</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="/js/toast.js"></script>
+    <link rel="stylesheet" href="/css/skeleton.css">
 <script>
 window.pacienteDashboard = function() {
     return {
@@ -237,6 +238,13 @@ window.pacienteDashboard = function() {
     </nav>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Skeletons para estadísticas -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" x-show="loading">
+            <div class="skeleton-stat-card"></div>
+            <div class="skeleton-stat-card"></div>
+            <div class="skeleton-stat-card"></div>
+        </div>
+
         <!-- Tarjetas de estadísticas -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" x-show="!loading">
             <div class="bg-white rounded-lg shadow-sm p-6">
@@ -307,9 +315,12 @@ window.pacienteDashboard = function() {
             </nav>
         </div>
 
-        <!-- Loading -->
-        <div x-show="loading" class="flex justify-center py-12">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <!-- Skeleton para lista de solicitudes -->
+        <div x-show="loading" class="space-y-4">
+            <div class="skeleton-list-item"></div>
+            <div class="skeleton-list-item"></div>
+            <div class="skeleton-list-item"></div>
+            <div class="skeleton-list-item"></div>
         </div>
 
         <!-- Contenido Tabs -->

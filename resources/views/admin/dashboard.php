@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Administrador - Especialistas en Casa</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/skeleton.css">
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="bg-gray-50" x-data="adminDashboard()">
@@ -40,7 +41,15 @@
 
     <!-- Estadísticas -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Skeletons para estadísticas -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" x-show="loading">
+            <div class="skeleton-stat-card"></div>
+            <div class="skeleton-stat-card"></div>
+            <div class="skeleton-stat-card"></div>
+            <div class="skeleton-stat-card"></div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" x-show="!loading">
             <!-- Pendientes Asignación -->
             <div class="bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl shadow-lg p-6 text-white">
                 <div class="flex items-center justify-between">
@@ -111,9 +120,13 @@
                 </button>
             </div>
 
-            <!-- Loading -->
-            <div x-show="loading" class="flex justify-center items-center py-12">
-                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <!-- Skeleton para tabla -->
+            <div x-show="loading" class="p-6 space-y-4">
+                <div class="skeleton-table-row"></div>
+                <div class="skeleton-table-row"></div>
+                <div class="skeleton-table-row"></div>
+                <div class="skeleton-table-row"></div>
+                <div class="skeleton-table-row"></div>
             </div>
 
             <!-- Lista de Solicitudes -->
@@ -319,7 +332,7 @@
                     ingresos_del_mes: 0
                 },
                 solicitudes: [],
-                loading: false,
+                loading: true,
                 notificacionesAbiertas: false,
                 
                 // Modal de asignación
