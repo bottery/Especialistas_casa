@@ -161,12 +161,16 @@
                         <h3 class="text-lg font-semibold">Transacciones Diarias</h3>
                         <button @click="exportarReporte('csv')" class="text-sm text-indigo-600 hover:text-indigo-800">Exportar CSV</button>
                     </div>
-                    <canvas id="transaccionesChart" height="250"></canvas>
+                    <div style="position: relative; height: 300px;">
+                        <canvas id="transaccionesChart"></canvas>
+                    </div>
                 </div>
 
                 <div class="bg-white rounded-xl shadow-lg p-6">
                     <h3 class="text-lg font-semibold mb-4">Métodos de Pago</h3>
-                    <canvas id="metodosChart" height="250"></canvas>
+                    <div style="position: relative; height: 300px;">
+                        <canvas id="metodosChart"></canvas>
+                    </div>
                 </div>
             </div>
 
@@ -364,21 +368,64 @@ function finanzasApp() {
                 this.charts.transacciones = new Chart(ctx1, {
                     type: 'line',
                     data: {
-                        labels: this.transacciones.map(t => t.fecha),
+                        labels: this.transacciones.map(t => {
+                            const fecha = new Date(t.fecha);
+                            return fecha.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
+                        }),
                         datasets: [{
-                            label: 'Ingresos ($)',
+                            label: 'Ingresos',
                             data: this.transacciones.map(t => parseFloat(t.total)),
-                            borderColor: 'rgb(34, 197, 94)',
-                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                            borderColor: 'rgb(59, 130, 246)',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            borderWidth: 3,
                             tension: 0.4,
-                            fill: true
+                            fill: true,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: 'rgb(59, 130, 246)',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: { y: { beginAtZero: true } }
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                labels: {
+                                    usePointStyle: true,
+                                    padding: 15,
+                                    font: { size: 12, weight: '500' }
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                padding: 12,
+                                titleFont: { size: 13 },
+                                bodyFont: { size: 12 },
+                                callbacks: {
+                                    label: function(context) {
+                                        return 'Ingresos: $' + context.parsed.y.toLocaleString('es-CO');
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '$' + value.toLocaleString('es-CO');
+                                    }
+                                },
+                                grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                            },
+                            x: {
+                                grid: { display: false }
+                            }
+                        }
                     }
                 });
             }
@@ -393,12 +440,44 @@ function finanzasApp() {
                         labels: this.metodos.map(m => m.metodo_pago.toUpperCase()),
                         datasets: [{
                             data: this.metodos.map(m => parseFloat(m.total)),
-                            backgroundColor: ['rgb(59, 130, 246)', 'rgb(139, 92, 246)']
+                            backgroundColor: [
+                                'rgb(59, 130, 246)',
+                                'rgb(139, 92, 246)',
+                                'rgb(236, 72, 153)',
+                                'rgb(34, 197, 94)'
+                            ],
+                            borderWidth: 3,
+                            borderColor: '#fff'
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 20,
+                                    font: { size: 12, weight: '500' },
+                                    usePointStyle: true
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                padding: 12,
+                                callbacks: {
+                                    label: function(context) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const porcentaje = ((context.parsed / total) * 100).toFixed(1);
+                                        return context.label + ': $' + context.parsed.toLocaleString('es-CO') + ' (' + porcentaje + '%)';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        },
                         plugins: { legend: { position: 'bottom' } }
                     }
                 });
