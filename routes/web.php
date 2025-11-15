@@ -45,6 +45,10 @@ if ($path === '/paciente/dashboard') {
     view('paciente/dashboard');
 }
 
+if ($path === '/paciente/nueva-solicitud') {
+    view('paciente/nueva-solicitud');
+}
+
 if ($path === '/paciente/servicios') {
     view('paciente/servicios');
 }
