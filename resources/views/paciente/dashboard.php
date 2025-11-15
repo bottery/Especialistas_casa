@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="/js/toast.js"></script>
     <link rel="stylesheet" href="/css/skeleton.css">
+    <link rel="stylesheet" href="/css/timeline.css">
 <script>
 window.pacienteDashboard = function() {
     return {
@@ -29,6 +30,10 @@ window.pacienteDashboard = function() {
         // Paginación
         itemsPorPagina: 5,
         paginaActual: 1,
+        
+        // Modal detalle con timeline
+        modalDetalleAbierto: false,
+        solicitudDetalle: null,
         
         // Modal de calificación
         modalCalificacionAbierto: false,
@@ -89,6 +94,32 @@ window.pacienteDashboard = function() {
         },
 
         verDetalle(id) {
+            const solicitud = this.solicitudes.find(s => s.id === id);
+            if (solicitud) {
+                this.solicitudDetalle = solicitud;
+                this.modalDetalleAbierto = true;
+            }
+        },
+
+        cerrarModalDetalle() {
+            this.modalDetalleAbierto = false;
+            this.solicitudDetalle = null;
+        },
+
+        getTimelineStates(estado) {
+            const estados = {
+                'pendiente': ['completed', 'pending', 'pending', 'pending', 'pending'],
+                'asignado': ['completed', 'completed', 'pending', 'pending', 'pending'],
+                'confirmado': ['completed', 'completed', 'completed', 'pending', 'pending'],
+                'en_progreso': ['completed', 'completed', 'completed', 'active', 'pending'],
+                'completado': ['completed', 'completed', 'completed', 'completed', 'completed'],
+                'pendiente_calificacion': ['completed', 'completed', 'completed', 'completed', 'completed'],
+                'rechazado': ['completed', 'rejected', 'rejected', 'rejected', 'rejected']
+            };
+            return estados[estado] || ['pending', 'pending', 'pending', 'pending', 'pending'];
+        },
+
+        verDetalle_old(id) {
             window.location.href = `/paciente/solicitud/${id}`;
         },
 
@@ -659,6 +690,161 @@ window.pacienteDashboard = function() {
                             class="px-6 py-2 bg-purple-600 text-white rounded-lg transition font-medium">
                         <span x-show="!enviandoCalificacion">✅ Enviar Calificación</span>
                         <span x-show="enviandoCalificacion">Enviando...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Detalle con Timeline -->
+    <div x-show="modalDetalleAbierto" 
+         x-cloak
+         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+         @click.self="cerrarModalDetalle()">
+        <div class="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto" @click.stop>
+            <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-gray-900">Detalle de la Solicitud</h3>
+                <button @click="cerrarModalDetalle()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="p-6" x-show="solicitudDetalle">
+                <!-- Información básica -->
+                <div class="mb-6">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h4 class="text-2xl font-bold text-gray-900" x-text="solicitudDetalle?.servicio_nombre"></h4>
+                            <p class="text-sm text-gray-500 mt-1">Solicitud #<span x-text="solicitudDetalle?.id"></span></p>
+                        </div>
+                        <span :class="getEstadoBadgeClass(solicitudDetalle?.estado)" 
+                              class="px-3 py-1 rounded-full text-xs font-semibold"
+                              x-text="getEstadoTexto(solicitudDetalle?.estado)">
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <p class="text-gray-500">Fecha programada</p>
+                            <p class="font-medium" x-text="formatDate(solicitudDetalle?.fecha_programada)"></p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500">Modalidad</p>
+                            <p class="font-medium capitalize" x-text="solicitudDetalle?.modalidad"></p>
+                        </div>
+                        <div x-show="solicitudDetalle?.profesional_nombre">
+                            <p class="text-gray-500">Profesional</p>
+                            <p class="font-medium" x-text="solicitudDetalle?.profesional_nombre"></p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500">Monto</p>
+                            <p class="font-medium text-indigo-600" x-text="formatMonto(solicitudDetalle?.monto_total)"></p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4" x-show="solicitudDetalle?.descripcion">
+                        <p class="text-gray-500 text-sm mb-1">Descripción</p>
+                        <p class="text-gray-700" x-text="solicitudDetalle?.descripcion"></p>
+                    </div>
+                </div>
+
+                <!-- Timeline -->
+                <div class="mb-6">
+                    <h5 class="font-semibold text-gray-900 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                        Historial del Servicio
+                    </h5>
+
+                    <div class="timeline-container">
+                        <template x-data="{ states: getTimelineStates(solicitudDetalle?.estado) }">
+                            <!-- Solicitud Creada -->
+                            <div class="timeline-step" :class="states[0]">
+                                <div class="timeline-icon">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                </div>
+                                <div class="timeline-content">
+                                    <div class="timeline-title">Solicitud Creada</div>
+                                    <div class="timeline-description">Tu solicitud ha sido registrada</div>
+                                    <div class="timeline-timestamp">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        <span x-text="formatDate(solicitudDetalle?.created_at)"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Profesional Asignado -->
+                            <div class="timeline-step" :class="states[1]">
+                                <div class="timeline-icon">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                    </svg>
+                                </div>
+                                <div class="timeline-content">
+                                    <div class="timeline-title">Profesional Asignado</div>
+                                    <div class="timeline-description" x-show="solicitudDetalle?.profesional_nombre">
+                                        Asignado a <span class="font-medium" x-text="solicitudDetalle?.profesional_nombre"></span>
+                                    </div>
+                                    <div class="timeline-description" x-show="!solicitudDetalle?.profesional_nombre">
+                                        En espera de asignación
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Servicio Confirmado -->
+                            <div class="timeline-step" :class="states[2]">
+                                <div class="timeline-icon">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </div>
+                                <div class="timeline-content">
+                                    <div class="timeline-title">Servicio Confirmado</div>
+                                    <div class="timeline-description">El profesional confirmó la cita</div>
+                                </div>
+                            </div>
+
+                            <!-- En Progreso -->
+                            <div class="timeline-step" :class="states[3]">
+                                <div class="timeline-icon">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                    </svg>
+                                </div>
+                                <div class="timeline-content">
+                                    <div class="timeline-title">Servicio en Progreso</div>
+                                    <div class="timeline-description">El servicio está siendo realizado</div>
+                                </div>
+                            </div>
+
+                            <!-- Completado -->
+                            <div class="timeline-step" :class="states[4]">
+                                <div class="timeline-icon">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                </div>
+                                <div class="timeline-content">
+                                    <div class="timeline-title">Servicio Completado</div>
+                                    <div class="timeline-description">El servicio fue finalizado exitosamente</div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Botón calificar si está pendiente -->
+                <div x-show="solicitudDetalle?.estado === 'pendiente_calificacion'" class="text-center">
+                    <button @click="abrirModalCalificacion(solicitudDetalle); cerrarModalDetalle();" 
+                            class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium">
+                        ⭐ Calificar Servicio
                     </button>
                 </div>
             </div>
