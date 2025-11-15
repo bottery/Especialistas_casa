@@ -6,7 +6,7 @@
     <title>Dashboard Financiero - Especialistas en Casa</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" id="alpine-script"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="bg-gray-50" x-data="finanzasApp()" x-init="init()">
     <nav class="bg-white shadow-lg sticky top-0 z-50">
