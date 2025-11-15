@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="/css/timeline.css">
     <link rel="stylesheet" href="/css/breadcrumbs.css">
     <link rel="stylesheet" href="/css/progress.css">
+    <link rel="stylesheet" href="/css/fab.css">
 <script>
 window.pacienteDashboard = function() {
     return {
@@ -864,6 +865,15 @@ window.pacienteDashboard = function() {
             </div>
         </div>
     </div>
+
+    <!-- FAB - Nueva Solicitud -->
+    <button @click="nuevaSolicitud()" 
+            class="fab fab-primary fab-animate-in fab-pulse" 
+            data-tooltip="Nueva Solicitud">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+    </button>
 
     <style>
         [x-cloak] { display: none !important; }
