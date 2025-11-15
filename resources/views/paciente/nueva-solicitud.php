@@ -15,7 +15,6 @@ window.nuevaSolicitudApp = function() {
         formData: {
             servicio_id: '',
             servicio_tipo: '',
-            profesional_id: '',
             modalidad: 'presencial',
             fecha_programada: '',
             hora_programada: '',
@@ -131,23 +130,9 @@ window.nuevaSolicitudApp = function() {
             this.formData.servicio_tipo = servicio.tipo;
             this.servicioSeleccionado = servicio;
             this.paso = 2;
-            await this.cargarProfesionales(servicio.id);
         },
 
-        async cargarProfesionales(servicioId) {
-            this.loading = true;
-            try {
-                const response = await fetch(`/api/profesionales?servicio_id=${servicioId}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    this.profesionales = data.profesionales || data || [];
-                }
-            } catch (error) {
-                console.error('Error:', error);
-            } finally {
-                this.loading = false;
-            }
-        },
+
 
         async enviarSolicitud() {
             if (!this.validarFormulario()) return;
@@ -471,16 +456,7 @@ window.nuevaSolicitudApp = function() {
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Especialidad</label>
                                 <input type="text" x-model="formData.especialidad" placeholder="Medicina General, Cardiología..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
-                            </div>
-                            
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Profesional</label>
-                                <select x-model="formData.profesional_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
-                                    <option value="">Cualquier médico disponible</option>
-                                    <template x-for="prof in profesionales" :key="prof.id">
-                                        <option :value="prof.id" x-text="`${prof.nombre} ${prof.apellido}`"></option>
-                                    </template>
-                                </select>
+                                <p class="text-xs text-gray-500 mt-1">El administrador asignará un profesional disponible</p>
                             </div>
                         </div>
                         

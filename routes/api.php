@@ -147,6 +147,13 @@ if (strpos($path, '/paciente/') === 0) {
         $controller->uploadDocuments();
         exit;
     }
+
+    // Calificar servicio
+    if (preg_match('#^/paciente/calificar/(\d+)$#', $path, $matches) && $method === 'POST') {
+        $controller = new PacienteController();
+        $controller->calificarServicio((int)$matches[1]);
+        exit;
+    }
 }
 
 // ============================================
@@ -231,6 +238,35 @@ if (strpos($path, '/medico/') === 0) {
 // RUTAS DE ADMINISTRADOR (Autenticadas)
 // ============================================
 if (strpos($path, '/admin/') === 0) {
+    // Estadísticas del admin
+    if ($path === '/admin/stats' && $method === 'GET') {
+        $controller = new AdminController();
+        $controller->getStats();
+        exit;
+    }
+
+    // Solicitudes pendientes de asignación
+    if ($path === '/admin/solicitudes/pendientes' && $method === 'GET') {
+        $controller = new AdminController();
+        $controller->getSolicitudesPendientes();
+        exit;
+    }
+
+    // Profesionales disponibles para asignación
+    if ($path === '/admin/profesionales' && $method === 'GET') {
+        $controller = new AdminController();
+        $controller->getProfesionalesDisponibles();
+        exit;
+    }
+
+    // Asignar profesional a solicitud
+    if (preg_match('#^/admin/solicitudes/(\d+)/asignar$#', $path, $matches) && $method === 'POST') {
+        $controller = new AdminController();
+        $controller->asignarProfesional((int)$matches[1]);
+        exit;
+    }
+    
+    // Endpoints legacy
     if ($path === '/admin/dashboard' && $method === 'GET') {
         sendResponse(['message' => 'Endpoint en desarrollo'], 501);
         exit;

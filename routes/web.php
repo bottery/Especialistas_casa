@@ -76,7 +76,8 @@ if ($path === '/medico/servicios') {
 // RUTAS DE ADMINISTRADOR
 // ============================================
 if ($path === '/admin/dashboard') {
-    view('admin/dashboard');
+    $controller = new \App\Controllers\AdminController();
+    $controller->dashboard();
 }
 
 if ($path === '/admin/usuarios') {

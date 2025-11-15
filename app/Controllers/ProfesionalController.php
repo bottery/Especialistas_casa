@@ -283,14 +283,15 @@ class ProfesionalController
             $montoProfesional = $montoTotal * 0.80;
             $montoPlataforma = $montoTotal * 0.20;
             
-            // Actualizar estado
+            // Actualizar estado a pendiente_calificacion (requiere calificación del paciente)
             $stmt = $pdo->prepare("
                 UPDATE solicitudes 
-                SET estado = 'completada',
+                SET estado = 'pendiente_calificacion',
                     resultado = :notas,
                     monto_profesional = :monto_profesional,
                     monto_plataforma = :monto_plataforma,
                     fecha_completada = CURRENT_TIMESTAMP,
+                    calificado = FALSE,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = :id
             ");
@@ -302,12 +303,13 @@ class ProfesionalController
                 'monto_plataforma' => $montoPlataforma
             ]);
             
-            // TODO: Enviar notificación al paciente y procesar pago al profesional
+            // Notificar al paciente que debe calificar el servicio
             
             $this->sendSuccess([
-                'message' => 'Servicio completado exitosamente',
+                'message' => 'Servicio completado. El paciente debe calificar antes de finalizar.',
                 'solicitud_id' => $solicitudId,
-                'monto_profesional' => $montoProfesional
+                'monto_profesional' => $montoProfesional,
+                'estado' => 'pendiente_calificacion'
             ]);
         } catch (\Exception $e) {
             error_log("Error al completar servicio: " . $e->getMessage());

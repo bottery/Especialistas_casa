@@ -18,6 +18,13 @@ window.pacienteDashboard = function() {
         solicitudes: [],
         historialMedico: [],
         activeTab: 'solicitudes',
+        
+        // Modal de calificación
+        modalCalificacionAbierto: false,
+        solicitudACalificar: null,
+        calificacion: 0,
+        comentario: '',
+        enviandoCalificacion: false,
 
         async init() {
             const token = localStorage.getItem('token');
@@ -30,6 +37,9 @@ window.pacienteDashboard = function() {
             this.usuario = userData;
 
             await this.cargarDatos();
+            
+            // Verificar si hay servicios pendientes de calificar
+            this.verificarCalificacionesPendientes();
         },
 
         async cargarDatos() {
@@ -74,12 +84,96 @@ window.pacienteDashboard = function() {
         getEstadoColor(estado) {
             const colores = {
                 'pendiente': 'bg-yellow-100 text-yellow-800',
+                'pendiente_asignacion': 'bg-orange-100 text-orange-800',
                 'confirmada': 'bg-blue-100 text-blue-800',
                 'en_progreso': 'bg-indigo-100 text-indigo-800',
                 'completada': 'bg-green-100 text-green-800',
+                'pendiente_calificacion': 'bg-purple-100 text-purple-800',
+                'finalizada': 'bg-gray-100 text-gray-800',
                 'cancelada': 'bg-red-100 text-red-800'
             };
             return colores[estado] || 'bg-gray-100 text-gray-800';
+        },
+        
+        getEstadoTexto(estado) {
+            const textos = {
+                'pendiente': 'Pendiente',
+                'pendiente_asignacion': 'Esperando Asignación',
+                'confirmada': 'Confirmada',
+                'en_progreso': 'En Progreso',
+                'completada': 'Completada',
+                'pendiente_calificacion': 'Califica el Servicio',
+                'finalizada': 'Finalizada',
+                'cancelada': 'Cancelada'
+            };
+            return textos[estado] || estado;
+        },
+
+        verificarCalificacionesPendientes() {
+            const pendientes = this.solicitudes.filter(s => s.estado === 'pendiente_calificacion');
+            if (pendientes.length > 0) {
+                // Mostrar alerta
+                setTimeout(() => {
+                    if (confirm(`Tienes ${pendientes.length} servicio(s) pendiente(s) de calificar. ¿Deseas calificar ahora?`)) {
+                        this.abrirModalCalificacion(pendientes[0]);
+                    }
+                }, 1000);
+            }
+        },
+
+        abrirModalCalificacion(solicitud) {
+            this.solicitudACalificar = solicitud;
+            this.calificacion = 0;
+            this.comentario = '';
+            this.modalCalificacionAbierto = true;
+        },
+
+        cerrarModalCalificacion() {
+            this.modalCalificacionAbierto = false;
+            this.solicitudACalificar = null;
+            this.calificacion = 0;
+            this.comentario = '';
+        },
+
+        seleccionarCalificacion(valor) {
+            this.calificacion = valor;
+        },
+
+        async enviarCalificacion() {
+            if (this.calificacion < 1 || this.calificacion > 5) {
+                alert('Por favor selecciona una calificación del 1 al 5');
+                return;
+            }
+
+            this.enviandoCalificacion = true;
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/paciente/calificar/${this.solicitudACalificar.id}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        calificacion: this.calificacion,
+                        comentario: this.comentario
+                    })
+                });
+
+                if (response.ok) {
+                    alert('✅ ¡Gracias por tu calificación!');
+                    this.cerrarModalCalificacion();
+                    await this.cargarDatos();
+                } else {
+                    const error = await response.json();
+                    alert('Error: ' + (error.message || 'No se pudo enviar la calificación'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al enviar la calificación');
+            } finally {
+                this.enviandoCalificacion = false;
+            }
         },
 
         formatDate(dateStr) {
@@ -238,7 +332,7 @@ window.pacienteDashboard = function() {
                                 <div class="flex-1">
                                     <div class="flex items-center space-x-3 mb-2">
                                         <h3 class="text-lg font-semibold text-gray-900" x-text="solicitud.servicio_nombre"></h3>
-                                        <span class="px-3 py-1 rounded-full text-xs font-medium" :class="getEstadoColor(solicitud.estado)" x-text="solicitud.estado"></span>
+                                        <span class="px-3 py-1 rounded-full text-xs font-medium" :class="getEstadoColor(solicitud.estado)" x-text="getEstadoTexto(solicitud.estado)"></span>
                                     </div>
                                     <p class="text-sm text-gray-600 mb-2">
                                         <span class="font-medium">Fecha programada:</span>
@@ -257,6 +351,14 @@ window.pacienteDashboard = function() {
                                     <p class="text-xl font-bold text-gray-900" x-text="formatMonto(solicitud.monto_total)"></p>
                                     <p class="text-xs text-gray-500 mt-1" x-show="solicitud.pagado">✓ Pagado</p>
                                 </div>
+                                
+                                <!-- Botón Calificar -->
+                                <div x-show="solicitud.estado === 'pendiente_calificacion'" class="mt-3">
+                                    <button @click="abrirModalCalificacion(solicitud)" 
+                                            class="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium text-sm">
+                                        ⭐ Calificar Servicio
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </template>
@@ -274,5 +376,93 @@ window.pacienteDashboard = function() {
             </div>
         </div>
     </div>
+
+    <!-- Modal de Calificación -->
+    <div x-show="modalCalificacionAbierto" 
+         x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto" 
+         style="display: none;">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+            <div @click="cerrarModalCalificacion()" class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"></div>
+
+            <div class="relative inline-block w-full max-w-lg p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
+                <!-- Header -->
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-2xl font-bold text-gray-900">
+                        ⭐ Califica el Servicio
+                    </h3>
+                    <button @click="cerrarModalCalificacion()" class="text-gray-400 hover:text-gray-600 transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Información del Servicio -->
+                <div x-show="solicitudACalificar" class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <p class="text-sm text-gray-600 mb-1">Servicio</p>
+                    <p class="font-semibold text-gray-900" x-text="solicitudACalificar?.servicio_nombre"></p>
+                    <p class="text-sm text-gray-600 mt-2">Profesional</p>
+                    <p class="font-medium text-gray-800" x-text="solicitudACalificar?.profesional_nombre"></p>
+                </div>
+
+                <!-- Sistema de Estrellas -->
+                <div class="mb-6">
+                    <p class="text-sm font-medium text-gray-700 mb-3">¿Cómo calificarías este servicio?</p>
+                    <div class="flex justify-center space-x-2">
+                        <template x-for="i in 5" :key="i">
+                            <button @click="seleccionarCalificacion(i)" 
+                                    type="button"
+                                    class="transition-transform hover:scale-110 focus:outline-none">
+                                <svg :class="i <= calificacion ? 'text-yellow-400' : 'text-gray-300'" 
+                                     class="w-12 h-12" 
+                                     fill="currentColor" 
+                                     viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                </svg>
+                            </button>
+                        </template>
+                    </div>
+                    <p class="text-center text-sm text-gray-600 mt-2" x-show="calificacion > 0">
+                        <span x-show="calificacion === 1">😞 Muy malo</span>
+                        <span x-show="calificacion === 2">😕 Malo</span>
+                        <span x-show="calificacion === 3">😐 Regular</span>
+                        <span x-show="calificacion === 4">😊 Bueno</span>
+                        <span x-show="calificacion === 5">😍 Excelente</span>
+                    </p>
+                </div>
+
+                <!-- Comentario -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Cuéntanos más sobre tu experiencia (opcional)
+                    </label>
+                    <textarea x-model="comentario" 
+                              rows="4" 
+                              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              placeholder="Describe qué te gustó o qué se podría mejorar..."></textarea>
+                </div>
+
+                <!-- Botones -->
+                <div class="flex justify-end space-x-3">
+                    <button @click="cerrarModalCalificacion()" 
+                            class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition font-medium">
+                        Cancelar
+                    </button>
+                    <button @click="enviarCalificacion()" 
+                            :disabled="calificacion === 0 || enviandoCalificacion"
+                            :class="calificacion === 0 || enviandoCalificacion ? 'opacity-50 cursor-not-allowed' : 'hover:bg-purple-700'"
+                            class="px-6 py-2 bg-purple-600 text-white rounded-lg transition font-medium">
+                        <span x-show="!enviandoCalificacion">✅ Enviar Calificación</span>
+                        <span x-show="enviandoCalificacion">Enviando...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
 </body>
 </html>

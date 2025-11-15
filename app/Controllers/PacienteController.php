@@ -61,6 +61,20 @@ class PacienteController
         try {
             $data = json_decode(file_get_contents('php://input'), true);
 
+            // Validar que no haya servicios pendientes de calificar
+            $stmt = $this->db->prepare("
+                SELECT COUNT(*) as pendientes 
+                FROM solicitudes 
+                WHERE paciente_id = ? AND estado = 'pendiente_calificacion'
+            ");
+            $stmt->execute([$this->user->id]);
+            $result = $stmt->fetch();
+            
+            if ($result['pendientes'] > 0) {
+                $this->sendError("Debes calificar tu último servicio antes de solicitar uno nuevo", 400);
+                return;
+            }
+
             // Validar datos requeridos básicos
             $required = ['servicio_id', 'modalidad', 'fecha_programada', 'metodo_pago_preferido'];
             foreach ($required as $field) {
@@ -95,16 +109,15 @@ class PacienteController
             $solicitudData = [
                 'paciente_id' => $this->user->id,
                 'servicio_id' => $data['servicio_id'],
-                'profesional_id' => !empty($data['profesional_id']) ? $data['profesional_id'] : null,
+                'profesional_id' => null, // Admin asignará después
                 'modalidad' => $data['modalidad'],
                 'fecha_programada' => $data['fecha_programada'],
                 'direccion_servicio' => $data['direccion_servicio'] ?? null,
                 'sintomas' => $data['sintomas'] ?? null,
                 'observaciones' => $data['observaciones'] ?? null,
                 'monto_total' => $servicio['precio_base'],
-                // Estado según método de pago: transferencia requiere confirmación de pago
-                'estado' => $data['metodo_pago_preferido'] === 'transferencia' ? 'pendiente' : 
-                           ($data['requiere_aprobacion'] ? 'pendiente' : 'confirmada'),
+                // Inicia en pendiente_asignacion, esperando que admin asigne profesional
+                'estado' => 'pendiente_asignacion',
                 'pagado' => $data['metodo_pago_preferido'] === 'pse' ? true : false,
                 
                 // Información de contacto
@@ -450,6 +463,116 @@ class PacienteController
             $this->sendSuccess(['message' => 'Funcionalidad de upload en desarrollo']);
         } catch (\Exception $e) {
             $this->sendError("Error al subir documentos", 500);
+        }
+    }
+
+    /**
+     * Calificar un servicio completado
+     */
+    public function calificarServicio(int $solicitudId): void
+    {
+        try {
+            $data = json_decode(file_get_contents('php://input'), true);
+            
+            $calificacion = $data['calificacion'] ?? null;
+            $comentario = $data['comentario'] ?? '';
+            
+            // Validar calificación
+            if (!$calificacion || $calificacion < 1 || $calificacion > 5) {
+                $this->sendError("La calificación debe estar entre 1 y 5", 400);
+                return;
+            }
+
+            global $pdo;
+            
+            // Verificar que la solicitud existe, pertenece al paciente y está pendiente de calificación
+            $stmt = $pdo->prepare("
+                SELECT s.*, u.id as profesional_id, u.nombre, u.apellido
+                FROM solicitudes s
+                INNER JOIN usuarios u ON s.profesional_id = u.id
+                WHERE s.id = :id 
+                    AND s.paciente_id = :paciente_id 
+                    AND s.estado = 'pendiente_calificacion'
+                    AND s.calificado = FALSE
+            ");
+            
+            $stmt->execute([
+                'id' => $solicitudId,
+                'paciente_id' => $this->user->id
+            ]);
+            
+            $solicitud = $stmt->fetch(\PDO::FETCH_ASSOC);
+            
+            if (!$solicitud) {
+                $this->sendError("Solicitud no encontrada o ya fue calificada", 404);
+                return;
+            }
+
+            // Iniciar transacción
+            $pdo->beginTransaction();
+
+            try {
+                // Actualizar solicitud con calificación
+                $stmt = $pdo->prepare("
+                    UPDATE solicitudes 
+                    SET calificacion_paciente = :calificacion,
+                        comentario_paciente = :comentario,
+                        fecha_calificacion = CURRENT_TIMESTAMP,
+                        calificado = TRUE,
+                        estado = 'finalizada',
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = :id
+                ");
+                
+                $stmt->execute([
+                    'id' => $solicitudId,
+                    'calificacion' => $calificacion,
+                    'comentario' => $comentario
+                ]);
+
+                // Recalcular puntuación promedio del profesional
+                $stmt = $pdo->prepare("
+                    SELECT 
+                        AVG(calificacion_paciente) as promedio,
+                        COUNT(*) as total
+                    FROM solicitudes 
+                    WHERE profesional_id = :profesional_id 
+                        AND calificado = TRUE
+                        AND calificacion_paciente IS NOT NULL
+                ");
+                
+                $stmt->execute(['profesional_id' => $solicitud['profesional_id']]);
+                $stats = $stmt->fetch(\PDO::FETCH_ASSOC);
+                
+                // Actualizar estadísticas del profesional
+                $stmt = $pdo->prepare("
+                    UPDATE usuarios 
+                    SET puntuacion_promedio = :promedio,
+                        total_calificaciones = :total,
+                        servicios_completados = servicios_completados + 1
+                    WHERE id = :id
+                ");
+                
+                $stmt->execute([
+                    'id' => $solicitud['profesional_id'],
+                    'promedio' => round($stats['promedio'], 2),
+                    'total' => $stats['total']
+                ]);
+
+                $pdo->commit();
+
+                $this->sendSuccess([
+                    'message' => '¡Gracias por tu calificación!',
+                    'solicitud_id' => $solicitudId,
+                    'nueva_puntuacion' => round($stats['promedio'], 2)
+                ]);
+            } catch (\Exception $e) {
+                $pdo->rollBack();
+                throw $e;
+            }
+        } catch (\Exception $e) {
+            error_log("Error al calificar servicio: " . $e->getMessage());
+            $this->sendError("Error al procesar la calificación", 500);
         }
     }
 
