@@ -444,20 +444,6 @@ window.nuevaSolicitudApp = function() {
                         <p class="text-xs text-gray-600">Exámenes a domicilio</p>
                     </div>
                 </div>
-                
-                <!-- OTROS SERVICIOS -->
-                <div @click="seleccionarServicio({id: 6, nombre: 'Otro Servicio', tipo: 'otro', precio_base: 0})" 
-                     class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200 border-2 border-transparent hover:border-gray-500">
-                    <div class="flex flex-col items-center text-center">
-                        <div class="bg-gray-600 p-4 rounded-full mb-3">
-                            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                            </svg>
-                        </div>
-                        <h3 class="font-bold text-gray-900 text-lg mb-1">Otros</h3>
-                        <p class="text-xs text-gray-600">Más servicios</p>
-                    </div>
-                </div>
             </div>
         </div>
 
