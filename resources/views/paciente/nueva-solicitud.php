@@ -356,14 +356,128 @@ window.nuevaSolicitudApp = function() {
         <!-- Paso 1: Seleccionar Servicio -->
         <div x-show="paso === 1 && !loading">
             <h2 class="text-2xl font-bold text-gray-900 mb-6">Selecciona un servicio</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <template x-for="servicio in servicios" :key="servicio.id">
-                    <div @click="seleccionarServicio(servicio)" class="bg-white rounded-lg shadow-sm p-6 cursor-pointer hover:shadow-md hover:border-indigo-500 border-2 border-transparent transition">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2" x-text="servicio.nombre"></h3>
-                        <p class="text-sm text-gray-600 mb-3" x-text="servicio.descripcion"></p>
-                        <p class="text-xl font-bold text-indigo-600">$<span x-text="parseInt(servicio.precio_base).toLocaleString('es-CO')"></span></p>
+            
+            <!-- Agrupar servicios por tipo/profesional -->
+            <div class="space-y-8">
+                <!-- MÉDICOS -->
+                <div x-show="servicios.filter(s => s.tipo === 'medico').length > 0">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-blue-100 p-3 rounded-lg mr-3">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900">Servicios Médicos</h3>
+                            <p class="text-sm text-gray-600">Consultas con médicos especialistas</p>
+                        </div>
                     </div>
-                </template>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <template x-for="servicio in servicios.filter(s => s.tipo === 'medico')" :key="servicio.id">
+                            <div @click="seleccionarServicio(servicio)" class="bg-white rounded-lg shadow-sm p-5 cursor-pointer hover:shadow-md hover:border-blue-500 border-2 border-transparent transition">
+                                <h4 class="text-base font-semibold text-gray-900 mb-2" x-text="servicio.nombre"></h4>
+                                <p class="text-xs text-gray-600 mb-3 line-clamp-2" x-text="servicio.descripcion"></p>
+                                <p class="text-lg font-bold text-blue-600">$<span x-text="parseInt(servicio.precio_base).toLocaleString('es-CO')"></span></p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                
+                <!-- ENFERMERÍA -->
+                <div x-show="servicios.filter(s => s.tipo === 'enfermera').length > 0">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-pink-100 p-3 rounded-lg mr-3">
+                            <svg class="w-6 h-6 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900">Servicios de Enfermería</h3>
+                            <p class="text-sm text-gray-600">Cuidados profesionales a domicilio</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <template x-for="servicio in servicios.filter(s => s.tipo === 'enfermera')" :key="servicio.id">
+                            <div @click="seleccionarServicio(servicio)" class="bg-white rounded-lg shadow-sm p-5 cursor-pointer hover:shadow-md hover:border-pink-500 border-2 border-transparent transition">
+                                <h4 class="text-base font-semibold text-gray-900 mb-2" x-text="servicio.nombre"></h4>
+                                <p class="text-xs text-gray-600 mb-3 line-clamp-2" x-text="servicio.descripcion"></p>
+                                <p class="text-lg font-bold text-pink-600">$<span x-text="parseInt(servicio.precio_base).toLocaleString('es-CO')"></span></p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                
+                <!-- AMBULANCIA -->
+                <div x-show="servicios.filter(s => s.tipo === 'ambulancia').length > 0">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-red-100 p-3 rounded-lg mr-3">
+                            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900">Servicios de Ambulancia</h3>
+                            <p class="text-sm text-gray-600">Traslados médicos urgentes y programados</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <template x-for="servicio in servicios.filter(s => s.tipo === 'ambulancia')" :key="servicio.id">
+                            <div @click="seleccionarServicio(servicio)" class="bg-white rounded-lg shadow-sm p-5 cursor-pointer hover:shadow-md hover:border-red-500 border-2 border-transparent transition">
+                                <h4 class="text-base font-semibold text-gray-900 mb-2" x-text="servicio.nombre"></h4>
+                                <p class="text-xs text-gray-600 mb-3 line-clamp-2" x-text="servicio.descripcion"></p>
+                                <p class="text-lg font-bold text-red-600">$<span x-text="parseInt(servicio.precio_base).toLocaleString('es-CO')"></span></p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                
+                <!-- VETERINARIA -->
+                <div x-show="servicios.filter(s => s.tipo === 'veterinario').length > 0">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-green-100 p-3 rounded-lg mr-3">
+                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900">Servicios Veterinarios</h3>
+                            <p class="text-sm text-gray-600">Atención médica para tus mascotas</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <template x-for="servicio in servicios.filter(s => s.tipo === 'veterinario')" :key="servicio.id">
+                            <div @click="seleccionarServicio(servicio)" class="bg-white rounded-lg shadow-sm p-5 cursor-pointer hover:shadow-md hover:border-green-500 border-2 border-transparent transition">
+                                <h4 class="text-base font-semibold text-gray-900 mb-2" x-text="servicio.nombre"></h4>
+                                <p class="text-xs text-gray-600 mb-3 line-clamp-2" x-text="servicio.descripcion"></p>
+                                <p class="text-lg font-bold text-green-600">$<span x-text="parseInt(servicio.precio_base).toLocaleString('es-CO')"></span></p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                
+                <!-- LABORATORIO -->
+                <div x-show="servicios.filter(s => s.tipo === 'laboratorio').length > 0">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-purple-100 p-3 rounded-lg mr-3">
+                            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900">Servicios de Laboratorio</h3>
+                            <p class="text-sm text-gray-600">Exámenes y toma de muestras a domicilio</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <template x-for="servicio in servicios.filter(s => s.tipo === 'laboratorio')" :key="servicio.id">
+                            <div @click="seleccionarServicio(servicio)" class="bg-white rounded-lg shadow-sm p-5 cursor-pointer hover:shadow-md hover:border-purple-500 border-2 border-transparent transition">
+                                <h4 class="text-base font-semibold text-gray-900 mb-2" x-text="servicio.nombre"></h4>
+                                <p class="text-xs text-gray-600 mb-3 line-clamp-2" x-text="servicio.descripcion"></p>
+                                <p class="text-lg font-bold text-purple-600">$<span x-text="parseInt(servicio.precio_base).toLocaleString('es-CO')"></span></p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
             </div>
         </div>
 
