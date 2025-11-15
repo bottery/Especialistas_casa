@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro - Especialistas en Casa</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/js/validator.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="bg-gradient-to-br from-indigo-50 to-blue-50 min-h-screen">
@@ -40,36 +41,36 @@
                         <h3 class="text-lg font-semibold text-gray-900 border-b pb-2">Información Personal</h3>
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
+                            <div class="field-container">
                                 <label for="nombre" class="block text-sm font-medium text-gray-700">Nombre *</label>
-                                <input type="text" id="nombre" x-model="formData.nombre" required
+                                <input type="text" id="nombre" x-model="formData.nombre" data-validate="required|minLength:2" required
                                     class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                             </div>
 
-                            <div>
+                            <div class="field-container">
                                 <label for="apellido" class="block text-sm font-medium text-gray-700">Apellido *</label>
-                                <input type="text" id="apellido" x-model="formData.apellido" required
+                                <input type="text" id="apellido" x-model="formData.apellido" data-validate="required|minLength:2" required
                                     class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                             </div>
                         </div>
 
-                        <div>
+                        <div class="field-container">
                             <label for="email" class="block text-sm font-medium text-gray-700">Correo Electrónico *</label>
-                            <input type="email" id="email" x-model="formData.email" required
+                            <input type="email" id="email" x-model="formData.email" data-validate="required|email" required
                                 class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
+                            <div class="field-container">
                                 <label for="telefono" class="block text-sm font-medium text-gray-700">Teléfono *</label>
-                                <input type="tel" id="telefono" x-model="formData.telefono" required
+                                <input type="tel" id="telefono" x-model="formData.telefono" data-validate="required|phone" required
                                     placeholder="+57 300 123 4567"
                                     class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                             </div>
 
-                            <div>
+                            <div class="field-container">
                                 <label for="documento" class="block text-sm font-medium text-gray-700">Documento de Identidad *</label>
-                                <input type="text" id="documento" x-model="formData.documento" required
+                                <input type="text" id="documento" x-model="formData.documento" data-validate="required|minLength:6" required
                                     class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                             </div>
                         </div>

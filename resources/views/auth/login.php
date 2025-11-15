@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iniciar Sesión - Especialistas en Casa</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/js/validator.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="bg-gradient-to-br from-indigo-100 to-blue-100 min-h-screen flex items-center justify-center p-4">
@@ -21,22 +22,24 @@
         </div>
 
         <form @submit.prevent="login" class="space-y-6">
-            <div>
+            <div class="field-container">
                 <label class="block text-gray-700 font-medium mb-2">Correo Electrónico</label>
                 <input 
                     type="email" 
                     x-model="formData.email"
+                    data-validate="required|email"
                     required
                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
                     placeholder="tu@email.com"
                 >
             </div>
 
-            <div>
+            <div class="field-container">
                 <label class="block text-gray-700 font-medium mb-2">Contraseña</label>
                 <input 
                     type="password" 
                     x-model="formData.password"
+                    data-validate="required|minLength:6"
                     required
                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
                     placeholder="••••••••"

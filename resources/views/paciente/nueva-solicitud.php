@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nueva Solicitud - Especialistas en Casa</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/js/validator.js"></script>
+    <script src="/js/toast.js"></script>
 <script>
 window.nuevaSolicitudApp = function() {
     return {
@@ -461,9 +463,9 @@ window.nuevaSolicitudApp = function() {
                         </div>
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
+                            <div class="field-container">
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Fecha *</label>
-                                <input type="date" x-model="formData.fecha_programada" :min="getFechaMinima()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+                                <input type="date" x-model="formData.fecha_programada" data-validate="required|futureDate" :min="getFechaMinima()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Horario *</label>
