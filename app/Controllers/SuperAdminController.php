@@ -25,31 +25,22 @@ class SuperAdminController
     public function dashboard(): void
     {
         try {
-            // Obtener estadísticas
-            $stats = [
-                'totalUsuarios' => $this->getTotalUsuarios(),
-                'serviciosActivos' => $this->getServiciosActivos(),
-                'solicitudesPendientes' => $this->getSolicitudesPendientes(),
-                'ingresosMes' => $this->getIngresosMes(),
-                'solicitudesCompletadas' => $this->getSolicitudesCompletadas(),
-                'pagosHoy' => $this->getPagosHoy(),
-                'nuevosUsuariosHoy' => $this->getNuevosUsuariosHoy(),
-                'profesionalesActivos' => $this->getProfesionalesActivos()
-            ];
+            $stats = [];
+            
+            try { $stats['totalUsuarios'] = $this->getTotalUsuarios(); } catch(\Exception $e) { $stats['totalUsuarios'] = 0; }
+            try { $stats['serviciosActivos'] = $this->getServiciosActivos(); } catch(\Exception $e) { $stats['serviciosActivos'] = 0; }
+            try { $stats['solicitudesPendientes'] = $this->getSolicitudesPendientes(); } catch(\Exception $e) { $stats['solicitudesPendientes'] = 0; }
+            try { $stats['ingresosMes'] = $this->getIngresosMes(); } catch(\Exception $e) { $stats['ingresosMes'] = 0; }
+            try { $stats['solicitudesCompletadas'] = $this->getSolicitudesCompletadas(); } catch(\Exception $e) { $stats['solicitudesCompletadas'] = 0; }
+            try { $stats['pagosHoy'] = $this->getPagosHoy(); } catch(\Exception $e) { $stats['pagosHoy'] = 0; }
+            try { $stats['nuevosUsuariosHoy'] = $this->getNuevosUsuariosHoy(); } catch(\Exception $e) { $stats['nuevosUsuariosHoy'] = 0; }
+            try { $stats['profesionalesActivos'] = $this->getProfesionalesActivos(); } catch(\Exception $e) { $stats['profesionalesActivos'] = 0; }
 
-            // Obtener actividad reciente
-            $actividadReciente = $this->getActividadReciente();
-
-            $this->sendSuccess([
-                'stats' => $stats,
-                'actividad_reciente' => $actividadReciente
-            ]);
+            $this->sendSuccess(['stats' => $stats]);
         } catch (\Exception $e) {
-            $this->sendError($e->getMessage(), 500);
+            $this->sendError($e->getMessage() . ' - Line: ' . $e->getLine(), 500);
         }
-    }
-
-    /**
+    }    /**
      * Obtener lista de usuarios
      */
     public function getUsuarios(): void
@@ -246,8 +237,8 @@ class SuperAdminController
             SELECT SUM(monto) as total 
             FROM pagos 
             WHERE estado IN ('completado', 'aprobado') 
-            AND MONTH(created_at) = MONTH(CURRENT_DATE())
-            AND YEAR(created_at) = YEAR(CURRENT_DATE())
+            AND MONTH(created_at) = MONTH(CURDATE())
+            AND YEAR(created_at) = YEAR(CURDATE())
         ");
         return (float) ($result['total'] ?? 0);
     }
@@ -260,13 +251,13 @@ class SuperAdminController
 
     private function getPagosHoy(): int
     {
-        $result = $this->db->selectOne("SELECT COUNT(*) as total FROM pagos WHERE DATE(created_at) = CURRENT_DATE()");
+        $result = $this->db->selectOne("SELECT COUNT(*) as total FROM pagos WHERE DATE(created_at) = CURDATE()");
         return (int) ($result['total'] ?? 0);
     }
 
     private function getNuevosUsuariosHoy(): int
     {
-        $result = $this->db->selectOne("SELECT COUNT(*) as total FROM usuarios WHERE DATE(created_at) = CURRENT_DATE()");
+        $result = $this->db->selectOne("SELECT COUNT(*) as total FROM usuarios WHERE DATE(created_at) = CURDATE()");
         return (int) ($result['total'] ?? 0);
     }
 
@@ -280,16 +271,22 @@ class SuperAdminController
     {
         // Últimas 10 solicitudes
         $solicitudes = $this->db->select("
-            SELECT s.*, u.nombre as cliente_nombre, u.email as cliente_email
+            SELECT s.*, 
+                   u.nombre as cliente_nombre, 
+                   u.email as cliente_email,
+                   p.nombre as profesional_nombre
             FROM solicitudes s
-            JOIN usuarios u ON s.usuario_id = u.id
+            JOIN usuarios u ON s.paciente_id = u.id
+            LEFT JOIN usuarios p ON s.profesional_id = p.id
             ORDER BY s.created_at DESC
             LIMIT 10
         ");
 
         // Últimos 10 pagos
         $pagos = $this->db->select("
-            SELECT p.*, u.nombre as usuario_nombre
+            SELECT p.*, 
+                   u.nombre as usuario_nombre,
+                   u.email as usuario_email
             FROM pagos p
             JOIN usuarios u ON p.usuario_id = u.id
             ORDER BY p.created_at DESC
