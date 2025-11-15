@@ -111,6 +111,7 @@ CREATE TABLE IF NOT EXISTS `solicitudes` (
     `monto_plataforma` DECIMAL(10, 2),
     `pagado` BOOLEAN DEFAULT FALSE,
     `pago_id` INT UNSIGNED,
+    `metodo_pago_preferido` ENUM('pse', 'transferencia') DEFAULT 'pse',
     `resultado` TEXT,
     `reporte_medico` TEXT,
     `receta` TEXT,

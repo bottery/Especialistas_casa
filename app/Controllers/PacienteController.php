@@ -62,12 +62,18 @@ class PacienteController
             $data = json_decode(file_get_contents('php://input'), true);
 
             // Validar datos requeridos básicos
-            $required = ['servicio_id', 'modalidad', 'fecha_programada'];
+            $required = ['servicio_id', 'modalidad', 'fecha_programada', 'metodo_pago_preferido'];
             foreach ($required as $field) {
                 if (empty($data[$field])) {
                     $this->sendError("El campo {$field} es requerido", 400);
                     return;
                 }
+            }
+            
+            // Validar método de pago
+            if (!in_array($data['metodo_pago_preferido'], ['pse', 'transferencia'])) {
+                $this->sendError("Método de pago no válido. Solo se acepta PSE o Transferencia", 400);
+                return;
             }
 
             // Verificar que el servicio existe
@@ -96,12 +102,15 @@ class PacienteController
                 'sintomas' => $data['sintomas'] ?? null,
                 'observaciones' => $data['observaciones'] ?? null,
                 'monto_total' => $servicio['precio_base'],
-                'estado' => $data['requiere_aprobacion'] ? 'pendiente' : 'confirmada',
+                // Estado según método de pago: transferencia requiere confirmación de pago
+                'estado' => $data['metodo_pago_preferido'] === 'transferencia' ? 'pendiente' : 
+                           ($data['requiere_aprobacion'] ? 'pendiente' : 'confirmada'),
+                'pagado' => $data['metodo_pago_preferido'] === 'pse' ? true : false,
                 
                 // Información de contacto
                 'telefono_contacto' => $data['telefono_contacto'] ?? null,
                 'urgencia' => $data['urgencia'] ?? 'normal',
-                'metodo_pago_preferido' => $data['metodo_pago_preferido'] ?? 'efectivo',
+                'metodo_pago_preferido' => $data['metodo_pago_preferido'],
                 
                 // Campos específicos - Médico
                 'especialidad' => $data['especialidad'] ?? null,
@@ -170,15 +179,22 @@ class PacienteController
 
             // Crear solicitud
             $solicitudId = $this->solicitudModel->createRequest($solicitudData);
+            
+            // Si es transferencia, crear registro de pago pendiente
+            if ($data['metodo_pago_preferido'] === 'transferencia') {
+                $this->createPendingPayment($solicitudId, $servicio['precio_base']);
+            }
 
-            // Mensaje personalizado según tipo
-            $mensaje = $this->getSuccessMessage($tipo, $data['requiere_aprobacion'] ?? false);
+            // Mensaje personalizado según tipo y método de pago
+            $mensaje = $this->getSuccessMessage($tipo, $data['metodo_pago_preferido'], $data['requiere_aprobacion'] ?? false);
 
             $this->sendSuccess([
                 'message' => $mensaje,
                 'solicitud_id' => $solicitudId,
                 'monto_total' => $servicio['precio_base'],
-                'estado' => $solicitudData['estado']
+                'estado' => $solicitudData['estado'],
+                'metodo_pago' => $data['metodo_pago_preferido'],
+                'requiere_confirmacion_pago' => $data['metodo_pago_preferido'] === 'transferencia'
             ], 201);
         } catch (\Exception $e) {
             error_log("Error al crear solicitud: " . $e->getMessage());
@@ -247,8 +263,19 @@ class PacienteController
     /**
      * Obtener mensaje de éxito personalizado
      */
-    private function getSuccessMessage(string $tipo, bool $requiereAprobacion): string
+    private function getSuccessMessage(string $tipo, string $metodoPago, bool $requiereAprobacion): string
     {
+        // Mensaje especial para transferencia
+        if ($metodoPago === 'transferencia') {
+            return "Solicitud creada exitosamente. Por favor realiza la transferencia y envía el comprobante al WhatsApp +57 300 123 4567 para confirmar tu pago. Tu solicitud quedará activa una vez se verifique el pago.";
+        }
+        
+        // Mensaje especial para PSE
+        if ($metodoPago === 'pse') {
+            return "Solicitud creada y pago procesado exitosamente con PSE. " . 
+                   ($requiereAprobacion ? "El profesional revisará tu solicitud en las próximas horas." : "Recibirás confirmación del profesional pronto.");
+        }
+        
         if ($requiereAprobacion) {
             return "Solicitud enviada. El profesional la revisará y confirmará en las próximas horas.";
         }
@@ -265,6 +292,30 @@ class PacienteController
         ];
         
         return $mensajes[$tipo] ?? 'Solicitud creada exitosamente.';
+    }
+    
+    /**
+     * Crear registro de pago pendiente para transferencias
+     */
+    private function createPendingPayment(int $solicitudId, float $monto): void
+    {
+        try {
+            global $pdo;
+            
+            $stmt = $pdo->prepare("
+                INSERT INTO pagos (solicitud_id, usuario_id, metodo_pago, monto, estado, notas)
+                VALUES (:solicitud_id, :usuario_id, 'transferencia', :monto, 'pendiente', 
+                        'Pendiente de envío de comprobante al WhatsApp +57 300 123 4567')
+            ");
+            
+            $stmt->execute([
+                'solicitud_id' => $solicitudId,
+                'usuario_id' => $this->user->id,
+                'monto' => $monto
+            ]);
+        } catch (\Exception $e) {
+            error_log("Error al crear pago pendiente: " . $e->getMessage());
+        }
     }
 
     /**

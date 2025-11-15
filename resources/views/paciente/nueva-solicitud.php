@@ -24,7 +24,7 @@ window.nuevaSolicitudApp = function() {
             observaciones: '',
             telefono_contacto: '',
             urgencia: 'normal',
-            metodo_pago_preferido: 'efectivo',
+            metodo_pago_preferido: '',
             
             // Médico Especialista
             especialidad: '',
@@ -151,6 +151,12 @@ window.nuevaSolicitudApp = function() {
 
         async enviarSolicitud() {
             if (!this.validarFormulario()) return;
+            
+            // Validar método de pago
+            if (!this.formData.metodo_pago_preferido) {
+                alert('Debes seleccionar un método de pago');
+                return;
+            }
 
             this.loading = true;
             try {
@@ -181,12 +187,22 @@ window.nuevaSolicitudApp = function() {
                     body: JSON.stringify(payload)
                 });
 
+                const data = await response.json();
+                
                 if (response.ok) {
-                    alert('¡Solicitud creada exitosamente!');
-                    window.location.href = '/paciente/dashboard';
+                    // Mostrar mensaje personalizado según método de pago
+                    if (data.metodo_pago === 'transferencia') {
+                        alert(`✅ ${data.message}\n\n📋 Datos para transferencia:\nBanco: Bancolombia\nCuenta Ahorros: 1234-5678-9012\nTitular: Especialistas en Casa SAS\nNIT: 900.123.456-7\n\n📱 Envía el comprobante al WhatsApp: +57 300 123 4567`);
+                    } else {
+                        alert(`✅ ${data.message}`);
+                    }
+                    
+                    // Redirigir después de 2 segundos
+                    setTimeout(() => {
+                        window.location.href = '/paciente/dashboard';
+                    }, 2000);
                 } else {
-                    const error = await response.json();
-                    alert(error.message || 'Error al crear la solicitud');
+                    alert(data.message || 'Error al crear la solicitud');
                 }
             } catch (error) {
                 console.error('Error:', error);
@@ -825,12 +841,36 @@ window.nuevaSolicitudApp = function() {
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Método pago</label>
-                            <select x-model="formData.metodo_pago_preferido" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm">
-                                <option value="efectivo">💵 Efectivo</option>
-                                <option value="tarjeta">💳 Tarjeta</option>
-                                <option value="transferencia">🏦 Transferencia</option>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Método pago *</label>
+                            <select x-model="formData.metodo_pago_preferido" @change="formData.metodo_pago_preferido === 'transferencia' && (paso3_mostrar_instrucciones = true)" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm">
+                                <option value="">Selecciona</option>
+                                <option value="pse">💳 PSE (Pago inmediato con MercadoPago)</option>
+                                <option value="transferencia">🏦 Transferencia (Requiere confirmación)</option>
                             </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Instrucciones de transferencia -->
+                    <div x-show="formData.metodo_pago_preferido === 'transferencia'" x-transition class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mt-3">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-yellow-800">Pago por transferencia</h3>
+                                <div class="mt-2 text-sm text-yellow-700">
+                                    <p class="mb-2">Al confirmar, deberás:</p>
+                                    <ol class="list-decimal list-inside space-y-1 ml-2">
+                                        <li>Realizar la transferencia a la cuenta indicada</li>
+                                        <li>Enviar captura de pantalla al WhatsApp: <strong>+57 300 123 4567</strong></li>
+                                        <li>Esperar confirmación del administrador</li>
+                                        <li>El profesional aceptará tu solicitud una vez confirmado el pago</li>
+                                    </ol>
+                                    <p class="mt-2 text-xs">⏱️ Tiempo estimado de confirmación: 1-2 horas en horario hábil</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -867,6 +907,30 @@ window.nuevaSolicitudApp = function() {
                 <div class="border-b pb-4">
                     <h3 class="font-semibold text-gray-900 mb-2">Síntomas</h3>
                     <p class="text-sm text-gray-600" x-text="formData.sintomas || 'No especificado'"></p>
+                </div>
+                
+                <div class="border-b pb-4">
+                    <h3 class="font-semibold text-gray-900 mb-2">Método de Pago</h3>
+                    <div x-show="formData.metodo_pago_preferido === 'pse'">
+                        <p class="text-sm text-gray-600">💳 <strong>PSE con MercadoPago</strong></p>
+                        <p class="text-xs text-green-600 mt-1">✓ Pago inmediato - Tu solicitud será confirmada automáticamente</p>
+                    </div>
+                    <div x-show="formData.metodo_pago_preferido === 'transferencia'" class="space-y-2">
+                        <p class="text-sm text-gray-600">🏦 <strong>Transferencia Bancaria</strong></p>
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
+                            <p class="text-xs font-semibold text-blue-900 mb-1">📋 Datos para transferencia:</p>
+                            <p class="text-xs text-blue-800">Banco: <strong>Bancolombia</strong></p>
+                            <p class="text-xs text-blue-800">Tipo: <strong>Ahorros</strong></p>
+                            <p class="text-xs text-blue-800">Cuenta: <strong>1234-5678-9012</strong></p>
+                            <p class="text-xs text-blue-800">Titular: <strong>Especialistas en Casa SAS</strong></p>
+                            <p class="text-xs text-blue-800">NIT: <strong>900.123.456-7</strong></p>
+                        </div>
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-2">
+                            <p class="text-xs font-semibold text-yellow-900 mb-1">⚠️ Importante:</p>
+                            <p class="text-xs text-yellow-800">Envía el comprobante al WhatsApp <strong>+57 300 123 4567</strong> con tu nombre completo.</p>
+                            <p class="text-xs text-yellow-800 mt-1">Tu solicitud quedará en estado <strong>"Pendiente de Pago"</strong> hasta confirmar.</p>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Botones -->
