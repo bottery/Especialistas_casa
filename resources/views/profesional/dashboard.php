@@ -6,6 +6,7 @@
     <title>Dashboard Profesional - Especialistas en Casa</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/css/skeleton.css">
+    <script src="/js/confirmation-modal.js"></script>
 <script>
 window.profesionalDashboard = function() {
     return {
@@ -125,7 +126,15 @@ window.profesionalDashboard = function() {
         },
 
         async aceptarSolicitud(solicitudId) {
-            if (!confirm('¿Deseas aceptar esta solicitud?')) return;
+            const result = await ConfirmModal.show({
+                title: '¿Aceptar solicitud?',
+                message: '¿Deseas aceptar esta solicitud y comprometerte a realizarla?',
+                confirmText: 'Aceptar',
+                cancelText: 'Cancelar',
+                type: 'info'
+            });
+            
+            if (!result.confirmed) return;
 
             this.loading = true;
             try {
@@ -155,8 +164,10 @@ window.profesionalDashboard = function() {
         },
 
         async rechazarSolicitud(solicitudId) {
-            const motivo = prompt('¿Por qué rechazas esta solicitud?');
-            if (!motivo) return;
+            const result = await ConfirmModal.confirmReject('esta solicitud');
+            if (!result.confirmed) return;
+            
+            const motivo = result.reason;
 
             this.loading = true;
             try {
@@ -187,7 +198,15 @@ window.profesionalDashboard = function() {
         },
 
         async iniciarServicio(solicitudId) {
-            if (!confirm('¿Iniciar este servicio?')) return;
+            const result = await ConfirmModal.show({
+                title: '¿Iniciar servicio?',
+                message: '¿Confirmas que vas a iniciar este servicio ahora?',
+                confirmText: 'Iniciar',
+                cancelText: 'Cancelar',
+                type: 'info'
+            });
+            
+            if (!result.confirmed) return;
 
             this.loading = true;
             try {
