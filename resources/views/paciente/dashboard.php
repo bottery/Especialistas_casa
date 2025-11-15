@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Panel - Especialistas en Casa</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/js/toast.js"></script>
 <script>
 window.pacienteDashboard = function() {
     return {
@@ -112,11 +113,11 @@ window.pacienteDashboard = function() {
         verificarCalificacionesPendientes() {
             const pendientes = this.solicitudes.filter(s => s.estado === 'pendiente_calificacion');
             if (pendientes.length > 0) {
-                // Mostrar alerta
                 setTimeout(() => {
-                    if (confirm(`Tienes ${pendientes.length} servicio(s) pendiente(s) de calificar. ¿Deseas calificar ahora?`)) {
-                        this.abrirModalCalificacion(pendientes[0]);
-                    }
+                    ToastNotification.warning(
+                        `Tienes ${pendientes.length} servicio(s) pendiente(s) de calificar. Haz clic en el botón "⭐ Calificar Servicio" para continuar.`,
+                        8000
+                    );
                 }, 1000);
             }
         },
@@ -141,7 +142,7 @@ window.pacienteDashboard = function() {
 
         async enviarCalificacion() {
             if (this.calificacion < 1 || this.calificacion > 5) {
-                alert('Por favor selecciona una calificación del 1 al 5');
+                ToastNotification.warning('Por favor selecciona una calificación del 1 al 5');
                 return;
             }
 
@@ -161,16 +162,16 @@ window.pacienteDashboard = function() {
                 });
 
                 if (response.ok) {
-                    alert('✅ ¡Gracias por tu calificación!');
+                    ToastNotification.success('¡Gracias por tu calificación! Tu opinión nos ayuda a mejorar.');
                     this.cerrarModalCalificacion();
                     await this.cargarDatos();
                 } else {
                     const error = await response.json();
-                    alert('Error: ' + (error.message || 'No se pudo enviar la calificación'));
+                    ToastNotification.error(error.message || 'No se pudo enviar la calificación');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error al enviar la calificación');
+                ToastNotification.error('Error al enviar la calificación. Verifica tu conexión.');
             } finally {
                 this.enviandoCalificacion = false;
             }

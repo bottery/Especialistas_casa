@@ -2,23 +2,29 @@
 
 namespace App\Controllers;
 
-class AdminController extends BaseController
+use App\Middleware\AuthMiddleware;
+
+class AdminController
 {
     private $user;
     private $db;
+    private $authMiddleware;
 
-    public function __construct()
+    public function __construct($requireAuth = true)
     {
-        parent::__construct();
-        $this->user = $_SESSION['user'] ?? null;
-        
-        if (!$this->user || $this->user->rol !== 'admin') {
-            header('Location: /login');
-            exit;
-        }
-
         global $pdo;
         $this->db = $pdo;
+        
+        // Solo verificar JWT token para endpoints API
+        if ($requireAuth) {
+            $this->authMiddleware = new AuthMiddleware();
+            
+            // Verificar autenticación
+            $this->user = $this->authMiddleware->checkRole(['admin']);
+            if (!$this->user) {
+                exit;
+            }
+        }
     }
 
     /**
@@ -297,9 +303,20 @@ class AdminController extends BaseController
     /**
      * Ver dashboard del admin
      */
+    /**
+     * Mostrar dashboard del administrador
+     */
     public function dashboard(): void
     {
+        // Verificar sesión PHP (no JWT) para vistas web
+        session_start();
+        if (!isset($_SESSION['user']) || $_SESSION['user']->rol !== 'admin') {
+            header('Location: /login');
+            exit;
+        }
+        
         require_once __DIR__ . '/../../resources/views/admin/dashboard.php';
+        exit;
     }
 
     /**

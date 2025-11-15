@@ -124,6 +124,13 @@ class AuthController
             // Actualizar último acceso
             $this->usuarioModel->updateLastAccess($user['id']);
 
+            // Establecer sesión PHP para vistas web
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            $_SESSION['user'] = (object) $user;
+            $_SESSION['logged_in'] = true;
+
             // Generar tokens
             $tokenPayload = [
                 'id' => $user['id'],

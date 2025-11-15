@@ -139,7 +139,7 @@ window.nuevaSolicitudApp = function() {
             
             // Validar método de pago
             if (!this.formData.metodo_pago_preferido) {
-                alert('Debes seleccionar un método de pago');
+                ToastNotification.warning('Debes seleccionar un método de pago');
                 return;
             }
 
@@ -218,17 +218,17 @@ window.nuevaSolicitudApp = function() {
                 }
             }
             
-            if (tipo === 'ambulancia') {
+            if (this.servicioSeleccionado.tipo === 'ambulancia') {
                 if (!this.formData.fecha_programada || !this.formData.hora_programada) {
-                    alert('Selecciona fecha y hora para la ambulancia');
+                    ToastNotification.warning('Selecciona fecha y hora para la ambulancia');
                     return false;
                 }
-                if (!this.formData.origen || !this.formData.destino) {
-                    alert('Ingresa dirección de origen y destino');
+                if (!this.formData.direccion_origen || !this.formData.direccion_destino) {
+                    ToastNotification.warning('Ingresa dirección de origen y destino');
                     return false;
                 }
                 if (!this.formData.condicion_paciente) {
-                    alert('Describe la condición del paciente');
+                    ToastNotification.warning('Describe la condición del paciente');
                     return false;
                 }
             }

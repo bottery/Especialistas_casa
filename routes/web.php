@@ -76,7 +76,7 @@ if ($path === '/medico/servicios') {
 // RUTAS DE ADMINISTRADOR
 // ============================================
 if ($path === '/admin/dashboard') {
-    $controller = new \App\Controllers\AdminController();
+    $controller = new \App\Controllers\AdminController(false); // Sin autenticación JWT
     $controller->dashboard();
 }
 
