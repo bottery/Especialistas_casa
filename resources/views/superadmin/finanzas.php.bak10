@@ -173,6 +173,11 @@ window.finanzasApp = function() {
                 });
             }
         },
+                        plugins: { legend: { position: 'bottom' } }
+                    }
+                });
+            }
+        },
 
         async actualizarEstado(id, estado) {
             if (!confirm(`¿${estado === 'aprobado' ? 'Aprobar' : 'Rechazar'} este pago?`)) return;
