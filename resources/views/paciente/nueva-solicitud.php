@@ -522,345 +522,316 @@ window.nuevaSolicitudApp = function() {
 
                 <!-- AMBULANCIA -->
                 <template x-if="formData.servicio_tipo === 'ambulancia'">
-                    <div class="space-y-6">
+                    <div class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de ambulancia *</label>
-                            <div class="grid grid-cols-2 gap-4">
-                                <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer" :class="formData.tipo_ambulancia === 'basica' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'">
-                                    <input type="radio" x-model="formData.tipo_ambulancia" value="basica" class="mr-2">
-                                    <div>
-                                        <div class="font-semibold">Básica</div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de ambulancia *</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <label class="flex items-center p-3 border-2 rounded-lg cursor-pointer" :class="formData.tipo_ambulancia === 'basica' ? 'border-red-500 bg-red-50' : 'border-gray-300'">
+                                    <input type="radio" x-model="formData.tipo_ambulancia" value="basica" class="sr-only">
+                                    <div class="text-center w-full">
+                                        <div class="font-semibold text-sm">🚐 Básica</div>
                                         <div class="text-xs text-gray-600">Traslado estándar</div>
                                     </div>
                                 </label>
-                                <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer" :class="formData.tipo_ambulancia === 'medicalizada' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'">
-                                    <input type="radio" x-model="formData.tipo_ambulancia" value="medicalizada" class="mr-2">
-                                    <div>
-                                        <div class="font-semibold">Medicalizada</div>
+                                <label class="flex items-center p-3 border-2 rounded-lg cursor-pointer" :class="formData.tipo_ambulancia === 'medicalizada' ? 'border-red-500 bg-red-50' : 'border-gray-300'">
+                                    <input type="radio" x-model="formData.tipo_ambulancia" value="medicalizada" class="sr-only">
+                                    <div class="text-center w-full">
+                                        <div class="font-semibold text-sm">🚑 Medicalizada</div>
                                         <div class="text-xs text-gray-600">Con equipo médico</div>
                                     </div>
                                 </label>
                             </div>
                         </div>
                         
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Fecha *</label>
+                                <input type="date" x-model="formData.fecha_programada" :min="getFechaMinima()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Hora *</label>
+                                <input type="time" x-model="formData.hora_programada" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 text-sm">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Urgencia *</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <label class="flex items-center justify-center p-3 border-2 rounded-lg cursor-pointer text-sm" :class="formData.tipo_emergencia === 'programado' ? 'border-red-500 bg-red-50 font-semibold' : 'border-gray-300'">
+                                    <input type="radio" x-model="formData.tipo_emergencia" value="programado" class="sr-only">
+                                    <span>📅 Programado</span>
+                                </label>
+                                <label class="flex items-center justify-center p-3 border-2 rounded-lg cursor-pointer text-sm" :class="formData.tipo_emergencia === 'urgente' ? 'border-red-600 bg-red-100 font-bold text-red-700' : 'border-gray-300'">
+                                    <input type="radio" x-model="formData.tipo_emergencia" value="urgente" class="sr-only">
+                                    <span>🚨 Urgente</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">📍 Origen (recogida) *</label>
+                            <input type="text" x-model="formData.origen" placeholder="Dirección de recogida" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 text-sm">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">🏥 Destino (entrega) *</label>
+                            <input type="text" x-model="formData.destino" placeholder="Hospital o clínica" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 text-sm">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Condición del paciente *</label>
+                            <textarea x-model="formData.condicion_paciente" rows="2" placeholder="Estable, requiere oxígeno, crítico..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 text-sm"></textarea>
+                        </div>
+                        
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Fecha *</label>
-                                <input type="date" x-model="formData.fecha_programada" :min="getFechaMinima()" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Acompañantes</label>
+                                <input type="number" x-model="formData.numero_acompanantes" min="0" max="2" placeholder="0-2" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 text-sm">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Hora exacta *</label>
-                                <input type="time" x-model="formData.hora_programada" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Contacto emergencia</label>
+                                <input type="text" x-model="formData.contacto_emergencia" placeholder="Nombre - Tel" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 text-sm">
                             </div>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de emergencia *</label>
-                            <div class="grid grid-cols-2 gap-4">
-                                <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer" :class="formData.tipo_emergencia === 'programado' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'">
-                                    <input type="radio" x-model="formData.tipo_emergencia" value="programado" class="mr-2">
-                                    <span>Programado</span>
-                                </label>
-                                <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer" :class="formData.tipo_emergencia === 'urgente' ? 'border-red-500 bg-red-50' : 'border-gray-300'">
-                                    <input type="radio" x-model="formData.tipo_emergencia" value="urgente" class="mr-2">
-                                    <span class="text-red-600 font-semibold">Urgente</span>
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Dirección de origen (recogida) *</label>
-                            <input type="text" x-model="formData.origen" placeholder="Calle 123 #45-67" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Dirección de destino (entrega) *</label>
-                            <input type="text" x-model="formData.destino" placeholder="Hospital XYZ, Calle 456 #78-90" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Condición del paciente *</label>
-                            <textarea x-model="formData.condicion_paciente" rows="2" placeholder="Ej: Estable, requiere oxígeno, paciente crítico..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Número de acompañantes</label>
-                                <input type="number" x-model="formData.numero_acompanantes" min="0" max="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Contacto de emergencia</label>
-                                <input type="text" x-model="formData.contacto_emergencia" placeholder="Nombre y teléfono" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Observaciones especiales</label>
-                            <textarea x-model="formData.observaciones" rows="2" placeholder="Equipo médico necesario, instrucciones adicionales..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
                         </div>
                     </div>
                 </template>
 
                 <!-- ENFERMERÍA -->
                 <template x-if="formData.servicio_tipo === 'enfermera'">
-                    <div class="space-y-6">
+                    <div class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de cuidado *</label>
-                            <select x-model="formData.tipo_cuidado" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de cuidado *</label>
+                            <select x-model="formData.tipo_cuidado" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 text-sm">
                                 <option value="">Selecciona</option>
-                                <option value="cuidado_general">Cuidado general</option>
-                                <option value="inyecciones">Aplicación de inyecciones</option>
-                                <option value="curaciones">Curaciones</option>
-                                <option value="postoperatorio">Post-operatorio</option>
-                                <option value="sondas">Manejo de sondas</option>
-                                <option value="geriatrico">Cuidado geriátrico</option>
-                                <option value="pediatrico">Cuidado pediátrico</option>
+                                <option value="cuidado_general">💊 Cuidado general</option>
+                                <option value="inyecciones">💉 Inyecciones</option>
+                                <option value="curaciones">🩹 Curaciones</option>
+                                <option value="postoperatorio">🏥 Post-operatorio</option>
+                                <option value="sondas">🔬 Manejo de sondas</option>
+                                <option value="geriatrico">👴 Geriátrico</option>
+                                <option value="pediatrico">👶 Pediátrico</option>
                             </select>
                         </div>
                         
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Intensidad horaria *</label>
-                            <div class="grid grid-cols-2 gap-4">
-                                <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer" :class="formData.intensidad_horaria === '12h' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'">
-                                    <input type="radio" x-model="formData.intensidad_horaria" value="12h" class="mr-2">
-                                    <span>12 horas</span>
-                                </label>
-                                <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer" :class="formData.intensidad_horaria === '24h' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'">
-                                    <input type="radio" x-model="formData.intensidad_horaria" value="24h" class="mr-2">
-                                    <span>24 horas</span>
-                                </label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Intensidad *</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <label class="flex items-center justify-center p-2 border-2 rounded-lg cursor-pointer text-sm" :class="formData.intensidad_horaria === '12h' ? 'border-pink-500 bg-pink-50 font-semibold' : 'border-gray-300'">
+                                        <input type="radio" x-model="formData.intensidad_horaria" value="12h" class="sr-only">
+                                        <span>12h</span>
+                                    </label>
+                                    <label class="flex items-center justify-center p-2 border-2 rounded-lg cursor-pointer text-sm" :class="formData.intensidad_horaria === '24h' ? 'border-pink-500 bg-pink-50 font-semibold' : 'border-gray-300'">
+                                        <input type="radio" x-model="formData.intensidad_horaria" value="24h" class="sr-only">
+                                        <span>24h</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Turno</label>
+                                <select x-model="formData.turno" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 text-sm">
+                                    <option value="diurno">☀️ Diurno</option>
+                                    <option value="nocturno">🌙 Nocturno</option>
+                                    <option value="mixto">🔄 Mixto</option>
+                                </select>
                             </div>
                         </div>
                         
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Turno preferido</label>
-                            <select x-model="formData.turno" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                                <option value="diurno">Diurno (6am - 6pm)</option>
-                                <option value="nocturno">Nocturno (6pm - 6am)</option>
-                                <option value="mixto">Mixto</option>
-                            </select>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-3 gap-3">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Duración *</label>
-                                <select x-model="formData.duracion_tipo" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Duración *</label>
+                                <select x-model="formData.duracion_tipo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 text-sm">
                                     <option value="dias">Días</option>
                                     <option value="semanas">Semanas</option>
                                     <option value="meses">Meses</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad *</label>
-                                <input type="number" x-model="formData.duracion_cantidad" min="1" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad *</label>
+                                <input type="number" x-model="formData.duracion_cantidad" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Género</label>
+                                <select x-model="formData.genero_preferido" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 text-sm">
+                                    <option value="indistinto">Indistinto</option>
+                                    <option value="femenino">♀ Femenino</option>
+                                    <option value="masculino">♂ Masculino</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Fecha inicio *</label>
+                                <input type="date" x-model="formData.fecha_programada" :min="getFechaMinima()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Dirección *</label>
+                                <input type="text" x-model="formData.direccion_servicio" placeholder="Dirección" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 text-sm">
                             </div>
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de inicio *</label>
-                            <input type="date" x-model="formData.fecha_programada" :min="getFechaMinima()" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Género preferido</label>
-                            <select x-model="formData.genero_preferido" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                                <option value="indistinto">Indistinto</option>
-                                <option value="femenino">Femenino</option>
-                                <option value="masculino">Masculino</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Dirección del servicio *</label>
-                            <input type="text" x-model="formData.direccion_servicio" placeholder="Calle 123 #45-67, Apto 101" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Condición del paciente</label>
-                            <textarea x-model="formData.condicion_paciente_detalle" rows="2" placeholder="Movilidad reducida, alzheimer, diabetes, etc..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Necesidades especiales</label>
-                            <textarea x-model="formData.necesidades_especiales" rows="2" placeholder="Manejo de sondas, oxígeno, medicación específica..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Condición del paciente</label>
+                            <textarea x-model="formData.condicion_paciente_detalle" rows="2" placeholder="Movilidad, condiciones médicas..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 text-sm"></textarea>
                         </div>
                     </div>
                 </template>
 
                 <!-- VETERINARIA -->
                 <template x-if="formData.servicio_tipo === 'veterinario'">
-                    <div class="space-y-6">
-                        <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-3 gap-3">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de mascota *</label>
-                                <select x-model="formData.tipo_mascota" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Tipo mascota *</label>
+                                <select x-model="formData.tipo_mascota" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm">
                                     <option value="">Selecciona</option>
-                                    <option value="perro">Perro</option>
-                                    <option value="gato">Gato</option>
-                                    <option value="ave">Ave</option>
-                                    <option value="conejo">Conejo</option>
-                                    <option value="otro">Otro</option>
+                                    <option value="perro">🐕 Perro</option>
+                                    <option value="gato">🐈 Gato</option>
+                                    <option value="ave">🦜 Ave</option>
+                                    <option value="conejo">🐰 Conejo</option>
+                                    <option value="otro">🐾 Otro</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Nombre de la mascota *</label>
-                                <input type="text" x-model="formData.nombre_mascota" placeholder="Nombre" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                            </div>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Edad</label>
-                                <input type="text" x-model="formData.edad_mascota" placeholder="Ej: 3 años" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                                <input type="text" x-model="formData.nombre_mascota" placeholder="Nombre" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Raza / Tamaño</label>
-                                <input type="text" x-model="formData.raza_tamano" placeholder="Ej: Golden Retriever / Grande" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Edad / Raza</label>
+                                <input type="text" x-model="formData.edad_mascota" placeholder="3 años / Labrador" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm">
                             </div>
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Motivo de consulta *</label>
-                            <select x-model="formData.motivo_veterinario" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Motivo de consulta *</label>
+                            <select x-model="formData.motivo_veterinario" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm">
                                 <option value="">Selecciona</option>
-                                <option value="vacunacion">Vacunación</option>
-                                <option value="revision">Revisión general</option>
-                                <option value="enfermedad">Enfermedad</option>
-                                <option value="emergencia">Emergencia</option>
-                                <option value="cirugia">Cirugía</option>
-                                <option value="desparasitacion">Desparasitación</option>
+                                <option value="vacunacion">💉 Vacunación</option>
+                                <option value="revision">🔍 Revisión general</option>
+                                <option value="enfermedad">🤒 Enfermedad</option>
+                                <option value="emergencia">🚨 Emergencia</option>
+                                <option value="cirugia">⚕️ Cirugía</option>
+                                <option value="desparasitacion">💊 Desparasitación</option>
                             </select>
                         </div>
                         
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Fecha *</label>
-                                <input type="date" x-model="formData.fecha_programada" :min="getFechaMinima()" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Fecha *</label>
+                                <input type="date" x-model="formData.fecha_programada" :min="getFechaMinima()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Rango horario *</label>
-                                <select x-model="formData.rango_horario" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                                    <option value="">Selecciona</option>
-                                    <option value="manana">Mañana (8am - 12pm)</option>
-                                    <option value="tarde">Tarde (2pm - 6pm)</option>
-                                </select>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Horario</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <label class="flex items-center justify-center p-2 border-2 rounded-lg cursor-pointer text-sm" :class="formData.rango_horario === 'manana' ? 'border-green-500 bg-green-50 font-semibold' : 'border-gray-300'">
+                                        <input type="radio" x-model="formData.rango_horario" value="manana" class="sr-only">
+                                        <span>🌅 AM</span>
+                                    </label>
+                                    <label class="flex items-center justify-center p-2 border-2 rounded-lg cursor-pointer text-sm" :class="formData.rango_horario === 'tarde' ? 'border-green-500 bg-green-50 font-semibold' : 'border-gray-300'">
+                                        <input type="radio" x-model="formData.rango_horario" value="tarde" class="sr-only">
+                                        <span>🌆 PM</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Modalidad</label>
-                            <div class="grid grid-cols-2 gap-4">
-                                <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer" :class="formData.modalidad === 'presencial' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'">
-                                    <input type="radio" x-model="formData.modalidad" value="presencial" class="mr-2">
-                                    <span>A domicilio</span>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Modalidad</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="flex items-center justify-center p-2 border-2 rounded-lg cursor-pointer text-sm" :class="formData.modalidad === 'presencial' ? 'border-green-500 bg-green-50 font-semibold' : 'border-gray-300'">
+                                    <input type="radio" x-model="formData.modalidad" value="presencial" class="sr-only">
+                                    <span>🏠 Domicilio</span>
                                 </label>
-                                <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer" :class="formData.modalidad === 'consultorio' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300'">
-                                    <input type="radio" x-model="formData.modalidad" value="consultorio" class="mr-2">
-                                    <span>En consultorio</span>
+                                <label class="flex items-center justify-center p-2 border-2 rounded-lg cursor-pointer text-sm" :class="formData.modalidad === 'consultorio' ? 'border-green-500 bg-green-50 font-semibold' : 'border-gray-300'">
+                                    <input type="radio" x-model="formData.modalidad" value="consultorio" class="sr-only">
+                                    <span>🏥 Consultorio</span>
                                 </label>
                             </div>
                         </div>
                         
                         <div x-show="formData.modalidad === 'presencial'">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Dirección *</label>
-                            <input type="text" x-model="formData.direccion_servicio" placeholder="Calle 123 #45-67" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Dirección *</label>
+                            <input type="text" x-model="formData.direccion_servicio" placeholder="Calle 123 #45-67" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm">
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Síntomas (si aplica)</label>
-                            <textarea x-model="formData.sintomas" rows="2" placeholder="Describe los síntomas de la mascota..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Historial de vacunas (opcional)</label>
-                            <textarea x-model="formData.historial_vacunas" rows="2" placeholder="Últimas vacunas aplicadas..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Síntomas (si aplica)</label>
+                            <textarea x-model="formData.sintomas" rows="2" placeholder="Describe los síntomas de la mascota..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm"></textarea>
                         </div>
                     </div>
                 </template>
 
                 <!-- LABORATORIO -->
                 <template x-if="formData.servicio_tipo === 'laboratorio'">
-                    <div class="space-y-6">
+                    <div class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Exámenes solicitados *</label>
-                            <div class="border border-gray-300 rounded-lg p-4 space-y-2 max-h-60 overflow-y-auto">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Exámenes solicitados * <span class="text-xs text-purple-600" x-text="'(' + formData.examenes_solicitados.length + ' seleccionados)'"></span></label>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-2 border border-gray-300 rounded-lg p-3 max-h-48 overflow-y-auto">
                                 <template x-for="examen in examenesDisponibles" :key="examen">
-                                    <label class="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                    <label class="flex items-center p-2 hover:bg-purple-50 rounded cursor-pointer text-sm">
                                         <input type="checkbox" :value="examen" @change="
                                             if ($event.target.checked) {
                                                 formData.examenes_solicitados.push(examen);
                                             } else {
                                                 formData.examenes_solicitados = formData.examenes_solicitados.filter(e => e !== examen);
                                             }
-                                        " class="mr-3">
-                                        <span x-text="examen"></span>
+                                        " class="mr-2">
+                                        <span x-text="examen" class="text-xs"></span>
                                     </label>
                                 </template>
                             </div>
-                            <p class="text-sm text-gray-600 mt-2">Seleccionados: <span x-text="formData.examenes_solicitados.length"></span></p>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Fecha toma de muestras *</label>
+                                <input type="date" x-model="formData.fecha_programada" :min="getFechaMinima()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Email resultados *</label>
+                                <input type="email" x-model="formData.email_resultados" placeholder="correo@ejemplo.com" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm">
+                            </div>
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Fecha para toma de muestras *</label>
-                            <input type="date" x-model="formData.fecha_programada" :min="getFechaMinima()" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                            <p class="text-xs text-gray-600 mt-1">Se recomienda agendar en horario de mañana si requiere ayuno</p>
-                        </div>
-                        
-                        <div>
-                            <label class="flex items-center space-x-3 p-4 bg-yellow-50 rounded-lg">
-                                <input type="checkbox" x-model="formData.requiere_ayuno" class="w-5 h-5">
-                                <span class="text-sm"><strong>Requiere ayuno</strong> (8-12 horas sin alimentos)</span>
+                            <label class="flex items-center space-x-2 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                                <input type="checkbox" x-model="formData.requiere_ayuno" class="w-4 h-4">
+                                <span class="text-sm">⚠️ <strong>Requiere ayuno</strong> (8-12 horas)</span>
                             </label>
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Dirección para toma de muestras *</label>
-                            <input type="text" x-model="formData.direccion_servicio" placeholder="Calle 123 #45-67, Apto 101" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Email para recibir resultados *</label>
-                            <input type="email" x-model="formData.email_resultados" placeholder="correo@ejemplo.com" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                            <p class="text-xs text-gray-600 mt-1">Los resultados se enviarán en 24-48 horas</p>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Preparación especial</label>
-                            <textarea x-model="formData.preparacion_especial" rows="2" placeholder="Indicaciones especiales del médico..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Dirección para toma de muestras *</label>
+                            <input type="text" x-model="formData.direccion_servicio" placeholder="Calle 123 #45-67, Apto 101" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm">
                         </div>
                     </div>
                 </template>
 
                 <!-- Campos comunes a todos -->
-                <div class="border-t pt-6 space-y-4">
-                    <h3 class="font-semibold text-gray-900">Información de contacto</h3>
+                <div class="border-t pt-4 space-y-3">
+                    <h3 class="font-semibold text-gray-900 text-sm">Información de contacto</h3>
                     
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-3 gap-3">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono de contacto *</label>
-                            <input type="tel" x-model="formData.telefono_contacto" placeholder="3001234567" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono *</label>
+                            <input type="tel" x-model="formData.telefono_contacto" placeholder="3001234567" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Urgencia</label>
-                            <select x-model="formData.urgencia" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                                <option value="normal">Normal</option>
-                                <option value="urgente">Urgente</option>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Urgencia</label>
+                            <select x-model="formData.urgencia" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm">
+                                <option value="normal">⏱️ Normal</option>
+                                <option value="urgente">🚨 Urgente</option>
                             </select>
                         </div>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Método de pago preferido</label>
-                        <select x-model="formData.metodo_pago_preferido" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                            <option value="efectivo">Efectivo</option>
-                            <option value="tarjeta">Tarjeta de crédito/débito</option>
-                            <option value="transferencia">Transferencia</option>
-                        </select>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Observaciones adicionales</label>
-                        <textarea x-model="formData.observaciones" rows="2" placeholder="Información adicional que consideres importante..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></textarea>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Método pago</label>
+                            <select x-model="formData.metodo_pago_preferido" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm">
+                                <option value="efectivo">💵 Efectivo</option>
+                                <option value="tarjeta">💳 Tarjeta</option>
+                                <option value="transferencia">🏦 Transferencia</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
