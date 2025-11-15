@@ -61,7 +61,7 @@ class PacienteController
         try {
             $data = json_decode(file_get_contents('php://input'), true);
 
-            // Validar datos requeridos
+            // Validar datos requeridos básicos
             $required = ['servicio_id', 'modalidad', 'fecha_programada'];
             foreach ($required as $field) {
                 if (empty($data[$field])) {
@@ -77,17 +77,90 @@ class PacienteController
                 return;
             }
 
-            // Preparar datos de la solicitud
+            // Validaciones específicas por tipo de servicio
+            $tipo = $data['servicio_tipo'] ?? $servicio['tipo'];
+            $validationError = $this->validateServiceType($tipo, $data);
+            if ($validationError) {
+                $this->sendError($validationError, 400);
+                return;
+            }
+
+            // Preparar datos de la solicitud con todos los campos posibles
             $solicitudData = [
                 'paciente_id' => $this->user->id,
                 'servicio_id' => $data['servicio_id'],
+                'profesional_id' => !empty($data['profesional_id']) ? $data['profesional_id'] : null,
                 'modalidad' => $data['modalidad'],
                 'fecha_programada' => $data['fecha_programada'],
+                'direccion_servicio' => $data['direccion_servicio'] ?? null,
                 'sintomas' => $data['sintomas'] ?? null,
                 'observaciones' => $data['observaciones'] ?? null,
-                'direccion_servicio' => $data['direccion_servicio'] ?? null,
                 'monto_total' => $servicio['precio_base'],
-                'estado' => 'pendiente'
+                'estado' => $data['requiere_aprobacion'] ? 'pendiente' : 'confirmada',
+                
+                // Información de contacto
+                'telefono_contacto' => $data['telefono_contacto'] ?? null,
+                'urgencia' => $data['urgencia'] ?? 'normal',
+                'metodo_pago_preferido' => $data['metodo_pago_preferido'] ?? 'efectivo',
+                
+                // Campos específicos - Médico
+                'especialidad' => $data['especialidad'] ?? null,
+                'rango_horario' => $data['rango_horario'] ?? null,
+                'requiere_aprobacion' => $data['requiere_aprobacion'] ?? false,
+                
+                // Campos específicos - Ambulancia
+                'tipo_ambulancia' => $data['tipo_ambulancia'] ?? null,
+                'origen' => $data['origen'] ?? null,
+                'destino' => $data['destino'] ?? null,
+                'tipo_emergencia' => $data['tipo_emergencia'] ?? null,
+                'condicion_paciente' => $data['condicion_paciente'] ?? null,
+                'numero_acompanantes' => $data['numero_acompanantes'] ?? 0,
+                'contacto_emergencia' => $data['contacto_emergencia'] ?? null,
+                
+                // Campos específicos - Enfermería
+                'tipo_cuidado' => $data['tipo_cuidado'] ?? null,
+                'intensidad_horaria' => $data['intensidad_horaria'] ?? null,
+                'duracion_tipo' => $data['duracion_tipo'] ?? null,
+                'duracion_cantidad' => $data['duracion_cantidad'] ?? null,
+                'turno' => $data['turno'] ?? null,
+                'genero_preferido' => $data['genero_preferido'] ?? 'indistinto',
+                'necesidades_especiales' => $data['necesidades_especiales'] ?? null,
+                'condicion_paciente_detalle' => $data['condicion_paciente_detalle'] ?? null,
+                
+                // Campos específicos - Veterinaria
+                'tipo_mascota' => $data['tipo_mascota'] ?? null,
+                'nombre_mascota' => $data['nombre_mascota'] ?? null,
+                'edad_mascota' => $data['edad_mascota'] ?? null,
+                'raza_tamano' => $data['raza_tamano'] ?? null,
+                'motivo_veterinario' => $data['motivo_veterinario'] ?? null,
+                'historial_vacunas' => $data['historial_vacunas'] ?? null,
+                
+                // Campos específicos - Laboratorio
+                'examenes_solicitados' => $data['examenes_solicitados'] ?? null,
+                'requiere_ayuno' => $data['requiere_ayuno'] ?? false,
+                'preparacion_especial' => $data['preparacion_especial'] ?? null,
+                'email_resultados' => $data['email_resultados'] ?? null,
+                
+                // Campos específicos - Fisioterapia
+                'tipo_tratamiento' => $data['tipo_tratamiento'] ?? null,
+                'numero_sesiones' => $data['numero_sesiones'] ?? null,
+                'frecuencia_sesiones' => $data['frecuencia_sesiones'] ?? null,
+                'zona_tratamiento' => $data['zona_tratamiento'] ?? null,
+                'lesion_condicion' => $data['lesion_condicion'] ?? null,
+                
+                // Campos específicos - Psicología
+                'tipo_sesion_psico' => $data['tipo_sesion_psico'] ?? null,
+                'motivo_consulta_psico' => $data['motivo_consulta_psico'] ?? null,
+                'primera_vez' => $data['primera_vez'] ?? true,
+                'observaciones_privadas' => $data['observaciones_privadas'] ?? null,
+                
+                // Campos específicos - Nutrición
+                'tipo_consulta_nutri' => $data['tipo_consulta_nutri'] ?? null,
+                'objetivos_nutri' => $data['objetivos_nutri'] ?? null,
+                'peso_actual' => $data['peso_actual'] ?? null,
+                'altura_actual' => $data['altura_actual'] ?? null,
+                'condiciones_medicas' => $data['condiciones_medicas'] ?? null,
+                'incluye_plan_alimenticio' => $data['incluye_plan_alimenticio'] ?? true
             ];
 
             // Procesar documentos adjuntos si existen
@@ -98,15 +171,100 @@ class PacienteController
             // Crear solicitud
             $solicitudId = $this->solicitudModel->createRequest($solicitudData);
 
+            // Mensaje personalizado según tipo
+            $mensaje = $this->getSuccessMessage($tipo, $data['requiere_aprobacion'] ?? false);
+
             $this->sendSuccess([
-                'message' => 'Solicitud creada exitosamente',
+                'message' => $mensaje,
                 'solicitud_id' => $solicitudId,
-                'monto_total' => $servicio['precio_base']
+                'monto_total' => $servicio['precio_base'],
+                'estado' => $solicitudData['estado']
             ], 201);
         } catch (\Exception $e) {
             error_log("Error al crear solicitud: " . $e->getMessage());
-            $this->sendError("Error al crear solicitud", 500);
+            $this->sendError("Error al crear solicitud: " . $e->getMessage(), 500);
         }
+    }
+    
+    /**
+     * Validar datos específicos por tipo de servicio
+     */
+    private function validateServiceType(string $tipo, array $data): ?string
+    {
+        switch ($tipo) {
+            case 'medico':
+                if (empty($data['rango_horario'])) {
+                    return "El rango horario es requerido para servicios médicos";
+                }
+                if (empty($data['sintomas'])) {
+                    return "Los síntomas son requeridos para servicios médicos";
+                }
+                break;
+                
+            case 'ambulancia':
+                if (empty($data['origen']) || empty($data['destino'])) {
+                    return "Las direcciones de origen y destino son requeridas";
+                }
+                if (empty($data['condicion_paciente'])) {
+                    return "La condición del paciente es requerida";
+                }
+                break;
+                
+            case 'enfermera':
+                if (empty($data['tipo_cuidado']) || empty($data['duracion_cantidad'])) {
+                    return "El tipo de cuidado y duración son requeridos";
+                }
+                if (empty($data['direccion_servicio'])) {
+                    return "La dirección del servicio es requerida";
+                }
+                break;
+                
+            case 'veterinario':
+                if (empty($data['tipo_mascota']) || empty($data['nombre_mascota'])) {
+                    return "La información de la mascota es requerida";
+                }
+                if (empty($data['rango_horario'])) {
+                    return "El rango horario es requerido";
+                }
+                break;
+                
+            case 'laboratorio':
+                if (empty($data['examenes_solicitados'])) {
+                    return "Debe seleccionar al menos un examen";
+                }
+                if (empty($data['email_resultados'])) {
+                    return "El email para resultados es requerido";
+                }
+                if (empty($data['direccion_servicio'])) {
+                    return "La dirección para toma de muestras es requerida";
+                }
+                break;
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Obtener mensaje de éxito personalizado
+     */
+    private function getSuccessMessage(string $tipo, bool $requiereAprobacion): string
+    {
+        if ($requiereAprobacion) {
+            return "Solicitud enviada. El profesional la revisará y confirmará en las próximas horas.";
+        }
+        
+        $mensajes = [
+            'medico' => 'Solicitud médica creada. Recibirás confirmación del médico pronto.',
+            'ambulancia' => 'Solicitud de ambulancia creada exitosamente.',
+            'enfermera' => 'Solicitud de enfermería creada. Un profesional te contactará pronto.',
+            'veterinario' => 'Solicitud veterinaria creada. El veterinario confirmará la cita.',
+            'laboratorio' => 'Solicitud de laboratorio creada. Te contactaremos para coordinar la toma de muestras.',
+            'fisioterapia' => 'Solicitud de fisioterapia creada exitosamente.',
+            'psicologia' => 'Sesión de psicología agendada exitosamente.',
+            'nutricion' => 'Consulta nutricional agendada exitosamente.'
+        ];
+        
+        return $mensajes[$tipo] ?? 'Solicitud creada exitosamente.';
     }
 
     /**
@@ -119,6 +277,49 @@ class PacienteController
             $this->sendSuccess(['solicitudes' => $solicitudes]);
         } catch (\Exception $e) {
             $this->sendError("Error al obtener historial", 500);
+        }
+    }
+    
+    /**
+     * Obtener estadísticas del paciente
+     */
+    public function getStats(): void
+    {
+        try {
+            $stats = [
+                'solicitudesActivas' => 0,
+                'solicitudesCompletadas' => 0,
+                'proximaCita' => null
+            ];
+            
+            // Contar solicitudes activas (pendiente, confirmada, en_progreso)
+            $query = "SELECT COUNT(*) as total FROM solicitudes 
+                      WHERE paciente_id = ? AND estado IN ('pendiente', 'confirmada', 'en_progreso')";
+            $result = $this->solicitudModel->query($query, [$this->user->id]);
+            $stats['solicitudesActivas'] = $result[0]['total'] ?? 0;
+            
+            // Contar solicitudes completadas
+            $query = "SELECT COUNT(*) as total FROM solicitudes 
+                      WHERE paciente_id = ? AND estado = 'completada'";
+            $result = $this->solicitudModel->query($query, [$this->user->id]);
+            $stats['solicitudesCompletadas'] = $result[0]['total'] ?? 0;
+            
+            // Obtener próxima cita
+            $query = "SELECT s.*, srv.nombre as servicio_nombre 
+                      FROM solicitudes s
+                      INNER JOIN servicios srv ON s.servicio_id = srv.id
+                      WHERE s.paciente_id = ? 
+                      AND s.estado IN ('pendiente', 'confirmada') 
+                      AND s.fecha_programada > NOW()
+                      ORDER BY s.fecha_programada ASC
+                      LIMIT 1";
+            $result = $this->solicitudModel->query($query, [$this->user->id]);
+            $stats['proximaCita'] = $result[0] ?? null;
+            
+            $this->sendSuccess($stats);
+        } catch (\Exception $e) {
+            error_log("Error al obtener stats: " . $e->getMessage());
+            $this->sendError("Error al obtener estadísticas", 500);
         }
     }
 

@@ -45,9 +45,72 @@ if ($path === '/logout' && $method === 'POST') {
 }
 
 // ============================================
+// RUTAS PÚBLICAS - SERVICIOS
+// ============================================
+if ($path === '/servicios' && $method === 'GET') {
+    require_once __DIR__ . '/../app/Models/Servicio.php';
+    $servicioModel = new App\Models\Servicio();
+    $servicios = $servicioModel->getActive();
+    
+    header('Content-Type: application/json');
+    echo json_encode(['success' => true, 'servicios' => $servicios]);
+    exit;
+}
+
+if (preg_match('#^/profesionales$#', $path) && $method === 'GET') {
+    require_once __DIR__ . '/../app/Models/Usuario.php';
+    $usuarioModel = new App\Models\Usuario();
+    
+    $servicioId = $_GET['servicio_id'] ?? null;
+    
+    if ($servicioId) {
+        $profesionales = $usuarioModel->query(
+            "SELECT u.id, u.nombre, u.apellido, u.email, u.telefono, u.especialidad, u.estado
+             FROM usuarios u
+             INNER JOIN profesional_servicios ps ON u.id = ps.profesional_id
+             WHERE ps.servicio_id = ? AND u.rol IN ('medico', 'enfermera', 'veterinario') AND u.estado = 'activo'
+             ORDER BY u.nombre",
+            [$servicioId]
+        );
+    } else {
+        $profesionales = $usuarioModel->query(
+            "SELECT id, nombre, apellido, email, telefono, especialidad, rol 
+             FROM usuarios 
+             WHERE rol IN ('medico', 'enfermera', 'veterinario') AND estado = 'activo'
+             ORDER BY nombre"
+        );
+    }
+    
+    header('Content-Type: application/json');
+    echo json_encode(['success' => true, 'profesionales' => $profesionales]);
+    exit;
+}
+
+// ============================================
+// RUTAS GENERALES - SOLICITUDES
+// ============================================
+if ($path === '/solicitudes' && $method === 'POST') {
+    $controller = new PacienteController();
+    $controller->requestService();
+    exit;
+}
+
+// ============================================
 // RUTAS DE PACIENTE (Autenticadas)
 // ============================================
 if (strpos($path, '/paciente/') === 0) {
+    if ($path === '/paciente/stats' && $method === 'GET') {
+        $controller = new PacienteController();
+        $controller->getStats();
+        exit;
+    }
+    
+    if ($path === '/paciente/solicitudes' && $method === 'GET') {
+        $controller = new PacienteController();
+        $controller->getHistory();
+        exit;
+    }
+    
     if ($path === '/paciente/servicios' && $method === 'GET') {
         $controller = new PacienteController();
         $controller->listServices();

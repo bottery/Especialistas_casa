@@ -13,7 +13,21 @@ class Solicitud extends Model
         'fecha_programada', 'direccion_servicio', 'sintomas', 'observaciones',
         'documentos_adjuntos', 'estado', 'monto_total', 'monto_profesional',
         'monto_plataforma', 'pagado', 'pago_id', 'resultado', 'reporte_medico',
-        'receta', 'archivos_resultado', 'cancelado_por', 'razon_cancelacion'
+        'receta', 'archivos_resultado', 'cancelado_por', 'razon_cancelacion',
+        // Campos específicos por tipo de servicio
+        'especialidad', 'rango_horario', 'requiere_aprobacion',
+        'tipo_ambulancia', 'origen', 'destino', 'tipo_emergencia', 'condicion_paciente',
+        'numero_acompanantes', 'contacto_emergencia',
+        'tipo_cuidado', 'intensidad_horaria', 'duracion_tipo', 'duracion_cantidad',
+        'turno', 'genero_preferido', 'necesidades_especiales', 'condicion_paciente_detalle',
+        'tipo_mascota', 'nombre_mascota', 'edad_mascota', 'raza_tamano',
+        'motivo_veterinario', 'historial_vacunas',
+        'examenes_solicitados', 'requiere_ayuno', 'preparacion_especial', 'email_resultados',
+        'tipo_tratamiento', 'numero_sesiones', 'frecuencia_sesiones', 'zona_tratamiento', 'lesion_condicion',
+        'tipo_sesion_psico', 'motivo_consulta_psico', 'primera_vez', 'observaciones_privadas',
+        'tipo_consulta_nutri', 'objetivos_nutri', 'peso_actual', 'altura_actual',
+        'condiciones_medicas', 'incluye_plan_alimenticio',
+        'telefono_contacto', 'urgencia', 'metodo_pago_preferido'
     ];
 
     /**
