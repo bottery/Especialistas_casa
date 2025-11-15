@@ -25,6 +25,11 @@ window.profesionalDashboard = function() {
         activeTab: 'pendientes',
         notificaciones: 0,
         audio: null,
+        
+        // Filtros y búsqueda
+        searchQuery: '',
+        filterModalidad: '',
+        filterFecha: '',
 
         async init() {
             const token = localStorage.getItem('token');
@@ -271,6 +276,48 @@ window.profesionalDashboard = function() {
             alert(`Detalles de la solicitud:\n\nServicio: ${solicitud.servicio_nombre}\nPaciente: ${solicitud.paciente_nombre}\nFecha: ${this.formatDate(solicitud.fecha_programada)}\nMonto: ${this.formatMonto(solicitud.monto_total)}\nSíntomas: ${solicitud.sintomas || 'No especificado'}`);
         },
 
+        get solicitudesPendientesFiltradas() {
+            return this.filtrarSolicitudes(this.solicitudesPendientes);
+        },
+
+        get solicitudesActivasFiltradas() {
+            return this.filtrarSolicitudes(this.solicitudesActivas);
+        },
+
+        get solicitudesCompletadasFiltradas() {
+            return this.filtrarSolicitudes(this.solicitudesCompletadas);
+        },
+
+        filtrarSolicitudes(lista) {
+            let filtered = lista;
+            
+            if (this.searchQuery.trim()) {
+                const query = this.searchQuery.toLowerCase();
+                filtered = filtered.filter(s => 
+                    s.paciente_nombre?.toLowerCase().includes(query) ||
+                    s.descripcion?.toLowerCase().includes(query) ||
+                    s.servicio_nombre?.toLowerCase().includes(query) ||
+                    s.id?.toString().includes(query)
+                );
+            }
+            
+            if (this.filterModalidad) {
+                filtered = filtered.filter(s => s.modalidad === this.filterModalidad);
+            }
+            
+            if (this.filterFecha) {
+                filtered = filtered.filter(s => s.fecha_programada?.startsWith(this.filterFecha));
+            }
+            
+            return filtered;
+        },
+
+        limpiarFiltros() {
+            this.searchQuery = '';
+            this.filterModalidad = '';
+            this.filterFecha = '';
+        },
+
         getEstadoColor(estado) {
             const colores = {
                 'pendiente': 'bg-yellow-100 text-yellow-800 border-yellow-300',
@@ -432,6 +479,53 @@ window.profesionalDashboard = function() {
             </div>
         </div>
 
+        <!-- Barra de búsqueda y filtros -->
+        <div class="bg-white rounded-lg shadow-sm p-4 mb-6" x-show="!loading">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="md:col-span-2">
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            x-model="searchQuery" 
+                            placeholder="Buscar por paciente, servicio, descripción..."
+                            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                        >
+                        <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <div>
+                    <select x-model="filterModalidad" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm">
+                        <option value="">Todas las modalidades</option>
+                        <option value="presencial">Presencial</option>
+                        <option value="telemedicina">Telemedicina</option>
+                    </select>
+                </div>
+
+                <div>
+                    <input 
+                        type="date" 
+                        x-model="filterFecha" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm"
+                    >
+                </div>
+            </div>
+
+            <div class="mt-3 flex justify-end" x-show="searchQuery || filterModalidad || filterFecha">
+                <button 
+                    @click="limpiarFiltros()" 
+                    class="text-sm text-green-600 hover:text-green-800 font-medium flex items-center space-x-1"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                    <span>Limpiar filtros</span>
+                </button>
+            </div>
+        </div>
+
         <!-- Tabs -->
         <div class="bg-white rounded-lg shadow-sm mb-6">
             <div class="border-b border-gray-200">
@@ -476,7 +570,7 @@ window.profesionalDashboard = function() {
             </div>
 
             <div class="grid gap-6">
-                <template x-for="solicitud in solicitudesPendientes" :key="solicitud.id">
+                <template x-for="solicitud in solicitudesPendientesFiltradas" :key="solicitud.id">
                     <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-yellow-500 hover:shadow-md transition-shadow">
                         <div class="flex justify-between items-start mb-4">
                             <div class="flex-1">
@@ -543,7 +637,7 @@ window.profesionalDashboard = function() {
             </div>
 
             <div class="grid gap-6">
-                <template x-for="solicitud in solicitudesActivas" :key="solicitud.id">
+                <template x-for="solicitud in solicitudesActivasFiltradas" :key="solicitud.id">
                     <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
                         <div class="flex justify-between items-start mb-4">
                             <div class="flex-1">
@@ -600,7 +694,7 @@ window.profesionalDashboard = function() {
             </div>
 
             <div class="grid gap-4">
-                <template x-for="solicitud in solicitudesCompletadas" :key="solicitud.id">
+                <template x-for="solicitud in solicitudesCompletadasFiltradas" :key="solicitud.id">
                     <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-green-500">
                         <div class="flex justify-between items-center">
                             <div class="flex-1">

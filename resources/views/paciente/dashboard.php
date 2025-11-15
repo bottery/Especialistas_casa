@@ -21,6 +21,11 @@ window.pacienteDashboard = function() {
         historialMedico: [],
         activeTab: 'solicitudes',
         
+        // Filtros y búsqueda
+        searchQuery: '',
+        filterEstado: '',
+        filterServicio: '',
+        
         // Modal de calificación
         modalCalificacionAbierto: false,
         solicitudACalificar: null,
@@ -196,6 +201,39 @@ window.pacienteDashboard = function() {
             }).format(monto);
         },
 
+        get solicitudesFiltradas() {
+            let filtered = this.solicitudes;
+            
+            // Filtrar por búsqueda
+            if (this.searchQuery.trim()) {
+                const query = this.searchQuery.toLowerCase();
+                filtered = filtered.filter(s => 
+                    s.servicio?.toLowerCase().includes(query) ||
+                    s.descripcion?.toLowerCase().includes(query) ||
+                    s.profesional_nombre?.toLowerCase().includes(query) ||
+                    s.id?.toString().includes(query)
+                );
+            }
+            
+            // Filtrar por estado
+            if (this.filterEstado) {
+                filtered = filtered.filter(s => s.estado === this.filterEstado);
+            }
+            
+            // Filtrar por servicio
+            if (this.filterServicio) {
+                filtered = filtered.filter(s => s.servicio_tipo === this.filterServicio);
+            }
+            
+            return filtered;
+        },
+
+        limpiarFiltros() {
+            this.searchQuery = '';
+            this.filterEstado = '';
+            this.filterServicio = '';
+        },
+
         logout() {
             localStorage.removeItem('token');
             localStorage.removeItem('usuario');
@@ -299,6 +337,67 @@ window.pacienteDashboard = function() {
             </button>
         </div>
 
+        <!-- Barra de búsqueda y filtros -->
+        <div class="bg-white rounded-lg shadow-sm p-4 mb-6" x-show="!loading">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <!-- Búsqueda -->
+                <div class="md:col-span-2">
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            x-model="searchQuery" 
+                            placeholder="Buscar por servicio, descripción, profesional..."
+                            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                        >
+                        <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Filtro Estado -->
+                <div>
+                    <select x-model="filterEstado" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm">
+                        <option value="">Todos los estados</option>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="asignado">Asignado</option>
+                        <option value="confirmado">Confirmado</option>
+                        <option value="en_progreso">En progreso</option>
+                        <option value="completado">Completado</option>
+                        <option value="rechazado">Rechazado</option>
+                    </select>
+                </div>
+
+                <!-- Filtro Servicio -->
+                <div>
+                    <select x-model="filterServicio" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm">
+                        <option value="">Todos los servicios</option>
+                        <option value="medico">Médico</option>
+                        <option value="enfermera">Enfermera</option>
+                        <option value="veterinario">Veterinario</option>
+                        <option value="laboratorio">Laboratorio</option>
+                        <option value="ambulancia">Ambulancia</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Botón limpiar filtros -->
+            <div class="mt-3 flex justify-between items-center" x-show="searchQuery || filterEstado || filterServicio">
+                <p class="text-sm text-gray-600">
+                    <span x-text="solicitudesFiltradas.length"></span> resultados encontrados
+                </p>
+                <button 
+                    @click="limpiarFiltros()" 
+                    class="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center space-x-1"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                    <span>Limpiar filtros</span>
+                </button>
+            </div>
+        </div>
+
         <!-- Tabs -->
         <div class="border-b border-gray-200 mb-6">
             <nav class="flex space-x-8">
@@ -338,7 +437,7 @@ window.pacienteDashboard = function() {
                 </div>
 
                 <div x-show="solicitudes.length > 0" class="space-y-4">
-                    <template x-for="solicitud in solicitudes" :key="solicitud.id">
+                    <template x-for="solicitud in solicitudesFiltradas" :key="solicitud.id">
                         <div class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition cursor-pointer" @click="verDetalle(solicitud.id)">
                             <div class="flex items-start justify-between">
                                 <div class="flex-1">
