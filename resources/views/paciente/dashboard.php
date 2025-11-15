@@ -26,6 +26,10 @@ window.pacienteDashboard = function() {
         filterEstado: '',
         filterServicio: '',
         
+        // Paginación
+        itemsPorPagina: 5,
+        paginaActual: 1,
+        
         // Modal de calificación
         modalCalificacionAbierto: false,
         solicitudACalificar: null,
@@ -232,6 +236,51 @@ window.pacienteDashboard = function() {
             this.searchQuery = '';
             this.filterEstado = '';
             this.filterServicio = '';
+            this.paginaActual = 1;
+        },
+
+        get solicitudesPaginadas() {
+            const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
+            const fin = inicio + this.itemsPorPagina;
+            return this.solicitudesFiltradas.slice(inicio, fin);
+        },
+
+        get totalPaginas() {
+            return Math.ceil(this.solicitudesFiltradas.length / this.itemsPorPagina);
+        },
+
+        cambiarPagina(pagina) {
+            if (pagina >= 1 && pagina <= this.totalPaginas) {
+                this.paginaActual = pagina;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        },
+
+        get paginasVisibles() {
+            const paginas = [];
+            const total = this.totalPaginas;
+            const actual = this.paginaActual;
+            
+            if (total <= 7) {
+                for (let i = 1; i <= total; i++) paginas.push(i);
+            } else {
+                if (actual <= 4) {
+                    for (let i = 1; i <= 5; i++) paginas.push(i);
+                    paginas.push('...');
+                    paginas.push(total);
+                } else if (actual >= total - 3) {
+                    paginas.push(1);
+                    paginas.push('...');
+                    for (let i = total - 4; i <= total; i++) paginas.push(i);
+                } else {
+                    paginas.push(1);
+                    paginas.push('...');
+                    for (let i = actual - 1; i <= actual + 1; i++) paginas.push(i);
+                    paginas.push('...');
+                    paginas.push(total);
+                }
+            }
+            return paginas;
         },
 
         logout() {
@@ -437,7 +486,7 @@ window.pacienteDashboard = function() {
                 </div>
 
                 <div x-show="solicitudes.length > 0" class="space-y-4">
-                    <template x-for="solicitud in solicitudesFiltradas" :key="solicitud.id">
+                    <template x-for="solicitud in solicitudesPaginadas" :key="solicitud.id">
                         <div class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition cursor-pointer" @click="verDetalle(solicitud.id)">
                             <div class="flex items-start justify-between">
                                 <div class="flex-1">
@@ -473,6 +522,50 @@ window.pacienteDashboard = function() {
                             </div>
                         </div>
                     </template>
+
+                    <!-- Paginación -->
+                    <div x-show="totalPaginas > 1" class="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
+                        <div class="text-sm text-gray-600">
+                            Mostrando 
+                            <span x-text="((paginaActual - 1) * itemsPorPagina) + 1"></span>
+                            a
+                            <span x-text="Math.min(paginaActual * itemsPorPagina, solicitudesFiltradas.length)"></span>
+                            de
+                            <span x-text="solicitudesFiltradas.length"></span>
+                            resultados
+                        </div>
+
+                        <div class="flex items-center space-x-2">
+                            <button 
+                                @click="cambiarPagina(paginaActual - 1)"
+                                :disabled="paginaActual === 1"
+                                :class="paginaActual === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'"
+                                class="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 transition"
+                            >
+                                ← Anterior
+                            </button>
+
+                            <template x-for="pagina in paginasVisibles" :key="pagina">
+                                <button 
+                                    x-show="pagina !== '...'"
+                                    @click="cambiarPagina(pagina)"
+                                    :class="paginaActual === pagina ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'"
+                                    class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium transition"
+                                    x-text="pagina"
+                                ></button>
+                                <span x-show="pagina === '...'" class="px-2 text-gray-500">...</span>
+                            </template>
+
+                            <button 
+                                @click="cambiarPagina(paginaActual + 1)"
+                                :disabled="paginaActual === totalPaginas"
+                                :class="paginaActual === totalPaginas ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'"
+                                class="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 transition"
+                            >
+                                Siguiente →
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 

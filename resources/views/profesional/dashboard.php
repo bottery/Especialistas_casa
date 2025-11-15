@@ -30,6 +30,10 @@ window.profesionalDashboard = function() {
         searchQuery: '',
         filterModalidad: '',
         filterFecha: '',
+        
+        // Paginación
+        itemsPorPagina: 5,
+        paginaActual: 1,
 
         async init() {
             const token = localStorage.getItem('token');
@@ -316,6 +320,27 @@ window.profesionalDashboard = function() {
             this.searchQuery = '';
             this.filterModalidad = '';
             this.filterFecha = '';
+            this.paginaActual = 1;
+        },
+
+        paginatedList(lista) {
+            const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
+            const fin = inicio + this.itemsPorPagina;
+            return lista.slice(inicio, fin);
+        },
+
+        get totalPaginas() {
+            const lista = this.activeTab === 'pendientes' ? this.solicitudesPendientesFiltradas :
+                         this.activeTab === 'activas' ? this.solicitudesActivasFiltradas :
+                         this.solicitudesCompletadasFiltradas;
+            return Math.ceil(lista.length / this.itemsPorPagina);
+        },
+
+        cambiarPagina(pagina) {
+            if (pagina >= 1 && pagina <= this.totalPaginas) {
+                this.paginaActual = pagina;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
         },
 
         getEstadoColor(estado) {
@@ -570,7 +595,7 @@ window.profesionalDashboard = function() {
             </div>
 
             <div class="grid gap-6">
-                <template x-for="solicitud in solicitudesPendientesFiltradas" :key="solicitud.id">
+                <template x-for="solicitud in paginatedList(solicitudesPendientesFiltradas)" :key="solicitud.id">
                     <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-yellow-500 hover:shadow-md transition-shadow">
                         <div class="flex justify-between items-start mb-4">
                             <div class="flex-1">
@@ -623,6 +648,31 @@ window.profesionalDashboard = function() {
                         </div>
                     </div>
                 </template>
+
+                <!-- Paginación -->
+                <div x-show="totalPaginas > 1" class="flex justify-center mt-6 pt-4 border-t border-gray-200">
+                    <div class="flex items-center space-x-2">
+                        <button 
+                            @click="cambiarPagina(paginaActual - 1)"
+                            :disabled="paginaActual === 1"
+                            :class="paginaActual === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'"
+                            class="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        >
+                            ←
+                        </button>
+                        <span class="text-sm text-gray-600">
+                            Página <span x-text="paginaActual"></span> de <span x-text="totalPaginas"></span>
+                        </span>
+                        <button 
+                            @click="cambiarPagina(paginaActual + 1)"
+                            :disabled="paginaActual === totalPaginas"
+                            :class="paginaActual === totalPaginas ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'"
+                            class="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        >
+                            →
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -637,7 +687,7 @@ window.profesionalDashboard = function() {
             </div>
 
             <div class="grid gap-6">
-                <template x-for="solicitud in solicitudesActivasFiltradas" :key="solicitud.id">
+                <template x-for="solicitud in paginatedList(solicitudesActivasFiltradas)" :key="solicitud.id">
                     <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
                         <div class="flex justify-between items-start mb-4">
                             <div class="flex-1">
@@ -694,7 +744,7 @@ window.profesionalDashboard = function() {
             </div>
 
             <div class="grid gap-4">
-                <template x-for="solicitud in solicitudesCompletadasFiltradas" :key="solicitud.id">
+                <template x-for="solicitud in paginatedList(solicitudesCompletadasFiltradas)" :key="solicitud.id">
                     <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-green-500">
                         <div class="flex justify-between items-center">
                             <div class="flex-1">
