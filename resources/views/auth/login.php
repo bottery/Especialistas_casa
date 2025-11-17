@@ -109,6 +109,14 @@
                         const data = await response.json();
 
                         if (data.success) {
+                            // Validar que tenemos los datos necesarios
+                            if (!data.user || !data.user.rol) {
+                                this.success = false;
+                                this.message = 'Respuesta del servidor inválida';
+                                console.error('Datos recibidos:', data);
+                                return;
+                            }
+
                             // Guardar token
                             localStorage.setItem('token', data.access_token);
                             localStorage.setItem('refresh_token', data.refresh_token);

@@ -6,6 +6,7 @@ use App\Models\Servicio;
 use App\Models\Solicitud;
 use App\Models\Usuario;
 use App\Middleware\AuthMiddleware;
+use App\Services\Database;
 
 /**
  * Controlador de Paciente
@@ -16,9 +17,13 @@ class PacienteController
     private $solicitudModel;
     private $authMiddleware;
     private $user;
+    private $db;
+    private $calificacionesPendientes = 0;
 
     public function __construct()
     {
+        $this->db = Database::getInstance()->getConnection();
+        
         $this->servicioModel = new Servicio();
         $this->solicitudModel = new Solicitud();
         $this->authMiddleware = new AuthMiddleware();
@@ -27,6 +32,79 @@ class PacienteController
         $this->user = $this->authMiddleware->checkRole(['paciente']);
         if (!$this->user) {
             exit;
+        }
+        
+        // Verificar calificaciones obligatorias pendientes
+        $this->verificarCalificacionesPendientes();
+    }
+
+    /**
+     * Verificar si hay servicios completados sin calificar
+     */
+    private function verificarCalificacionesPendientes(): void
+    {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT COUNT(*) as pendientes
+                FROM solicitudes
+                WHERE paciente_id = :paciente_id
+                    AND estado = 'completado'
+                    AND calificado = FALSE
+                    AND fecha_completada IS NOT NULL
+            ");
+            
+            $stmt->execute(['paciente_id' => $this->user->id]);
+            $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+            
+            $this->calificacionesPendientes = (int)$result['pendientes'];
+        } catch (\Exception $e) {
+            error_log("Error al verificar calificaciones pendientes: " . $e->getMessage());
+            $this->calificacionesPendientes = 0;
+        }
+    }
+
+    /**
+     * Obtener servicios completados que requieren calificación OBLIGATORIA
+     */
+    public function getServiciosPendientesCalificar(): void
+    {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT 
+                    s.id,
+                    s.fecha_completada,
+                    s.servicio_id,
+                    s.reporte_profesional,
+                    s.diagnostico,
+                    srv.nombre as servicio_nombre,
+                    u.nombre as profesional_nombre,
+                    u.apellido as profesional_apellido,
+                    u.puntuacion_promedio,
+                    u.total_calificaciones
+                FROM solicitudes s
+                INNER JOIN servicios srv ON s.servicio_id = srv.id
+                INNER JOIN usuarios u ON s.profesional_id = u.id
+                WHERE s.paciente_id = :paciente_id
+                    AND s.estado = 'completado'
+                    AND s.calificado = FALSE
+                    AND s.fecha_completada IS NOT NULL
+                ORDER BY s.fecha_completada ASC
+            ");
+            
+            $stmt->execute(['paciente_id' => $this->user->id]);
+            $pendientes = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            
+            $this->sendSuccess([
+                'pendientes' => $pendientes,
+                'total' => count($pendientes),
+                'obligatorio' => count($pendientes) > 0,
+                'mensaje' => count($pendientes) > 0 
+                    ? '⚠️ Debes calificar ' . count($pendientes) . ' servicio(s) completado(s) antes de continuar'
+                    : 'No tienes servicios pendientes de calificar'
+            ]);
+        } catch (\Exception $e) {
+            error_log("Error al obtener servicios pendientes: " . $e->getMessage());
+            $this->sendError("Error al cargar datos", 500);
         }
     }
 
@@ -85,8 +163,8 @@ class PacienteController
             }
             
             // Validar método de pago
-            if (!in_array($data['metodo_pago_preferido'], ['pse', 'transferencia'])) {
-                $this->sendError("Método de pago no válido. Solo se acepta PSE o Transferencia", 400);
+            if ($data['metodo_pago_preferido'] !== 'transferencia') {
+                $this->sendError("Método de pago no válido. Solo se acepta Transferencia", 400);
                 return;
             }
 
@@ -117,9 +195,9 @@ class PacienteController
                 'sintomas' => $data['sintomas'] ?? null,
                 'observaciones' => $data['observaciones'] ?? null,
                 'monto_total' => $servicio['precio_base'],
-                // Si es transferencia: pendiente_confirmacion_pago, si es PSE: pendiente (listo para asignar)
-                'estado' => $data['metodo_pago_preferido'] === 'transferencia' ? 'pendiente_confirmacion_pago' : 'pendiente',
-                'pagado' => $data['metodo_pago_preferido'] === 'pse' ? true : false,
+                // Transferencia siempre inicia en pendiente_pago
+                'estado' => 'pendiente_pago',
+                'pagado' => 0,
                 
                 // Información de contacto
                 'telefono_contacto' => $data['telefono_contacto'] ?? null,
@@ -191,6 +269,19 @@ class PacienteController
                 $solicitudData['documentos_adjuntos'] = json_encode($data['documentos']);
             }
 
+            // Limpiar y normalizar datos antes de insertar
+            $solicitudData = array_map(function($value) {
+                // Convertir booleanos a enteros
+                if (is_bool($value)) {
+                    return $value ? 1 : 0;
+                }
+                // Convertir cadenas vacías y arrays vacíos a null
+                if ($value === '' || $value === '[]') {
+                    return null;
+                }
+                return $value;
+            }, $solicitudData);
+
             // Crear solicitud
             $solicitudId = $this->solicitudModel->createRequest($solicitudData);
             
@@ -203,8 +294,7 @@ class PacienteController
             // Obtener configuración de pagos para mostrar QR
             $configPagos = null;
             if ($data['metodo_pago_preferido'] === 'transferencia') {
-                global $pdo;
-                $stmt = $pdo->query("SELECT * FROM configuracion_pagos WHERE id = 1 LIMIT 1");
+                $stmt = $this->db->query("SELECT * FROM configuracion_pagos WHERE id = 1 LIMIT 1");
                 $configPagos = $stmt->fetch(\PDO::FETCH_ASSOC);
             }
 
@@ -236,7 +326,13 @@ class PacienteController
 
             $this->sendSuccess($response, 201);
         } catch (\Exception $e) {
-            error_log("Error al crear solicitud: " . $e->getMessage());
+            error_log("=== ERROR AL CREAR SOLICITUD ===");
+            error_log("Mensaje: " . $e->getMessage());
+            error_log("Archivo: " . $e->getFile() . " Línea: " . $e->getLine());
+            error_log("Stack trace: " . $e->getTraceAsString());
+            error_log("Datos recibidos: " . json_encode($data ?? []));
+            error_log("================================");
+            
             $this->sendError("Error al crear solicitud: " . $e->getMessage(), 500);
         }
     }
@@ -309,11 +405,6 @@ class PacienteController
             return "Solicitud creada exitosamente. Por favor realiza la transferencia según los datos bancarios mostrados y sube tu comprobante de pago. Tu solicitud será activada una vez confirmemos el pago.";
         }
         
-        // Mensaje especial para PSE
-        if ($metodoPago === 'pse') {
-            return "Solicitud creada y pago procesado exitosamente con PSE. Un administrador asignará un profesional pronto y serás notificado.";
-        }
-        
         if ($requiereAprobacion) {
             return "Solicitud enviada. El profesional la revisará y confirmará en las próximas horas.";
         }
@@ -339,9 +430,7 @@ class PacienteController
     private function createPendingPayment(int $solicitudId, float $monto): int
     {
         try {
-            global $pdo;
-            
-            $stmt = $pdo->prepare("
+            $stmt = $this->db->prepare("
                 INSERT INTO pagos (solicitud_id, usuario_id, metodo_pago, monto, estado, notas)
                 VALUES (:solicitud_id, :usuario_id, 'transferencia', :monto, 'pendiente', 
                         'Esperando comprobante de transferencia del usuario')
@@ -353,7 +442,7 @@ class PacienteController
                 'monto' => $monto
             ]);
             
-            return (int)$pdo->lastInsertId();
+            return (int)$this->db->lastInsertId();
         } catch (\Exception $e) {
             error_log("Error al crear pago pendiente: " . $e->getMessage());
             throw $e;
@@ -366,9 +455,14 @@ class PacienteController
     public function getHistory(): void
     {
         try {
+            error_log("getHistory called for user: " . $this->user->id);
             $solicitudes = $this->solicitudModel->getByPatient($this->user->id);
+            error_log("Solicitudes found: " . count($solicitudes));
+            error_log("Solicitudes data: " . json_encode($solicitudes));
             $this->sendSuccess(['solicitudes' => $solicitudes]);
         } catch (\Exception $e) {
+            error_log("Error in getHistory: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
             $this->sendError("Error al obtener historial", 500);
         }
     }
@@ -385,15 +479,15 @@ class PacienteController
                 'proximaCita' => null
             ];
             
-            // Contar solicitudes activas (pendiente, confirmada, en_progreso)
+            // Contar solicitudes activas (pagado, asignado, en_proceso)
             $query = "SELECT COUNT(*) as total FROM solicitudes 
-                      WHERE paciente_id = ? AND estado IN ('pendiente', 'confirmada', 'en_progreso')";
+                      WHERE paciente_id = ? AND estado IN ('pagado', 'asignado', 'en_proceso')";
             $result = $this->solicitudModel->query($query, [$this->user->id]);
             $stats['solicitudesActivas'] = $result[0]['total'] ?? 0;
             
             // Contar solicitudes completadas
             $query = "SELECT COUNT(*) as total FROM solicitudes 
-                      WHERE paciente_id = ? AND estado = 'completada'";
+                      WHERE paciente_id = ? AND estado = 'completado'";
             $result = $this->solicitudModel->query($query, [$this->user->id]);
             $stats['solicitudesCompletadas'] = $result[0]['total'] ?? 0;
             
@@ -402,13 +496,21 @@ class PacienteController
                       FROM solicitudes s
                       INNER JOIN servicios srv ON s.servicio_id = srv.id
                       WHERE s.paciente_id = ? 
-                      AND s.estado IN ('pendiente', 'confirmada') 
-                      AND s.fecha_programada > NOW()
+                      AND s.estado IN ('pagado', 'asignado', 'en_proceso') 
+                      AND s.fecha_programada >= CURDATE()
                       ORDER BY s.fecha_programada ASC
                       LIMIT 1";
             $result = $this->solicitudModel->query($query, [$this->user->id]);
-            $stats['proximaCita'] = $result[0] ?? null;
             
+            if (!empty($result[0])) {
+                $stats['proximaCita'] = [
+                    'fecha' => $result[0]['fecha_programada'],
+                    'servicio' => $result[0]['servicio_nombre'],
+                    'hora' => $result[0]['hora_programada'] ?? null
+                ];
+            }
+            
+            error_log("Stats calculados: " . json_encode($stats));
             $this->sendSuccess($stats);
         } catch (\Exception $e) {
             error_log("Error al obtener stats: " . $e->getMessage());
@@ -464,8 +566,8 @@ class PacienteController
                 return;
             }
 
-            // Solo se puede cancelar si está pendiente o confirmada
-            if (!in_array($solicitud['estado'], ['pendiente', 'confirmada'])) {
+            // Solo se puede cancelar si está pendiente_pago, pagado o asignado
+            if (!in_array($solicitud['estado'], ['pendiente_pago', 'pagado', 'asignado'])) {
                 $this->sendError("No se puede cancelar esta solicitud", 400);
                 return;
             }
@@ -511,17 +613,15 @@ class PacienteController
                 $this->sendError("La calificación debe estar entre 1 y 5", 400);
                 return;
             }
-
-            global $pdo;
             
-            // Verificar que la solicitud existe, pertenece al paciente y está pendiente de calificación
-            $stmt = $pdo->prepare("
+            // Verificar que la solicitud existe, pertenece al paciente y está completada
+            $stmt = $this->db->prepare("
                 SELECT s.*, u.id as profesional_id, u.nombre, u.apellido
                 FROM solicitudes s
                 INNER JOIN usuarios u ON s.profesional_id = u.id
                 WHERE s.id = :id 
                     AND s.paciente_id = :paciente_id 
-                    AND s.estado = 'pendiente_calificacion'
+                    AND s.estado = 'completado'
                     AND s.calificado = FALSE
             ");
             
@@ -538,17 +638,16 @@ class PacienteController
             }
 
             // Iniciar transacción
-            $pdo->beginTransaction();
+            $this->db->beginTransaction();
 
             try {
                 // Actualizar solicitud con calificación
-                $stmt = $pdo->prepare("
+                $stmt = $this->db->prepare("
                     UPDATE solicitudes 
                     SET calificacion_paciente = :calificacion,
                         comentario_paciente = :comentario,
                         fecha_calificacion = CURRENT_TIMESTAMP,
                         calificado = TRUE,
-                        estado = 'finalizada',
                         updated_at = CURRENT_TIMESTAMP
                     WHERE id = :id
                 ");
@@ -560,7 +659,7 @@ class PacienteController
                 ]);
 
                 // Recalcular puntuación promedio del profesional
-                $stmt = $pdo->prepare("
+                $stmt = $this->db->prepare("
                     SELECT 
                         AVG(calificacion_paciente) as promedio,
                         COUNT(*) as total
@@ -574,11 +673,10 @@ class PacienteController
                 $stats = $stmt->fetch(\PDO::FETCH_ASSOC);
                 
                 // Actualizar estadísticas del profesional
-                $stmt = $pdo->prepare("
+                $stmt = $this->db->prepare("
                     UPDATE usuarios 
                     SET puntuacion_promedio = :promedio,
-                        total_calificaciones = :total,
-                        servicios_completados = servicios_completados + 1
+                        total_calificaciones = :total
                     WHERE id = :id
                 ");
                 
@@ -588,7 +686,7 @@ class PacienteController
                     'total' => $stats['total']
                 ]);
 
-                $pdo->commit();
+                $this->db->commit();
 
                 $this->sendSuccess([
                     'message' => '¡Gracias por tu calificación!',
@@ -596,12 +694,76 @@ class PacienteController
                     'nueva_puntuacion' => round($stats['promedio'], 2)
                 ]);
             } catch (\Exception $e) {
-                $pdo->rollBack();
+                $this->db->rollBack();
                 throw $e;
             }
         } catch (\Exception $e) {
             error_log("Error al calificar servicio: " . $e->getMessage());
-            $this->sendError("Error al procesar la calificación", 500);
+            $this->sendError("Error al procesar la solicitud",500);
+        }
+    }
+
+    /**
+     * Obtener reporte final del profesional
+     */
+    public function obtenerReporteFinal(int $solicitudId): void
+    {
+        try {
+            // Verificar que la solicitud existe y pertenece al paciente
+            $stmt = $this->db->prepare("
+                SELECT 
+                    s.*,
+                    u.nombre as profesional_nombre,
+                    u.apellido as profesional_apellido,
+                    u.tipo_profesional,
+                    u.especialidad,
+                    u.puntuacion_promedio,
+                    u.total_calificaciones
+                FROM solicitudes s
+                INNER JOIN usuarios u ON s.profesional_id = u.id
+                WHERE s.id = :id 
+                    AND s.paciente_id = :paciente_id 
+                    AND s.estado IN ('completado', 'cancelado')
+            ");
+            
+            $stmt->execute([
+                'id' => $solicitudId,
+                'paciente_id' => $this->user->id
+            ]);
+            
+            $solicitud = $stmt->fetch(\PDO::FETCH_ASSOC);
+            
+            if (!$solicitud) {
+                $this->sendError("Solicitud no encontrada", 404);
+                return;
+            }
+            
+            $this->sendSuccess([
+                'reporte' => [
+                    'solicitud_id' => $solicitud['id'],
+                    'fecha_servicio' => $solicitud['fecha_programada'],
+                    'fecha_completado' => $solicitud['fecha_completada'],
+                    'profesional' => [
+                        'nombre' => $solicitud['profesional_nombre'] . ' ' . $solicitud['profesional_apellido'],
+                        'tipo' => $solicitud['tipo_profesional'],
+                        'especialidad' => $solicitud['especialidad'],
+                        'puntuacion' => $solicitud['puntuacion_promedio'],
+                        'total_calificaciones' => $solicitud['total_calificaciones']
+                    ],
+                    'reporte_profesional' => $solicitud['reporte_profesional'],
+                    'diagnostico' => $solicitud['diagnostico'],
+                    'notas_adicionales' => $solicitud['resultado'],
+                    'calificacion' => [
+                        'calificado' => (bool)$solicitud['calificado'],
+                        'puntuacion' => $solicitud['calificacion_paciente'],
+                        'comentario' => $solicitud['comentario_paciente'],
+                        'fecha' => $solicitud['fecha_calificacion']
+                    ]
+                ]
+            ]);
+        } catch (\Exception $e) {
+            error_log("Error al obtener reporte: " . $e->getMessage());
+            $this->sendError("Error al obtener el reporte", 500);
         }
     }
 

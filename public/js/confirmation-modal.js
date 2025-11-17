@@ -11,11 +11,22 @@ class ConfirmationModal {
     }
 
     init() {
+        // Esperar a que el DOM esté listo
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.createContainer());
+        } else {
+            this.createContainer();
+        }
+    }
+
+    createContainer() {
         // Crear el contenedor del modal si no existe
         if (!document.getElementById('confirmation-modal-root')) {
             this.modalContainer = document.createElement('div');
             this.modalContainer.id = 'confirmation-modal-root';
             document.body.appendChild(this.modalContainer);
+        } else {
+            this.modalContainer = document.getElementById('confirmation-modal-root');
         }
     }
 

@@ -58,18 +58,20 @@ if ($path === '/paciente/historial') {
 }
 
 // ============================================
-// RUTAS DE MÉDICO/PROFESIONAL
+// RUTAS DE PROFESIONALES/ESPECIALISTAS
 // ============================================
 if ($path === '/profesional/dashboard') {
     view('profesional/dashboard');
 }
 
-if ($path === '/medico/dashboard') {
-    view('medico/dashboard');
+// Redirigir rutas antiguas de roles específicos al dashboard unificado
+if (in_array($path, ['/medico/dashboard', '/enfermera/dashboard', '/veterinario/dashboard', '/laboratorio/dashboard', '/ambulancia/dashboard'])) {
+    header('Location: /profesional/dashboard');
+    exit;
 }
 
-if ($path === '/medico/servicios') {
-    view('medico/servicios');
+if ($path === '/profesional/servicios' || $path === '/medico/servicios') {
+    view('profesional/servicios');
 }
 
 // ============================================

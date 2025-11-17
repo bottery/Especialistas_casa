@@ -5,17 +5,17 @@
  */
 
 return [
-    'default' => 'mysql',
+    'default' => $_ENV['DB_CONNECTION'] ?? 'mysql',
     
     'connections' => [
         'mysql' => [
             'driver' => 'mysql',
-            'host' => 'localhost',
-            'port' => '3306',
-            'database' => 'especialistas_casa',
-            'username' => 'especialistas_user',
-            'password' => 'especialistas_pass',
-            'unix_socket' => '/tmp/mysql.sock',
+            'host' => $_ENV['DB_HOST'] ?? 'localhost',
+            'port' => $_ENV['DB_PORT'] ?? '3306',
+            'database' => $_ENV['DB_DATABASE'] ?? 'especialistas_casa',
+            'username' => $_ENV['DB_USERNAME'] ?? 'root',
+            'password' => $_ENV['DB_PASSWORD'] ?? '',
+            'unix_socket' => $_ENV['DB_SOCKET'] ?? '',
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',
             'prefix' => '',

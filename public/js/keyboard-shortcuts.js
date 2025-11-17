@@ -9,7 +9,12 @@ class KeyboardShortcuts {
     init() {
         this.registerDefaultShortcuts();
         this.addEventListeners();
-        this.createHelpModal();
+        // Crear modal cuando el DOM esté listo
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.createHelpModal());
+        } else {
+            this.createHelpModal();
+        }
     }
 
     addEventListeners() {
@@ -145,7 +150,13 @@ class KeyboardShortcuts {
             </div>
         `;
 
-        document.body.appendChild(modal);
+        // Asegurar que document.body existe antes de agregar
+        if (document.body) {
+            document.body.appendChild(modal);
+        } else {
+            console.warn('document.body no está disponible para keyboard-shortcuts modal');
+            return;
+        }
 
         // Cerrar al hacer click fuera
         modal.addEventListener('click', (e) => {

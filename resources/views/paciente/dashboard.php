@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Panel - Especialistas en Casa</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/js/auth-interceptor.js"></script>
     <script src="/js/toast.js"></script>
     <link rel="stylesheet" href="/css/skeleton.css">
     <link rel="stylesheet" href="/css/timeline.css">
@@ -49,19 +50,24 @@ window.pacienteDashboard = function() {
         enviandoCalificacion: false,
 
         async init() {
+            console.log('🚀 Inicializando paciente dashboard...');
             const token = localStorage.getItem('token');
             if (!token) {
+                console.log('❌ No hay token, redirigiendo a login');
                 window.location.href = '/login';
                 return;
             }
 
             const userData = JSON.parse(localStorage.getItem('usuario') || '{}');
             this.usuario = userData;
+            console.log('👤 Usuario:', userData);
 
             await this.cargarDatos();
             
             // Verificar si hay servicios pendientes de calificar
             this.verificarCalificacionesPendientes();
+            
+            console.log('✅ Dashboard inicializado. Solicitudes:', this.solicitudes.length);
         },
 
         async cargarDatos() {
@@ -76,7 +82,10 @@ window.pacienteDashboard = function() {
                 
                 if (statsResponse.ok) {
                     const data = await statsResponse.json();
-                    this.stats = data.stats || this.stats;
+                    console.log('Stats recibidos:', data);
+                    // El backend envía los stats expandidos en el nivel raíz con ...spread
+                    const { success, ...stats } = data;
+                    this.stats = stats;
                 }
 
                 // Cargar solicitudes
@@ -84,9 +93,16 @@ window.pacienteDashboard = function() {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 
+                console.log('Solicitudes response status:', solicitudesResponse.status);
+                
                 if (solicitudesResponse.ok) {
                     const data = await solicitudesResponse.json();
+                    console.log('Solicitudes data received:', data);
                     this.solicitudes = data.solicitudes || [];
+                    console.log('Solicitudes array:', this.solicitudes);
+                } else {
+                    const errorText = await solicitudesResponse.text();
+                    console.error('Error loading solicitudes:', solicitudesResponse.status, errorText);
                 }
             } catch (error) {
                 console.error('Error:', error);
@@ -114,13 +130,12 @@ window.pacienteDashboard = function() {
 
         getTimelineStates(estado) {
             const estados = {
-                'pendiente': ['completed', 'pending', 'pending', 'pending', 'pending'],
-                'asignado': ['completed', 'completed', 'pending', 'pending', 'pending'],
-                'confirmado': ['completed', 'completed', 'completed', 'pending', 'pending'],
-                'en_progreso': ['completed', 'completed', 'completed', 'active', 'pending'],
+                'pendiente_pago': ['completed', 'pending', 'pending', 'pending', 'pending'],
+                'pagado': ['completed', 'completed', 'pending', 'pending', 'pending'],
+                'asignado': ['completed', 'completed', 'completed', 'pending', 'pending'],
+                'en_proceso': ['completed', 'completed', 'completed', 'active', 'pending'],
                 'completado': ['completed', 'completed', 'completed', 'completed', 'completed'],
-                'pendiente_calificacion': ['completed', 'completed', 'completed', 'completed', 'completed'],
-                'rechazado': ['completed', 'rejected', 'rejected', 'rejected', 'rejected']
+                'cancelado': ['completed', 'rejected', 'rejected', 'rejected', 'rejected']
             };
             return estados[estado] || ['pending', 'pending', 'pending', 'pending', 'pending'];
         },
@@ -133,23 +148,33 @@ window.pacienteDashboard = function() {
             const colores = {
                 'pendiente': 'bg-yellow-100 text-yellow-800',
                 'pendiente_asignacion': 'bg-orange-100 text-orange-800',
-                'confirmada': 'bg-blue-100 text-blue-800',
-                'en_progreso': 'bg-indigo-100 text-indigo-800',
-                'completada': 'bg-green-100 text-green-800',
+                'pendiente_pago': 'bg-yellow-100 text-yellow-800',
+                'pagado': 'bg-blue-100 text-blue-800',
+                'asignado': 'bg-indigo-100 text-indigo-800',
+                'en_proceso': 'bg-purple-100 text-purple-800',
+                'completado': 'bg-green-100 text-green-800',
+                'cancelado': 'bg-red-100 text-red-800',
                 'pendiente_calificacion': 'bg-purple-100 text-purple-800',
                 'finalizada': 'bg-gray-100 text-gray-800',
                 'cancelada': 'bg-red-100 text-red-800'
             };
             return colores[estado] || 'bg-gray-100 text-gray-800';
         },
+
+        getEstadoBadgeClass(estado) {
+            return this.getEstadoColor(estado);
+        },
         
         getEstadoTexto(estado) {
             const textos = {
                 'pendiente': 'Pendiente',
                 'pendiente_asignacion': 'Esperando Asignación',
-                'confirmada': 'Confirmada',
-                'en_progreso': 'En Progreso',
-                'completada': 'Completada',
+                'pendiente_pago': 'Esperando Confirmación de Pago',
+                'pagado': 'Pago Confirmado - Pendiente Asignación',
+                'asignado': 'Profesional Asignado',
+                'en_proceso': 'En Progreso',
+                'completado': 'Completado',
+                'cancelado': 'Cancelado',
                 'pendiente_calificacion': 'Califica el Servicio',
                 'finalizada': 'Finalizada',
                 'cancelada': 'Cancelada'

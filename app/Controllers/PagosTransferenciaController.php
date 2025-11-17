@@ -7,9 +7,52 @@
 namespace App\Controllers;
 
 use App\Models\Solicitud;
+use App\Middleware\AuthMiddleware;
+use App\Services\Database;
 
-class PagosTransferenciaController extends BaseController
+class PagosTransferenciaController
 {
+    private $authMiddleware;
+    private $user;
+    private $db;
+
+    public function __construct()
+    {
+        $this->db = Database::getInstance()->getConnection();
+        $this->authMiddleware = new AuthMiddleware();
+    }
+
+    /**
+     * Verificar autenticación con roles específicos
+     */
+    private function requireAuth(array $roles): void
+    {
+        $this->user = $this->authMiddleware->checkRole($roles);
+        if (!$this->user) {
+            exit;
+        }
+    }
+
+    /**
+     * Enviar respuesta JSON de éxito
+     */
+    private function sendSuccess($data, int $code = 200): void
+    {
+        http_response_code($code);
+        header('Content-Type: application/json');
+        echo json_encode(array_merge(['success' => true], $data));
+    }
+
+    /**
+     * Enviar respuesta JSON de error
+     */
+    private function sendError(string $message, int $code = 400): void
+    {
+        http_response_code($code);
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => $message]);
+    }
+
     /**
      * Listar pagos pendientes de confirmación
      * GET /api/admin/pagos/pendientes
@@ -88,230 +131,6 @@ class PagosTransferenciaController extends BaseController
         } catch (\Exception $e) {
             error_log("Error obteniendo detalle de pago: " . $e->getMessage());
             $this->sendError("Error al obtener detalle del pago", 500);
-        }
-    }
-    
-    /**
-     * Aprobar pago por transferencia
-     * POST /api/admin/pagos/{id}/aprobar
-     */
-    public function aprobarPago(int $pagoId): void
-    {
-        try {
-            $this->requireAuth(['admin', 'superadmin']);
-            
-            $data = $this->getRequestData();
-            $observaciones = $data['observaciones'] ?? null;
-            
-            global $pdo;
-            $userId = $_SESSION['user_id'];
-            
-            $pdo->beginTransaction();
-            
-            // Verificar que el pago existe y está pendiente
-            $stmt = $pdo->prepare("
-                SELECT p.*, s.id as solicitud_id, s.paciente_id
-                FROM pagos p
-                INNER JOIN solicitudes s ON p.solicitud_id = s.id
-                WHERE p.id = :pago_id 
-                AND p.metodo_pago = 'transferencia'
-                AND p.estado IN ('pendiente', 'comprobante_subido')
-            ");
-            $stmt->execute(['pago_id' => $pagoId]);
-            $pago = $stmt->fetch(\PDO::FETCH_ASSOC);
-            
-            if (!$pago) {
-                $pdo->rollBack();
-                $this->sendError("Pago no encontrado o no está pendiente de aprobación", 404);
-                return;
-            }
-            
-            // Actualizar estado del pago a aprobado
-            $stmt = $pdo->prepare("
-                UPDATE pagos 
-                SET estado = 'aprobado',
-                    aprobado_por = :admin_id,
-                    fecha_aprobacion = NOW(),
-                    observaciones_admin = :observaciones
-                WHERE id = :pago_id
-            ");
-            $stmt->execute([
-                'pago_id' => $pagoId,
-                'admin_id' => $userId,
-                'observaciones' => $observaciones
-            ]);
-            
-            // Actualizar solicitud: de 'pendiente_confirmacion_pago' a 'pendiente' (listo para asignar)
-            $stmt = $pdo->prepare("
-                UPDATE solicitudes 
-                SET estado = 'pendiente',
-                    pagado = TRUE,
-                    pago_id = :pago_id
-                WHERE id = :solicitud_id
-            ");
-            $stmt->execute([
-                'solicitud_id' => $pago['solicitud_id'],
-                'pago_id' => $pagoId
-            ]);
-            
-            // Registrar en historial de estados
-            $stmt = $pdo->prepare("
-                INSERT INTO solicitud_estado_historial 
-                (solicitud_id, estado_anterior, estado_nuevo, cambiado_por, motivo)
-                VALUES (:solicitud_id, 'pendiente_confirmacion_pago', 'pendiente', :user_id, :motivo)
-            ");
-            $stmt->execute([
-                'solicitud_id' => $pago['solicitud_id'],
-                'user_id' => $userId,
-                'motivo' => 'Pago por transferencia aprobado por administrador'
-            ]);
-            
-            // Crear notificación para el paciente
-            $stmt = $pdo->prepare("
-                INSERT INTO notificaciones 
-                (user_id, from_user_id, type, title, message, action_url, created_at)
-                VALUES 
-                (:user_id, :admin_id, 'pago_aprobado', 
-                 'Pago confirmado', 
-                 'Tu pago por transferencia ha sido confirmado. Tu solicitud está siendo procesada.',
-                 '/mis-solicitudes',
-                 NOW())
-            ");
-            $stmt->execute([
-                'user_id' => $pago['paciente_id'],
-                'admin_id' => $userId
-            ]);
-            
-            $pdo->commit();
-            
-            $this->sendSuccess([
-                'message' => 'Pago aprobado exitosamente. La solicitud está lista para asignar profesional.',
-                'pago_id' => $pagoId,
-                'solicitud_id' => $pago['solicitud_id'],
-                'nuevo_estado' => 'pendiente'
-            ]);
-            
-        } catch (\Exception $e) {
-            if ($pdo->inTransaction()) {
-                $pdo->rollBack();
-            }
-            error_log("Error aprobando pago: " . $e->getMessage());
-            $this->sendError("Error al aprobar pago: " . $e->getMessage(), 500);
-        }
-    }
-    
-    /**
-     * Rechazar pago por transferencia
-     * POST /api/admin/pagos/{id}/rechazar
-     */
-    public function rechazarPago(int $pagoId): void
-    {
-        try {
-            $this->requireAuth(['admin', 'superadmin']);
-            
-            $data = $this->getRequestData();
-            
-            if (empty($data['motivo'])) {
-                $this->sendError("El motivo del rechazo es requerido", 400);
-                return;
-            }
-            
-            global $pdo;
-            $userId = $_SESSION['user_id'];
-            
-            $pdo->beginTransaction();
-            
-            // Verificar que el pago existe y está pendiente
-            $stmt = $pdo->prepare("
-                SELECT p.*, s.id as solicitud_id, s.paciente_id
-                FROM pagos p
-                INNER JOIN solicitudes s ON p.solicitud_id = s.id
-                WHERE p.id = :pago_id 
-                AND p.metodo_pago = 'transferencia'
-                AND p.estado IN ('pendiente', 'comprobante_subido')
-            ");
-            $stmt->execute(['pago_id' => $pagoId]);
-            $pago = $stmt->fetch(\PDO::FETCH_ASSOC);
-            
-            if (!$pago) {
-                $pdo->rollBack();
-                $this->sendError("Pago no encontrado o no está pendiente de revisión", 404);
-                return;
-            }
-            
-            // Actualizar estado del pago a rechazado
-            $stmt = $pdo->prepare("
-                UPDATE pagos 
-                SET estado = 'rechazado',
-                    aprobado_por = :admin_id,
-                    fecha_rechazo = NOW(),
-                    motivo_rechazo = :motivo,
-                    observaciones_admin = :observaciones
-                WHERE id = :pago_id
-            ");
-            $stmt->execute([
-                'pago_id' => $pagoId,
-                'admin_id' => $userId,
-                'motivo' => $data['motivo'],
-                'observaciones' => $data['observaciones'] ?? null
-            ]);
-            
-            // Actualizar solicitud a cancelada
-            $stmt = $pdo->prepare("
-                UPDATE solicitudes 
-                SET estado = 'cancelada',
-                    cancelado_por = :admin_id,
-                    razon_cancelacion = :razon
-                WHERE id = :solicitud_id
-            ");
-            $stmt->execute([
-                'solicitud_id' => $pago['solicitud_id'],
-                'admin_id' => $userId,
-                'razon' => 'Pago rechazado: ' . $data['motivo']
-            ]);
-            
-            // Registrar en historial
-            $stmt = $pdo->prepare("
-                INSERT INTO solicitud_estado_historial 
-                (solicitud_id, estado_anterior, estado_nuevo, cambiado_por, motivo)
-                VALUES (:solicitud_id, 'pendiente_confirmacion_pago', 'cancelada', :user_id, :motivo)
-            ");
-            $stmt->execute([
-                'solicitud_id' => $pago['solicitud_id'],
-                'user_id' => $userId,
-                'motivo' => 'Pago rechazado: ' . $data['motivo']
-            ]);
-            
-            // Notificar al paciente
-            $stmt = $pdo->prepare("
-                INSERT INTO notificaciones 
-                (user_id, from_user_id, type, title, message, action_url, created_at)
-                VALUES 
-                (:user_id, :admin_id, 'pago_rechazado', 
-                 'Pago no confirmado', 
-                 :mensaje,
-                 '/mis-solicitudes',
-                 NOW())
-            ");
-            $stmt->execute([
-                'user_id' => $pago['paciente_id'],
-                'admin_id' => $userId,
-                'mensaje' => 'Tu pago no pudo ser confirmado. Motivo: ' . $data['motivo'] . '. Por favor contacta con soporte.'
-            ]);
-            
-            $pdo->commit();
-            
-            $this->sendSuccess([
-                'message' => 'Pago rechazado. Se ha notificado al paciente.',
-                'pago_id' => $pagoId
-            ]);
-            
-        } catch (\Exception $e) {
-            if ($pdo->inTransaction()) {
-                $pdo->rollBack();
-            }
-            error_log("Error rechazando pago: " . $e->getMessage());
-            $this->sendError("Error al rechazar pago: " . $e->getMessage(), 500);
         }
     }
     
@@ -414,6 +233,196 @@ class PagosTransferenciaController extends BaseController
         } catch (\Exception $e) {
             error_log("Error subiendo comprobante: " . $e->getMessage());
             $this->sendError("Error al subir comprobante: " . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Obtener solicitudes con estado pendiente_confirmacion_pago
+     * GET /api/admin/pagos/pendientes-confirmacion
+     */
+    public function getSolicitudesPendientesConfirmacion(): void
+    {
+        try {
+            $this->requireAuth(['admin', 'superadmin']);
+            
+            $stmt = $this->db->query("
+                SELECT 
+                    s.id,
+                    s.servicio_id,
+                    s.paciente_id,
+                    s.estado,
+                    s.monto_total,
+                    s.fecha_programada,
+                    s.metodo_pago_preferido,
+                    srv.nombre as servicio_nombre,
+                    srv.tipo as servicio_tipo,
+                    u.nombre as paciente_nombre,
+                    u.telefono as paciente_telefono,
+                    u.email as paciente_email
+                FROM solicitudes s
+                INNER JOIN servicios srv ON s.servicio_id = srv.id
+                INNER JOIN usuarios u ON s.paciente_id = u.id
+                WHERE s.estado = 'pendiente_pago'
+                ORDER BY s.created_at DESC
+            ");
+            
+            $solicitudes = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            
+            $this->sendSuccess([
+                'solicitudes' => $solicitudes,
+                'total' => count($solicitudes)
+            ]);
+            
+        } catch (\Exception $e) {
+            error_log("Error obteniendo solicitudes pendientes de confirmación: " . $e->getMessage());
+            $this->sendError("Error al obtener solicitudes", 500);
+        }
+    }
+
+    /**
+     * Aprobar pago de una solicitud
+     * POST /api/admin/solicitudes/{id}/aprobar-pago
+     */
+    public function aprobarPago(int $solicitudId): void
+    {
+        try {
+            $this->requireAuth(['admin', 'superadmin']);
+            
+            // Verificar que la solicitud existe y está pendiente de confirmación
+            $stmt = $this->db->prepare("
+                SELECT id, estado, paciente_id, monto_total 
+                FROM solicitudes 
+                WHERE id = ? AND estado = 'pendiente_pago'
+            ");
+            $stmt->execute([$solicitudId]);
+            $solicitud = $stmt->fetch(\PDO::FETCH_ASSOC);
+            
+            if (!$solicitud) {
+                $this->sendError("Solicitud no encontrada o no está pendiente de confirmación", 404);
+                return;
+            }
+            
+            // Iniciar transacción
+            $this->db->beginTransaction();
+            
+            try {
+                // Actualizar estado de la solicitud a 'pagado' (lista para asignar)
+                $stmt = $this->db->prepare("
+                    UPDATE solicitudes 
+                    SET estado = 'pagado', 
+                        pagado = 1,
+                        updated_at = NOW()
+                    WHERE id = ?
+                ");
+                $stmt->execute([$solicitudId]);
+                
+                // Registrar en historial
+                $stmt = $this->db->prepare("
+                    INSERT INTO solicitud_estado_historial 
+                    (solicitud_id, estado_anterior, estado_nuevo, cambiado_por, motivo, created_at)
+                    VALUES (?, 'pendiente_confirmacion_pago', 'pendiente', ?, 'Pago aprobado por administrador', NOW())
+                ");
+                $stmt->execute([$solicitudId, $this->user->id]);
+                
+                // Crear notificación para el paciente
+                $stmt = $this->db->prepare("
+                    INSERT INTO notificaciones 
+                    (usuario_id, tipo, titulo, mensaje, created_at)
+                    VALUES (?, 'sistema', 'Pago Aprobado', 
+                            'Tu pago ha sido aprobado. Pronto asignaremos un profesional a tu solicitud.',
+                            NOW())
+                ");
+                $stmt->execute([$solicitud['paciente_id']]);
+                
+                $this->db->commit();
+                
+                $this->sendSuccess([
+                    'message' => 'Pago aprobado exitosamente. La solicitud está lista para asignar profesional.'
+                ]);
+                
+            } catch (\Exception $e) {
+                $this->db->rollBack();
+                throw $e;
+            }
+            
+        } catch (\Exception $e) {
+            error_log("Error al aprobar pago: " . $e->getMessage());
+            $this->sendError("Error al aprobar pago", 500);
+        }
+    }
+
+    /**
+     * Rechazar pago de una solicitud
+     * POST /api/admin/solicitudes/{id}/rechazar-pago
+     */
+    public function rechazarPago(int $solicitudId): void
+    {
+        try {
+            $this->requireAuth(['admin', 'superadmin']);
+            
+            $data = json_decode(file_get_contents('php://input'), true);
+            $motivo = $data['motivo'] ?? 'No especificado';
+            
+            // Verificar que la solicitud existe y está pendiente de confirmación
+            $stmt = $this->db->prepare("
+                SELECT id, estado, paciente_id 
+                FROM solicitudes 
+                WHERE id = ? AND estado = 'pendiente_confirmacion_pago'
+            ");
+            $stmt->execute([$solicitudId]);
+            $solicitud = $stmt->fetch(\PDO::FETCH_ASSOC);
+            
+            if (!$solicitud) {
+                $this->sendError("Solicitud no encontrada o no está pendiente de confirmación", 404);
+                return;
+            }
+            
+            // Iniciar transacción
+            $this->db->beginTransaction();
+            
+            try {
+                // Actualizar estado de la solicitud a 'cancelada'
+                $stmt = $this->db->prepare("
+                    UPDATE solicitudes 
+                    SET estado = 'cancelada',
+                        cancelado_por = ?,
+                        razon_cancelacion = ?,
+                        updated_at = NOW()
+                    WHERE id = ?
+                ");
+                $stmt->execute([$this->user->id, 'Pago rechazado: ' . $motivo, $solicitudId]);
+                
+                // Registrar en historial
+                $stmt = $this->db->prepare("
+                    INSERT INTO solicitud_estado_historial 
+                    (solicitud_id, estado_anterior, estado_nuevo, cambiado_por, motivo, created_at)
+                    VALUES (?, 'pendiente_confirmacion_pago', 'cancelada', ?, ?, NOW())
+                ");
+                $stmt->execute([$solicitudId, $this->user->id, 'Pago rechazado: ' . $motivo]);
+                
+                // Crear notificación para el paciente
+                $mensajeNotif = 'Tu pago ha sido rechazado. Motivo: ' . $motivo . '. Por favor contacta con soporte.';
+                $stmt = $this->db->prepare("
+                    INSERT INTO notificaciones 
+                    (usuario_id, tipo, titulo, mensaje, created_at)
+                    VALUES (?, 'sistema', 'Pago Rechazado', ?, NOW())
+                ");
+                $stmt->execute([$solicitud['paciente_id'], $mensajeNotif]);
+                
+                $this->db->commit();
+                
+                $this->sendSuccess([
+                    'message' => 'Pago rechazado. Se ha notificado al paciente.'
+                ]);
+                
+            } catch (\Exception $e) {
+                $this->db->rollBack();
+                throw $e;
+            }
+            
+        } catch (\Exception $e) {
+            error_log("Error al rechazar pago: " . $e->getMessage());
+            $this->sendError("Error al rechazar pago", 500);
         }
     }
 }

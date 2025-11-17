@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nueva Solicitud - Especialistas en Casa</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/js/auth-interceptor.js"></script>
     <script src="/js/validator.js"></script>
     <script src="/js/toast.js"></script>
     <link rel="stylesheet" href="/css/breadcrumbs.css">
@@ -129,6 +130,29 @@ window.nuevaSolicitudApp = function() {
             }
         },
 
+        obtenerServicioPorTipo(tipo) {
+            // Buscar el primer servicio activo del tipo especificado
+            return this.servicios.find(s => s.tipo === tipo && s.activo == 1) || 
+                   { id: 0, nombre: tipo, tipo: tipo, precio_base: 0 };
+        },
+        
+        // Actualizar servicio cuando cambia la modalidad
+        actualizarServicioPorModalidad() {
+            if (!this.formData.servicio_tipo) return;
+            
+            // Buscar un servicio que coincida con tipo Y modalidad
+            const servicioConModalidad = this.servicios.find(s => 
+                s.tipo === this.formData.servicio_tipo && 
+                s.modalidad === this.formData.modalidad && 
+                s.activo == 1
+            );
+            
+            if (servicioConModalidad) {
+                this.formData.servicio_id = servicioConModalidad.id;
+                this.servicioSeleccionado = servicioConModalidad;
+            }
+        },
+
         async seleccionarServicio(servicio) {
             this.formData.servicio_id = servicio.id;
             this.formData.servicio_tipo = servicio.tipo;
@@ -181,9 +205,14 @@ window.nuevaSolicitudApp = function() {
                 if (response.ok) {
                     // Mostrar mensaje personalizado según método de pago
                     if (data.metodo_pago === 'transferencia') {
-                        alert(`✅ ${data.message}\n\n📋 Datos para transferencia:\nBanco: Bancolombia\nCuenta Ahorros: 1234-5678-9012\nTitular: Especialistas en Casa SAS\nNIT: 900.123.456-7\n\n📱 Envía el comprobante al WhatsApp: +57 300 123 4567`);
+                        // Mostrar modal de transferencia si existe la utilidad
+                        if (window.transferenciaPago && data.datos_transferencia) {
+                            window.transferenciaPago.mostrarModalTransferencia(data);
+                        } else {
+                            alert(`✅ ${data.message}\n\n📱 Sube tu comprobante de pago desde "Mis Solicitudes"`);
+                        }
                     } else {
-                        alert(`✅ ${data.message}`);
+                        ToastNotification.success(data.message);
                     }
                     
                     // Redirigir después de 2 segundos
@@ -191,11 +220,16 @@ window.nuevaSolicitudApp = function() {
                         window.location.href = '/paciente/dashboard';
                     }, 2000);
                 } else {
-                    alert(data.message || 'Error al crear la solicitud');
+                    // Mostrar error detallado
+                    const errorMsg = data.error || data.message || 'Error desconocido al crear la solicitud';
+                    console.error('Error del servidor:', data);
+                    ToastNotification.error(errorMsg);
+                    alert(`❌ Error: ${errorMsg}`);
                 }
             } catch (error) {
-                console.error('Error:', error);
-                alert('Error al crear la solicitud');
+                console.error('Error de conexión:', error);
+                ToastNotification.error('Error de conexión con el servidor');
+                alert(`❌ Error de conexión: ${error.message}`);
             } finally {
                 this.loading = false;
             }
@@ -344,26 +378,6 @@ window.nuevaSolicitudApp = function() {
         </nav>
     </div>
 
-    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <button @click="volver()" class="text-gray-600 hover:text-gray-900 mr-4" title="Volver">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                        </svg>
-                    </button>
-                    <h1 class="text-xl font-semibold text-gray-900">Nueva Solicitud</h1>
-                </div>
-                
-                <div class="flex items-center">
-                    <button @click="window.location.href='/paciente/dashboard'" class="text-gray-600 hover:text-indigo-600 transition" title="Ir al inicio">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </nav>
-
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Indicador de pasos mejorado -->
         <div class="progress-steps mb-8">
@@ -444,7 +458,7 @@ window.nuevaSolicitudApp = function() {
             <!-- Categorías principales - Grid compacto -->
             <div class="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
                 <!-- MÉDICOS -->
-                <div @click="seleccionarServicio({id: 1, nombre: 'Consulta Médica', tipo: 'medico', precio_base: 80000})" 
+                <div @click="seleccionarServicio(obtenerServicioPorTipo('medico'))" 
                      class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200 border-2 border-transparent hover:border-blue-500">
                     <div class="flex flex-col items-center text-center">
                         <div class="bg-blue-600 p-4 rounded-full mb-3">
@@ -458,7 +472,7 @@ window.nuevaSolicitudApp = function() {
                 </div>
                 
                 <!-- ENFERMERÍA -->
-                <div @click="seleccionarServicio({id: 2, nombre: 'Servicio de Enfermería', tipo: 'enfermera', precio_base: 120000})" 
+                <div @click="seleccionarServicio(obtenerServicioPorTipo('enfermera'))" 
                      class="bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl p-6 cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200 border-2 border-transparent hover:border-pink-500">
                     <div class="flex flex-col items-center text-center">
                         <div class="bg-pink-600 p-4 rounded-full mb-3">
@@ -472,7 +486,7 @@ window.nuevaSolicitudApp = function() {
                 </div>
                 
                 <!-- AMBULANCIA -->
-                <div @click="seleccionarServicio({id: 3, nombre: 'Servicio de Ambulancia', tipo: 'ambulancia', precio_base: 200000})" 
+                <div @click="seleccionarServicio(obtenerServicioPorTipo('ambulancia'))" 
                      class="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-6 cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200 border-2 border-transparent hover:border-red-500">
                     <div class="flex flex-col items-center text-center">
                         <div class="bg-red-600 p-4 rounded-full mb-3">
@@ -486,7 +500,7 @@ window.nuevaSolicitudApp = function() {
                 </div>
                 
                 <!-- VETERINARIA -->
-                <div @click="seleccionarServicio({id: 4, nombre: 'Consulta Veterinaria', tipo: 'veterinario', precio_base: 70000})" 
+                <div @click="seleccionarServicio(obtenerServicioPorTipo('veterinario'))" 
                      class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200 border-2 border-transparent hover:border-green-500">
                     <div class="flex flex-col items-center text-center">
                         <div class="bg-green-600 p-4 rounded-full mb-3">
@@ -500,7 +514,7 @@ window.nuevaSolicitudApp = function() {
                 </div>
                 
                 <!-- LABORATORIO -->
-                <div @click="seleccionarServicio({id: 5, nombre: 'Exámenes de Laboratorio', tipo: 'laboratorio', precio_base: 50000})" 
+                <div @click="seleccionarServicio(obtenerServicioPorTipo('laboratorio'))" 
                      class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200 border-2 border-transparent hover:border-purple-500">
                     <div class="flex flex-col items-center text-center">
                         <div class="bg-purple-600 p-4 rounded-full mb-3">
@@ -557,14 +571,18 @@ window.nuevaSolicitudApp = function() {
                         
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Modalidad</label>
-                            <div class="grid grid-cols-2 gap-3">
+                            <div class="grid grid-cols-3 gap-3">
                                 <label class="flex items-center p-3 border-2 rounded-lg cursor-pointer" :class="formData.modalidad === 'virtual' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'">
-                                    <input type="radio" x-model="formData.modalidad" value="virtual" class="mr-2">
-                                    <span class="text-sm">💻 Telemedicina</span>
+                                    <input type="radio" x-model="formData.modalidad" value="virtual" @change="actualizarServicioPorModalidad()" class="mr-2">
+                                    <span class="text-sm">💻 Virtual</span>
                                 </label>
                                 <label class="flex items-center p-3 border-2 rounded-lg cursor-pointer" :class="formData.modalidad === 'presencial' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'">
-                                    <input type="radio" x-model="formData.modalidad" value="presencial" class="mr-2">
+                                    <input type="radio" x-model="formData.modalidad" value="presencial" @change="actualizarServicioPorModalidad()" class="mr-2">
                                     <span class="text-sm">🏠 Domicilio</span>
+                                </label>
+                                <label class="flex items-center p-3 border-2 rounded-lg cursor-pointer" :class="formData.modalidad === 'consultorio' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'">
+                                    <input type="radio" x-model="formData.modalidad" value="consultorio" @change="actualizarServicioPorModalidad()" class="mr-2">
+                                    <span class="text-sm">🏥 Consultorio</span>
                                 </label>
                             </div>
                         </div>
@@ -798,20 +816,6 @@ window.nuevaSolicitudApp = function() {
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Modalidad</label>
-                            <div class="grid grid-cols-2 gap-2">
-                                <label class="flex items-center justify-center p-2 border-2 rounded-lg cursor-pointer text-sm" :class="formData.modalidad === 'presencial' ? 'border-green-500 bg-green-50 font-semibold' : 'border-gray-300'">
-                                    <input type="radio" x-model="formData.modalidad" value="presencial" class="sr-only">
-                                    <span>🏠 Domicilio</span>
-                                </label>
-                                <label class="flex items-center justify-center p-2 border-2 rounded-lg cursor-pointer text-sm" :class="formData.modalidad === 'consultorio' ? 'border-green-500 bg-green-50 font-semibold' : 'border-gray-300'">
-                                    <input type="radio" x-model="formData.modalidad" value="consultorio" class="sr-only">
-                                    <span>🏥 Consultorio</span>
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <div x-show="formData.modalidad === 'presencial'">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Dirección *</label>
                             <input type="text" x-model="formData.direccion_servicio" placeholder="Calle 123 #45-67" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm">
                         </div>
@@ -889,7 +893,6 @@ window.nuevaSolicitudApp = function() {
                             <label class="block text-sm font-medium text-gray-700 mb-1">Método pago *</label>
                             <select x-model="formData.metodo_pago_preferido" @change="formData.metodo_pago_preferido === 'transferencia' && (paso3_mostrar_instrucciones = true)" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm">
                                 <option value="">Selecciona</option>
-                                <option value="pse">💳 PSE (Pago inmediato con MercadoPago)</option>
                                 <option value="transferencia">🏦 Transferencia (Requiere confirmación)</option>
                             </select>
                         </div>
@@ -956,10 +959,6 @@ window.nuevaSolicitudApp = function() {
                 
                 <div class="border-b pb-4">
                     <h3 class="font-semibold text-gray-900 mb-2">Método de Pago</h3>
-                    <div x-show="formData.metodo_pago_preferido === 'pse'">
-                        <p class="text-sm text-gray-600">💳 <strong>PSE con MercadoPago</strong></p>
-                        <p class="text-xs text-green-600 mt-1">✓ Pago inmediato - Tu solicitud será confirmada automáticamente</p>
-                    </div>
                     <div x-show="formData.metodo_pago_preferido === 'transferencia'" class="space-y-2">
                         <p class="text-sm text-gray-600">🏦 <strong>Transferencia Bancaria</strong></p>
                         <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">

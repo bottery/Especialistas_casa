@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Middleware\AuthMiddleware;
+use App\Services\Database;
 
 class AdminController
 {
@@ -12,8 +13,7 @@ class AdminController
 
     public function __construct($requireAuth = true)
     {
-        global $pdo;
-        $this->db = $pdo;
+        $this->db = Database::getInstance()->getConnection();
         
         // Solo verificar JWT token para endpoints API
         if ($requireAuth) {
@@ -44,14 +44,13 @@ class AdminController
                     p.email as paciente_email,
                     p.telefono as paciente_telefono,
                     CASE 
-                        WHEN s.metodo_pago_preferido = 'pse' THEN 'Confirmado'
                         WHEN s.pagado = TRUE THEN 'Confirmado'
                         ELSE 'Pendiente confirmación'
                     END as estado_pago
                 FROM solicitudes s
                 INNER JOIN servicios srv ON s.servicio_id = srv.id
                 INNER JOIN usuarios p ON s.paciente_id = p.id
-                WHERE s.estado = 'pendiente_asignacion'
+                WHERE s.estado = 'pagado' AND s.profesional_id IS NULL
                 ORDER BY s.created_at DESC
             ");
             
@@ -68,6 +67,49 @@ class AdminController
     }
 
     /**
+     * Obtener solicitudes en proceso (asignadas pero no completadas)
+     */
+    public function getSolicitudesEnProceso(): void
+    {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT 
+                    s.*,
+                    srv.nombre as servicio_nombre,
+                    srv.tipo as servicio_tipo,
+                    srv.precio_base,
+                    p.nombre as paciente_nombre,
+                    p.apellido as paciente_apellido,
+                    p.email as paciente_email,
+                    p.telefono as paciente_telefono,
+                    p.documento_numero as paciente_documento,
+                    prof.nombre as profesional_nombre,
+                    prof.apellido as profesional_apellido,
+                    prof.email as profesional_email,
+                    prof.telefono as profesional_telefono,
+                    prof.especialidad as profesional_especialidad,
+                    5.0 as calificacion_promedio
+                FROM solicitudes s
+                INNER JOIN servicios srv ON s.servicio_id = srv.id
+                INNER JOIN usuarios p ON s.paciente_id = p.id
+                INNER JOIN usuarios prof ON s.profesional_id = prof.id
+                WHERE s.estado IN ('asignado', 'en_proceso')
+                ORDER BY s.fecha_programada ASC, s.created_at DESC
+            ");
+            
+            $stmt->execute();
+            $solicitudes = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            
+            $this->sendSuccess([
+                'solicitudes' => $solicitudes
+            ]);
+        } catch (\Exception $e) {
+            error_log("Error al obtener solicitudes en proceso: " . $e->getMessage());
+            $this->sendError("Error al cargar solicitudes en proceso", 500);
+        }
+    }
+
+    /**
      * Obtener profesionales disponibles y rankeados para un servicio
      */
     public function getProfesionalesDisponibles(): void
@@ -80,6 +122,29 @@ class AdminController
                 $this->sendError("servicio_id es requerido", 400);
                 return;
             }
+            
+            // Obtener el tipo de servicio para determinar qué rol buscar
+            $stmt = $this->db->prepare("SELECT tipo FROM servicios WHERE id = ?");
+            $stmt->execute([$servicioId]);
+            $servicio = $stmt->fetch(\PDO::FETCH_ASSOC);
+            
+            if (!$servicio) {
+                $this->sendError("Servicio no encontrado", 404);
+                return;
+            }
+            
+            $tipoServicio = $servicio['tipo'];
+            
+            // Mapear tipo de servicio a rol de usuario
+            $rolMap = [
+                'ambulancia' => 'ambulancia',
+                'medico' => 'medico',
+                'enfermera' => 'enfermera',
+                'veterinario' => 'veterinario',
+                'laboratorio' => 'laboratorio'
+            ];
+            
+            $rol = $rolMap[$tipoServicio] ?? 'medico';
 
             // Obtener profesionales con ranking por calificación y servicios completados
             $query = "
@@ -89,32 +154,26 @@ class AdminController
                     u.apellido,
                     u.email,
                     u.telefono,
+                    u.ciudad,
+                    u.rol,
+                    u.especialidad,
                     u.puntuacion_promedio,
                     u.total_calificaciones,
-                    u.servicios_completados,
-                    ps.experiencia_anos,
-                    ps.certificaciones,
-                    GROUP_CONCAT(DISTINCT srv.nombre SEPARATOR ', ') as servicios
+                    u.servicios_completados
                 FROM usuarios u
-                INNER JOIN profesional_servicios ps ON u.id = ps.profesional_id
-                INNER JOIN servicios srv ON ps.servicio_id = srv.id
-                WHERE u.rol = 'profesional' 
-                    AND u.activo = TRUE
-                    AND ps.servicio_id = :servicio_id
+                WHERE u.rol = :rol
+                    AND u.estado = 'activo'
             ";
             
-            $params = ['servicio_id' => $servicioId];
+            $params = ['rol' => $rol];
             
-            // Filtro adicional por especialidad si es proporcionado
-            if ($especialidad) {
-                $query .= " AND ps.especialidad LIKE :especialidad";
+            // Filtro adicional por especialidad si es proporcionado (excepto para ambulancias)
+            if ($especialidad && $rol !== 'ambulancia') {
+                $query .= " AND u.especialidad LIKE :especialidad";
                 $params['especialidad'] = "%{$especialidad}%";
             }
             
             $query .= "
-                GROUP BY u.id, u.nombre, u.apellido, u.email, u.telefono, 
-                         u.puntuacion_promedio, u.total_calificaciones, u.servicios_completados,
-                         ps.experiencia_anos, ps.certificaciones
                 ORDER BY u.puntuacion_promedio DESC, u.servicios_completados DESC, u.total_calificaciones DESC
             ";
             
@@ -124,7 +183,9 @@ class AdminController
             
             $this->sendSuccess([
                 'profesionales' => $profesionales,
-                'total' => count($profesionales)
+                'total' => count($profesionales),
+                'tipo_servicio' => $tipoServicio,
+                'rol_requerido' => $rol
             ]);
         } catch (\Exception $e) {
             error_log("Error al obtener profesionales: " . $e->getMessage());
@@ -148,10 +209,10 @@ class AdminController
                 return;
             }
 
-            // Verificar que la solicitud existe y está pendiente de asignación
+            // Verificar que la solicitud existe y está pagada sin asignar
             $stmt = $this->db->prepare("
                 SELECT * FROM solicitudes 
-                WHERE id = :id AND estado = 'pendiente_asignacion'
+                WHERE id = :id AND estado = 'pagado' AND profesional_id IS NULL
             ");
             $stmt->execute(['id' => $solicitudId]);
             $solicitud = $stmt->fetch(\PDO::FETCH_ASSOC);
@@ -163,9 +224,11 @@ class AdminController
 
             // Verificar que el profesional existe y está activo
             $stmt = $this->db->prepare("
-                SELECT id, nombre, apellido, activo 
+                SELECT id, nombre, apellido, rol, estado 
                 FROM usuarios 
-                WHERE id = :id AND rol = 'profesional' AND activo = TRUE
+                WHERE id = :id 
+                AND rol IN ('medico', 'enfermera', 'veterinario', 'laboratorio', 'ambulancia')
+                AND estado = 'activo'
             ");
             $stmt->execute(['id' => $profesionalId]);
             $profesional = $stmt->fetch(\PDO::FETCH_ASSOC);
@@ -179,11 +242,11 @@ class AdminController
             $this->db->beginTransaction();
 
             try {
-                // Actualizar solicitud con profesional asignado
+                // Actualizar solicitud con profesional asignado y cambiar estado a 'asignado'
                 $stmt = $this->db->prepare("
                     UPDATE solicitudes 
                     SET profesional_id = :profesional_id,
-                        estado = 'pendiente',
+                        estado = 'asignado',
                         updated_at = CURRENT_TIMESTAMP
                     WHERE id = :id
                 ");
@@ -193,23 +256,33 @@ class AdminController
                     'profesional_id' => $profesionalId
                 ]);
 
-                // Registrar asignación en tabla de auditoría
+                // Registrar en historial de estados
                 $stmt = $this->db->prepare("
-                    INSERT INTO asignaciones_profesional 
-                    (solicitud_id, profesional_id, asignado_por, motivo, fecha_asignacion)
-                    VALUES (:solicitud_id, :profesional_id, :asignado_por, :motivo, CURRENT_TIMESTAMP)
+                    INSERT INTO solicitud_estado_historial 
+                    (solicitud_id, estado_anterior, estado_nuevo, cambiado_por, motivo, created_at)
+                    VALUES (:solicitud_id, 'pendiente', 'confirmada', :asignado_por, :motivo, NOW())
                 ");
                 
                 $stmt->execute([
                     'solicitud_id' => $solicitudId,
-                    'profesional_id' => $profesionalId,
                     'asignado_por' => $this->user->id,
-                    'motivo' => $motivo
+                    'motivo' => $motivo ?: 'Profesional asignado por administrador'
+                ]);
+
+                // Crear notificación para el paciente
+                $stmt = $this->db->prepare("
+                    INSERT INTO notificaciones 
+                    (usuario_id, tipo, titulo, mensaje, created_at)
+                    VALUES (:usuario_id, 'sistema', 'Profesional Asignado', :mensaje, NOW())
+                ");
+                
+                $mensajeNotif = 'Se ha asignado un profesional a tu solicitud. Te contactaremos pronto.';
+                $stmt->execute([
+                    'usuario_id' => $solicitud['paciente_id'],
+                    'mensaje' => $mensajeNotif
                 ]);
 
                 $this->db->commit();
-
-                // TODO: Enviar notificación al profesional asignado
 
                 $this->sendSuccess([
                     'message' => 'Profesional asignado exitosamente',
@@ -235,19 +308,19 @@ class AdminController
     public function getStats(): void
     {
         try {
-            // Solicitudes pendientes de asignación
+            // Solicitudes pendientes de asignación (pagadas sin profesional)
             $stmt = $this->db->query("
                 SELECT COUNT(*) as total 
                 FROM solicitudes 
-                WHERE estado = 'pendiente_asignacion'
+                WHERE estado = 'pagado' AND profesional_id IS NULL
             ");
             $pendientesAsignacion = $stmt->fetch(\PDO::FETCH_ASSOC)['total'];
 
-            // Solicitudes en proceso
+            // Solicitudes en proceso (asignadas o en ejecución)
             $stmt = $this->db->query("
                 SELECT COUNT(*) as total 
                 FROM solicitudes 
-                WHERE estado IN ('pendiente', 'confirmada', 'en_progreso')
+                WHERE estado IN ('asignado', 'en_proceso')
             ");
             $enProceso = $stmt->fetch(\PDO::FETCH_ASSOC)['total'];
 
@@ -255,16 +328,16 @@ class AdminController
             $stmt = $this->db->query("
                 SELECT COUNT(*) as total 
                 FROM solicitudes 
-                WHERE estado = 'finalizada' 
-                AND DATE(fecha_completada) = CURDATE()
+                WHERE estado = 'completado'
+                AND DATE(updated_at) = CURDATE()
             ");
             $completadasHoy = $stmt->fetch(\PDO::FETCH_ASSOC)['total'];
 
-            // Ingresos totales del mes
+            // Ingresos totales del mes (todas las solicitudes con pago confirmado)
             $stmt = $this->db->query("
                 SELECT COALESCE(SUM(monto_total), 0) as total 
                 FROM solicitudes 
-                WHERE estado IN ('finalizada', 'pendiente_calificacion')
+                WHERE pagado = 1
                 AND MONTH(created_at) = MONTH(CURDATE())
                 AND YEAR(created_at) = YEAR(CURDATE())
             ");
@@ -274,7 +347,8 @@ class AdminController
             $stmt = $this->db->query("
                 SELECT COUNT(*) as total 
                 FROM usuarios 
-                WHERE rol = 'profesional' AND activo = TRUE
+                WHERE rol IN ('medico', 'enfermera', 'veterinario', 'laboratorio', 'ambulancia')
+                AND estado = 'activo'
             ");
             $profesionalesActivos = $stmt->fetch(\PDO::FETCH_ASSOC)['total'];
 
@@ -317,6 +391,219 @@ class AdminController
         
         require_once __DIR__ . '/../../resources/views/admin/dashboard.php';
         exit;
+    }
+
+    /**
+     * Obtener lista de reportes de servicios completados
+     */
+    public function obtenerReportes(): void
+    {
+        try {
+            // Filtros opcionales
+            $fecha_desde = $_GET['fecha_desde'] ?? null;
+            $fecha_hasta = $_GET['fecha_hasta'] ?? null;
+            $profesional_id = $_GET['profesional_id'] ?? null;
+            $calificado = $_GET['calificado'] ?? null;
+            $estado = $_GET['estado'] ?? 'completado';
+            
+            $query = "
+                SELECT 
+                    s.id,
+                    s.fecha_programada,
+                    s.fecha_completada,
+                    s.estado,
+                    s.calificado,
+                    s.calificacion_paciente,
+                    s.comentario_paciente,
+                    s.fecha_calificacion,
+                    s.reporte_profesional,
+                    s.diagnostico,
+                    s.resultado as notas_adicionales,
+                    p.nombre as paciente_nombre,
+                    p.apellido as paciente_apellido,
+                    p.email as paciente_email,
+                    p.telefono as paciente_telefono,
+                    prof.nombre as profesional_nombre,
+                    prof.apellido as profesional_apellido,
+                    prof.tipo_profesional,
+                    prof.especialidad,
+                    prof.puntuacion_promedio,
+                    prof.total_calificaciones,
+                    srv.nombre as servicio_nombre,
+                    srv.tipo as servicio_tipo,
+                    s.modalidad,
+                    s.monto_total,
+                    s.monto_profesional,
+                    s.monto_plataforma
+                FROM solicitudes s
+                INNER JOIN usuarios p ON s.paciente_id = p.id
+                INNER JOIN usuarios prof ON s.profesional_id = prof.id
+                INNER JOIN servicios srv ON s.servicio_id = srv.id
+                WHERE s.estado = 'completado' AND s.fecha_completada IS NOT NULL
+            ";
+            
+            $params = [];
+            
+            if ($fecha_desde) {
+                $query .= " AND DATE(s.fecha_completada) >= :fecha_desde";
+                $params['fecha_desde'] = $fecha_desde;
+            }
+            
+            if ($fecha_hasta) {
+                $query .= " AND DATE(s.fecha_completada) <= :fecha_hasta";
+                $params['fecha_hasta'] = $fecha_hasta;
+            }
+            
+            if ($profesional_id) {
+                $query .= " AND s.profesional_id = :profesional_id";
+                $params['profesional_id'] = $profesional_id;
+            }
+            
+            if ($calificado !== null) {
+                $query .= " AND s.calificado = :calificado";
+                $params['calificado'] = (bool)$calificado;
+            }
+            
+            if ($estado && $estado !== 'todos') {
+                $query .= " AND s.estado = :estado";
+                $params['estado'] = $estado;
+            }
+            
+            $query .= " ORDER BY s.fecha_completada DESC LIMIT 100";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->execute($params);
+            $reportes = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            
+            // Calcular estadísticas adicionales
+            $stats = [
+                'total' => count($reportes),
+                'con_calificacion' => 0,
+                'sin_calificacion' => 0,
+                'promedio_calificacion' => 0,
+                'total_ingresos' => 0
+            ];
+            
+            $suma_calificaciones = 0;
+            foreach ($reportes as $reporte) {
+                if ($reporte['calificado']) {
+                    $stats['con_calificacion']++;
+                    $suma_calificaciones += $reporte['calificacion_paciente'];
+                } else {
+                    $stats['sin_calificacion']++;
+                }
+                $stats['total_ingresos'] += $reporte['monto_total'];
+            }
+            
+            if ($stats['con_calificacion'] > 0) {
+                $stats['promedio_calificacion'] = round($suma_calificaciones / $stats['con_calificacion'], 2);
+            }
+            
+            $this->sendSuccess([
+                'reportes' => $reportes,
+                'estadisticas' => $stats
+            ]);
+        } catch (\Exception $e) {
+            error_log("Error al obtener reportes: " . $e->getMessage());
+            $this->sendError("Error al obtener reportes", 500);
+        }
+    }
+
+    /**
+     * Ver reporte detallado de un servicio específico
+     */
+    public function verReporte(int $solicitudId): void
+    {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT 
+                    s.*,
+                    p.nombre as paciente_nombre,
+                    p.apellido as paciente_apellido,
+                    p.email as paciente_email,
+                    p.telefono as paciente_telefono,
+                    p.puntuacion_promedio_paciente,
+                    p.total_calificaciones_paciente,
+                    prof.nombre as profesional_nombre,
+                    prof.apellido as profesional_apellido,
+                    prof.tipo_profesional,
+                    prof.especialidad,
+                    prof.puntuacion_promedio,
+                    prof.total_calificaciones,
+                    prof.servicios_completados,
+                    srv.nombre as servicio_nombre,
+                    srv.tipo as servicio_tipo,
+                    srv.descripcion as servicio_descripcion
+                FROM solicitudes s
+                INNER JOIN usuarios p ON s.paciente_id = p.id
+                INNER JOIN usuarios prof ON s.profesional_id = prof.id
+                INNER JOIN servicios srv ON s.servicio_id = srv.id
+                WHERE s.id = :id AND s.estado = 'completado' AND s.fecha_completada IS NOT NULL
+            ");
+            
+            $stmt->execute(['id' => $solicitudId]);
+            $solicitud = $stmt->fetch(\PDO::FETCH_ASSOC);
+            
+            if (!$solicitud) {
+                $this->sendError("Reporte no encontrado", 404);
+                return;
+            }
+            
+            $this->sendSuccess([
+                'reporte' => [
+                    'solicitud_id' => $solicitud['id'],
+                    'estado' => $solicitud['estado'],
+                    'fecha_solicitud' => $solicitud['fecha_solicitud'],
+                    'fecha_programada' => $solicitud['fecha_programada'],
+                    'fecha_completada' => $solicitud['fecha_completada'],
+                    'paciente' => [
+                        'nombre' => $solicitud['paciente_nombre'] . ' ' . $solicitud['paciente_apellido'],
+                        'email' => $solicitud['paciente_email'],
+                        'telefono' => $solicitud['paciente_telefono'],
+                        'puntuacion_promedio' => $solicitud['puntuacion_promedio_paciente'],
+                        'total_calificaciones' => $solicitud['total_calificaciones_paciente']
+                    ],
+                    'profesional' => [
+                        'nombre' => $solicitud['profesional_nombre'] . ' ' . $solicitud['profesional_apellido'],
+                        'tipo' => $solicitud['tipo_profesional'],
+                        'especialidad' => $solicitud['especialidad'],
+                        'puntuacion_promedio' => $solicitud['puntuacion_promedio'],
+                        'total_calificaciones' => $solicitud['total_calificaciones'],
+                        'servicios_completados' => $solicitud['servicios_completados']
+                    ],
+                    'servicio' => [
+                        'nombre' => $solicitud['servicio_nombre'],
+                        'tipo' => $solicitud['servicio_tipo'],
+                        'descripcion' => $solicitud['servicio_descripcion'],
+                        'modalidad' => $solicitud['modalidad']
+                    ],
+                    'reporte_profesional' => $solicitud['reporte_profesional'],
+                    'diagnostico' => $solicitud['diagnostico'],
+                    'notas_adicionales' => $solicitud['resultado'],
+                    'finanzas' => [
+                        'monto_total' => $solicitud['monto_total'],
+                        'monto_profesional' => $solicitud['monto_profesional'],
+                        'monto_plataforma' => $solicitud['monto_plataforma'],
+                        'pagado' => (bool)$solicitud['pagado']
+                    ],
+                    'calificacion_paciente_a_profesional' => [
+                        'calificado' => (bool)$solicitud['calificado'],
+                        'puntuacion' => $solicitud['calificacion_paciente'],
+                        'comentario' => $solicitud['comentario_paciente'],
+                        'fecha' => $solicitud['fecha_calificacion']
+                    ],
+                    'calificacion_profesional_a_paciente' => [
+                        'calificado' => !is_null($solicitud['calificacion_profesional']),
+                        'puntuacion' => $solicitud['calificacion_profesional'],
+                        'comentario' => $solicitud['comentario_profesional'],
+                        'fecha' => $solicitud['fecha_calificacion_profesional']
+                    ]
+                ]
+            ]);
+        } catch (\Exception $e) {
+            error_log("Error al ver reporte: " . $e->getMessage());
+            $this->sendError("Error al obtener el reporte", 500);
+        }
     }
 
     /**

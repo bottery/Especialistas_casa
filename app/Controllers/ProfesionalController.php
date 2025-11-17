@@ -2,24 +2,28 @@
 
 namespace App\Controllers;
 
+use App\Core\BaseController;
 use App\Models\Solicitud;
 use App\Middleware\AuthMiddleware;
+use App\Services\Database;
 
 /**
  * Controlador de Profesional
  */
-class ProfesionalController
+class ProfesionalController extends BaseController
 {
     private $solicitudModel;
     private $authMiddleware;
     private $user;
+    private $db;
 
     public function __construct()
     {
+        $this->db = Database::getInstance()->getConnection();
         $this->solicitudModel = new Solicitud();
         $this->authMiddleware = new AuthMiddleware();
         
-        // Verificar autenticación
+        // Verificar autenticación para rol 'profesional' (incluye todos los especialistas)
         $this->user = $this->authMiddleware->checkRole(['profesional']);
         if (!$this->user) {
             exit;
@@ -32,14 +36,11 @@ class ProfesionalController
     public function getStats(): void
     {
         try {
-            global $pdo;
-            
-            $stmt = $pdo->prepare("
+            $stmt = $this->db->prepare("
                 SELECT 
-                    COUNT(CASE WHEN estado = 'pendiente' AND (pagado = TRUE OR metodo_pago_preferido = 'pse') THEN 1 END) as solicitudesPendientes,
-                    COUNT(CASE WHEN estado IN ('confirmada', 'en_progreso') THEN 1 END) as solicitudesEnProgreso,
-                    COUNT(CASE WHEN estado = 'completada' THEN 1 END) as solicitudesCompletadas,
-                    COALESCE(SUM(CASE WHEN estado = 'completada' AND MONTH(fecha_completada) = MONTH(CURDATE()) AND YEAR(fecha_completada) = YEAR(CURDATE()) THEN monto_profesional END), 0) as ingresosDelMes
+                    COUNT(CASE WHEN estado = 'asignado' THEN 1 END) as solicitudesPendientes,
+                    COUNT(CASE WHEN estado = 'en_proceso' THEN 1 END) as solicitudesEnProgreso,
+                    COUNT(CASE WHEN estado = 'completado' THEN 1 END) as solicitudesCompletadas
                 FROM solicitudes
                 WHERE profesional_id = :profesional_id
             ");
@@ -60,9 +61,7 @@ class ProfesionalController
     public function getSolicitudes(): void
     {
         try {
-            global $pdo;
-            
-            $stmt = $pdo->prepare("
+            $stmt = $this->db->prepare("
                 SELECT 
                     s.*,
                     srv.nombre as servicio_nombre,
@@ -77,9 +76,9 @@ class ProfesionalController
                 WHERE s.profesional_id = :profesional_id
                 ORDER BY 
                     CASE s.estado
-                        WHEN 'pendiente' THEN 1
-                        WHEN 'confirmada' THEN 2
-                        WHEN 'en_progreso' THEN 3
+                        WHEN 'asignado' THEN 1
+                        WHEN 'en_proceso' THEN 2
+                        WHEN 'completado' THEN 3
                         ELSE 4
                     END,
                     s.fecha_programada ASC
@@ -106,12 +105,10 @@ class ProfesionalController
     public function aceptarSolicitud(int $solicitudId): void
     {
         try {
-            global $pdo;
-            
             // Verificar que la solicitud existe y pertenece al profesional
-            $stmt = $pdo->prepare("
+            $stmt = $this->db->prepare("
                 SELECT * FROM solicitudes 
-                WHERE id = :id AND profesional_id = :profesional_id AND estado = 'pendiente'
+                WHERE id = :id AND profesional_id = :profesional_id AND estado = 'asignado'
             ");
             $stmt->execute([
                 'id' => $solicitudId,
@@ -121,20 +118,20 @@ class ProfesionalController
             $solicitud = $stmt->fetch(\PDO::FETCH_ASSOC);
             
             if (!$solicitud) {
-                $this->sendError("Solicitud no encontrada o no está pendiente", 404);
+                $this->sendError("Solicitud no encontrada o no está asignada a ti", 404);
                 return;
             }
 
-            // Verificar que el pago esté confirmado (PSE o transferencia aprobada)
-            if (!$solicitud['pagado'] && $solicitud['metodo_pago_preferido'] !== 'pse') {
+            // Verificar que el pago esté confirmado
+            if (!$solicitud['pagado']) {
                 $this->sendError("Esta solicitud requiere confirmación de pago antes de ser aceptada", 400);
                 return;
             }
             
-            // Actualizar estado
-            $stmt = $pdo->prepare("
+            // Actualizar estado a en_proceso (el profesional acepta e inicia el servicio)
+            $stmt = $this->db->prepare("
                 UPDATE solicitudes 
-                SET estado = 'confirmada',
+                SET estado = 'en_proceso',
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = :id
             ");
@@ -162,10 +159,8 @@ class ProfesionalController
             $data = json_decode(file_get_contents('php://input'), true);
             $motivo = $data['motivo'] ?? 'Sin motivo especificado';
             
-            global $pdo;
-            
             // Verificar que la solicitud existe y pertenece al profesional
-            $stmt = $pdo->prepare("
+            $stmt = $this->db->prepare("
                 SELECT * FROM solicitudes 
                 WHERE id = :id AND profesional_id = :profesional_id AND estado = 'pendiente'
             ");
@@ -175,12 +170,12 @@ class ProfesionalController
             ]);
             
             if (!$stmt->fetch()) {
-                $this->sendError("Solicitud no encontrada o no está pendiente", 404);
+                $this->sendError("Solicitud no encontrada o no está asignada", 404);
                 return;
             }
             
             // Actualizar estado
-            $stmt = $pdo->prepare("
+            $stmt = $this->db->prepare("
                 UPDATE solicitudes 
                 SET estado = 'rechazada',
                     razon_cancelacion = :motivo,
@@ -208,63 +203,20 @@ class ProfesionalController
     }
 
     /**
-     * Iniciar un servicio
-     */
-    public function iniciarServicio(int $solicitudId): void
-    {
-        try {
-            global $pdo;
-            
-            // Verificar que la solicitud existe, pertenece al profesional y está confirmada
-            $stmt = $pdo->prepare("
-                SELECT * FROM solicitudes 
-                WHERE id = :id AND profesional_id = :profesional_id AND estado = 'confirmada'
-            ");
-            $stmt->execute([
-                'id' => $solicitudId,
-                'profesional_id' => $this->user->id
-            ]);
-            
-            if (!$stmt->fetch()) {
-                $this->sendError("Solicitud no encontrada o no está confirmada", 404);
-                return;
-            }
-            
-            // Actualizar estado
-            $stmt = $pdo->prepare("
-                UPDATE solicitudes 
-                SET estado = 'en_progreso',
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = :id
-            ");
-            
-            $stmt->execute(['id' => $solicitudId]);
-            
-            $this->sendSuccess([
-                'message' => 'Servicio iniciado exitosamente',
-                'solicitud_id' => $solicitudId
-            ]);
-        } catch (\Exception $e) {
-            error_log("Error al iniciar servicio: " . $e->getMessage());
-            $this->sendError("Error al procesar la solicitud", 500);
-        }
-    }
-
-    /**
      * Completar un servicio
      */
     public function completarServicio(int $solicitudId): void
     {
         try {
             $data = json_decode(file_get_contents('php://input'), true);
+            $reporte = $data['reporte'] ?? '';
+            $diagnostico = $data['diagnostico'] ?? '';
             $notas = $data['notas'] ?? '';
             
-            global $pdo;
-            
-            // Verificar que la solicitud existe, pertenece al profesional y está en progreso
-            $stmt = $pdo->prepare("
+            // Verificar que la solicitud existe, pertenece al profesional y está en proceso
+            $stmt = $this->db->prepare("
                 SELECT * FROM solicitudes 
-                WHERE id = :id AND profesional_id = :profesional_id AND estado = 'en_progreso'
+                WHERE id = :id AND profesional_id = :profesional_id AND estado = 'en_proceso'
             ");
             $stmt->execute([
                 'id' => $solicitudId,
@@ -274,42 +226,40 @@ class ProfesionalController
             $solicitud = $stmt->fetch(\PDO::FETCH_ASSOC);
             
             if (!$solicitud) {
-                $this->sendError("Solicitud no encontrada o no está en progreso", 404);
+                $this->sendError("Solicitud no encontrada o no está en proceso", 404);
                 return;
             }
             
-            // Calcular montos (80% para profesional, 20% para plataforma)
-            $montoTotal = $solicitud['monto_total'];
-            $montoProfesional = $montoTotal * 0.80;
-            $montoPlataforma = $montoTotal * 0.20;
+            // Actualizar profesional: incrementar servicios completados
+            $stmtProf = $this->db->prepare("
+                UPDATE usuarios 
+                SET servicios_completados = servicios_completados + 1
+                WHERE id = :id
+            ");
+            $stmtProf->execute(['id' => $this->user->id]);
             
-            // Actualizar estado a pendiente_calificacion (requiere calificación del paciente)
-            $stmt = $pdo->prepare("
+            // Actualizar estado a completado con reporte profesional
+            $stmt = $this->db->prepare("
                 UPDATE solicitudes 
-                SET estado = 'pendiente_calificacion',
+                SET estado = 'completado',
+                    reporte_profesional = :reporte,
+                    diagnostico = :diagnostico,
                     resultado = :notas,
-                    monto_profesional = :monto_profesional,
-                    monto_plataforma = :monto_plataforma,
                     fecha_completada = CURRENT_TIMESTAMP,
-                    calificado = FALSE,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = :id
             ");
             
             $stmt->execute([
                 'id' => $solicitudId,
-                'notas' => $notas,
-                'monto_profesional' => $montoProfesional,
-                'monto_plataforma' => $montoPlataforma
+                'reporte' => $reporte,
+                'diagnostico' => $diagnostico,
+                'notas' => $notas
             ]);
             
-            // Notificar al paciente que debe calificar el servicio
-            
             $this->sendSuccess([
-                'message' => 'Servicio completado. El paciente debe calificar antes de finalizar.',
-                'solicitud_id' => $solicitudId,
-                'monto_profesional' => $montoProfesional,
-                'estado' => 'pendiente_calificacion'
+                'message' => 'Servicio completado exitosamente. El paciente ahora puede calificarte.',
+                'solicitud_id' => $solicitudId
             ]);
         } catch (\Exception $e) {
             error_log("Error al completar servicio: " . $e->getMessage());
@@ -318,27 +268,144 @@ class ProfesionalController
     }
 
     /**
-     * Enviar respuesta exitosa
+     * Calificar al paciente después de completar el servicio
      */
-    private function sendSuccess(array $data, int $statusCode = 200): void
+    public function calificarPaciente(int $solicitudId): void
     {
-        http_response_code($statusCode);
-        header('Content-Type: application/json');
-        echo json_encode(array_merge(['success' => true], $data));
-        exit;
+        try {
+            $data = json_decode(file_get_contents('php://input'), true);
+            
+            $calificacion = $data['calificacion'] ?? null;
+            $comentario = $data['comentario'] ?? '';
+            
+            // Validar calificación
+            if (!$calificacion || $calificacion < 1 || $calificacion > 5) {
+                $this->sendError("La calificación debe estar entre 1 y 5", 400);
+                return;
+            }
+            
+            // Verificar que la solicitud existe, pertenece al profesional y está completada
+            $stmt = $this->db->prepare("
+                SELECT s.*, u.id as paciente_id, u.nombre, u.apellido
+                FROM solicitudes s
+                INNER JOIN usuarios u ON s.paciente_id = u.id
+                WHERE s.id = :id 
+                    AND s.profesional_id = :profesional_id 
+                    AND s.estado = 'completado'
+                    AND s.calificacion_profesional IS NULL
+            ");
+            
+            $stmt->execute([
+                'id' => $solicitudId,
+                'profesional_id' => $this->user->id
+            ]);
+            
+            $solicitud = $stmt->fetch(\PDO::FETCH_ASSOC);
+            
+            if (!$solicitud) {
+                $this->sendError("Solicitud no encontrada o ya calificaste a este paciente", 404);
+                return;
+            }
+
+            // Iniciar transacción
+            $this->db->beginTransaction();
+
+            try {
+                // Guardar calificación del profesional al paciente
+                $stmt = $this->db->prepare("
+                    UPDATE solicitudes 
+                    SET calificacion_profesional = :calificacion,
+                        comentario_profesional = :comentario,
+                        fecha_calificacion_profesional = CURRENT_TIMESTAMP,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = :id
+                ");
+                
+                $stmt->execute([
+                    'id' => $solicitudId,
+                    'calificacion' => $calificacion,
+                    'comentario' => $comentario
+                ]);
+
+                // Recalcular puntuación promedio del paciente
+                $stmt = $this->db->prepare("
+                    SELECT 
+                        AVG(calificacion_profesional) as promedio,
+                        COUNT(*) as total
+                    FROM solicitudes 
+                    WHERE paciente_id = :paciente_id 
+                        AND calificacion_profesional IS NOT NULL
+                ");
+                
+                $stmt->execute(['paciente_id' => $solicitud['paciente_id']]);
+                $stats = $stmt->fetch(\PDO::FETCH_ASSOC);
+                
+                // Actualizar estadísticas del paciente
+                $stmt = $this->db->prepare("
+                    UPDATE usuarios 
+                    SET puntuacion_promedio_paciente = :promedio,
+                        total_calificaciones_paciente = :total
+                    WHERE id = :id
+                ");
+                
+                $stmt->execute([
+                    'id' => $solicitud['paciente_id'],
+                    'promedio' => round($stats['promedio'], 2),
+                    'total' => $stats['total']
+                ]);
+
+                $this->db->commit();
+
+                $this->sendSuccess([
+                    'message' => '✅ Gracias por tu evaluación del paciente',
+                    'solicitud_id' => $solicitudId,
+                    'puntuacion_paciente' => round($stats['promedio'], 2)
+                ]);
+            } catch (\Exception $e) {
+                $this->db->rollback();
+                throw $e;
+            }
+        } catch (\Exception $e) {
+            error_log("Error al calificar paciente: " . $e->getMessage());
+            $this->sendError("Error al procesar la calificación", 500);
+        }
     }
 
     /**
-     * Enviar respuesta de error
+     * Obtener servicios pendientes de calificar al paciente
      */
-    private function sendError(string $message, int $statusCode = 400): void
+    public function getServiciosPendientesCalificarPaciente(): void
     {
-        http_response_code($statusCode);
-        header('Content-Type: application/json');
-        echo json_encode([
-            'success' => false,
-            'message' => $message
-        ]);
-        exit;
+        try {
+            $stmt = $this->db->prepare("
+                SELECT 
+                    s.id,
+                    s.fecha_completada,
+                    s.servicio_id,
+                    srv.nombre as servicio_nombre,
+                    u.nombre as paciente_nombre,
+                    u.apellido as paciente_apellido,
+                    u.puntuacion_promedio_paciente,
+                    u.total_calificaciones_paciente
+                FROM solicitudes s
+                INNER JOIN servicios srv ON s.servicio_id = srv.id
+                INNER JOIN usuarios u ON s.paciente_id = u.id
+                WHERE s.profesional_id = :profesional_id
+                    AND s.estado = 'completado'
+                    AND s.calificacion_profesional IS NULL
+                ORDER BY s.fecha_completada DESC
+            ");
+            
+            $stmt->execute(['profesional_id' => $this->user->id]);
+            $pendientes = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            
+            $this->sendSuccess([
+                'pendientes' => $pendientes,
+                'total' => count($pendientes)
+            ]);
+        } catch (\Exception $e) {
+            error_log("Error al obtener servicios pendientes: " . $e->getMessage());
+            $this->sendError("Error al cargar datos", 500);
+        }
     }
 }

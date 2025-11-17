@@ -104,7 +104,7 @@ class Solicitud extends Model
     {
         $updated = $this->update($solicitudId, [
             'profesional_id' => $profesionalId,
-            'estado' => 'confirmada'
+            'estado' => 'asignado'
         ]);
         return $updated > 0;
     }
@@ -114,7 +114,7 @@ class Solicitud extends Model
      */
     public function confirm(int $id): bool
     {
-        $updated = $this->update($id, ['estado' => 'confirmada']);
+        $updated = $this->update($id, ['estado' => 'asignado']);
         return $updated > 0;
     }
 
@@ -145,7 +145,7 @@ class Solicitud extends Model
     public function complete(int $id, array $data = []): bool
     {
         $updateData = [
-            'estado' => 'completada',
+            'estado' => 'completado',
             'fecha_completada' => date('Y-m-d H:i:s')
         ];
 

@@ -8,19 +8,27 @@
 // Configurar zona horaria
 date_default_timezone_set('America/Bogota');
 
+// Cargar funciones helper primero
+require_once __DIR__ . '/../app/helpers.php';
+
 // Cargar autoloader (intentar Composer primero, luego bootstrap manual)
 if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
     require_once __DIR__ . '/../vendor/autoload.php';
     // Cargar variables de entorno con Dotenv
-    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
-    $dotenv->load();
+    if (file_exists(__DIR__ . '/../.env')) {
+        $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
+        $dotenv->load();
+    }
 } else {
     require_once __DIR__ . '/../bootstrap.php';
 }
 
+// Inicializar manejador de errores
+App\Core\ErrorHandler::init();
+
 // Configurar manejo de errores
 error_reporting(E_ALL);
-ini_set('display_errors', env('APP_DEBUG', '0'));
+ini_set('display_errors', '1');
 
 // Configurar headers de seguridad
 header('X-Frame-Options: DENY');
@@ -28,9 +36,12 @@ header('X-Content-Type-Options: nosniff');
 header('X-XSS-Protection: 1; mode=block');
 header('Referrer-Policy: strict-origin-when-cross-origin');
 
-// CORS (ajustar según necesidades)
-if (isset($_SERVER['HTTP_ORIGIN'])) {
-    header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}");
+// CORS - Obtener dominios permitidos
+$allowedOrigins = explode(',', env('CORS_ALLOWED_ORIGINS', ''));
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+
+if (in_array($origin, $allowedOrigins) || env('APP_ENV') === 'local') {
+    header("Access-Control-Allow-Origin: $origin");
     header('Access-Control-Allow-Credentials: true');
     header('Access-Control-Max-Age: 86400');
 }

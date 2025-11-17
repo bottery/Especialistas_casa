@@ -3,6 +3,7 @@
 namespace App\Middleware;
 
 use App\Services\JWTService;
+use App\Services\TokenBlacklistService;
 
 /**
  * Middleware de autenticación JWT
@@ -10,10 +11,12 @@ use App\Services\JWTService;
 class AuthMiddleware
 {
     private $jwtService;
+    private $tokenBlacklist;
 
     public function __construct()
     {
         $this->jwtService = new JWTService();
+        $this->tokenBlacklist = new TokenBlacklistService();
     }
 
     /**
@@ -21,7 +24,22 @@ class AuthMiddleware
      */
     public function handle(): ?object
     {
-        $userData = $this->jwtService->validateRequest();
+        // Obtener token
+        $token = $this->jwtService->getTokenFromHeader();
+        
+        if (!$token) {
+            $this->unauthorized("Token no proporcionado");
+            return null;
+        }
+
+        // Verificar si el token está en la blacklist
+        if ($this->tokenBlacklist->isBlacklisted($token)) {
+            $this->unauthorized("Token inválido o revocado");
+            return null;
+        }
+
+        // Validar token
+        $userData = $this->jwtService->verifyToken($token);
 
         if (!$userData) {
             $this->unauthorized("Token inválido o expirado");

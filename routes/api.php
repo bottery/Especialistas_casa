@@ -13,6 +13,7 @@ use App\Controllers\AdminController;
 use App\Controllers\ConfiguracionPagosController;
 use App\Controllers\PagosTransferenciaController;
 use App\Controllers\AsignacionProfesionalController;
+use App\Controllers\HealthController;
 
 // Obtener ruta y método
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -20,6 +21,21 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 // Remover prefijo /api
 $path = str_replace('/api', '', $path);
+
+// ============================================
+// HEALTH CHECK (Sin autenticación)
+// ============================================
+if ($path === '/health' && $method === 'GET') {
+    $controller = new HealthController();
+    $controller->check();
+    exit;
+}
+
+if ($path === '/ping' && $method === 'GET') {
+    $controller = new HealthController();
+    $controller->ping();
+    exit;
+}
 
 // ============================================
 // RUTAS DE AUTENTICACIÓN (Públicas)
@@ -37,6 +53,12 @@ if ($path === '/login' && $method === 'POST') {
 }
 
 if ($path === '/refresh-token' && $method === 'POST') {
+    $controller = new AuthController();
+    $controller->refreshToken();
+    exit;
+}
+
+if ($path === '/auth/refresh' && $method === 'POST') {
     $controller = new AuthController();
     $controller->refreshToken();
     exit;
@@ -157,6 +179,20 @@ if (strpos($path, '/paciente/') === 0) {
         $controller->calificarServicio((int)$matches[1]);
         exit;
     }
+    
+    // Obtener reporte final de servicio completado
+    if (preg_match('#^/paciente/reporte/(\d+)$#', $path, $matches) && $method === 'GET') {
+        $controller = new PacienteController();
+        $controller->obtenerReporteFinal((int)$matches[1]);
+        exit;
+    }
+    
+    // Obtener servicios pendientes de calificar (OBLIGATORIO)
+    if ($path === '/paciente/servicios-pendientes-calificar' && $method === 'GET') {
+        $controller = new PacienteController();
+        $controller->getServiciosPendientesCalificar();
+        exit;
+    }
 }
 
 // ============================================
@@ -196,6 +232,18 @@ if (strpos($path, '/profesional/') === 0) {
     if (preg_match('#^/profesional/solicitudes/(\d+)/completar$#', $path, $matches) && $method === 'POST') {
         $controller = new ProfesionalController();
         $controller->completarServicio((int)$matches[1]);
+        exit;
+    }
+    
+    if (preg_match('#^/profesional/solicitudes/(\d+)/calificar-paciente$#', $path, $matches) && $method === 'POST') {
+        $controller = new ProfesionalController();
+        $controller->calificarPaciente((int)$matches[1]);
+        exit;
+    }
+    
+    if ($path === '/profesional/servicios-pendientes-calificar' && $method === 'GET') {
+        $controller = new ProfesionalController();
+        $controller->getServiciosPendientesCalificarPaciente();
         exit;
     }
 }
@@ -248,10 +296,45 @@ if (strpos($path, '/admin/') === 0) {
         exit;
     }
 
+    // Solicitudes pendientes de confirmación de pago
+    if ($path === '/admin/pagos/pendientes-confirmacion' && $method === 'GET') {
+        $controller = new PagosTransferenciaController();
+        $controller->getSolicitudesPendientesConfirmacion();
+        exit;
+    }
+
+    // Aprobar pago de solicitud
+    if (preg_match('#^/admin/solicitudes/(\d+)/aprobar-pago$#', $path, $matches) && $method === 'POST') {
+        $controller = new PagosTransferenciaController();
+        $controller->aprobarPago((int)$matches[1]);
+        exit;
+    }
+
+    // Rechazar pago de solicitud
+    if (preg_match('#^/admin/solicitudes/(\d+)/rechazar-pago$#', $path, $matches) && $method === 'POST') {
+        $controller = new PagosTransferenciaController();
+        $controller->rechazarPago((int)$matches[1]);
+        exit;
+    }
+
+    // Obtener QR de pago de una solicitud
+    if (preg_match('#^/admin/pagos/(\d+)/qr$#', $path, $matches) && $method === 'GET') {
+        $controller = new ConfiguracionPagosController();
+        $controller->obtenerQRPago();
+        exit;
+    }
+
     // Solicitudes pendientes de asignación
     if ($path === '/admin/solicitudes/pendientes' && $method === 'GET') {
         $controller = new AdminController();
         $controller->getSolicitudesPendientes();
+        exit;
+    }
+
+    // Solicitudes en proceso (asignadas)
+    if ($path === '/admin/solicitudes/en-proceso' && $method === 'GET') {
+        $controller = new AdminController();
+        $controller->getSolicitudesEnProceso();
         exit;
     }
 
@@ -292,6 +375,20 @@ if (strpos($path, '/admin/') === 0) {
     
     if ($path === '/admin/aprobar-pago' && $method === 'POST') {
         sendResponse(['message' => 'Endpoint en desarrollo'], 501);
+        exit;
+    }
+    
+    // Obtener reportes de servicios completados
+    if ($path === '/admin/reportes' && $method === 'GET') {
+        $controller = new AdminController();
+        $controller->obtenerReportes();
+        exit;
+    }
+    
+    // Ver reporte específico
+    if (preg_match('#^/admin/reportes/(\d+)$#', $path, $matches) && $method === 'GET') {
+        $controller = new AdminController();
+        $controller->verReporte((int)$matches[1]);
         exit;
     }
 }
@@ -396,6 +493,19 @@ if ($path === '/superadmin/test-onesignal' && $method === 'POST') {
 if ($path === '/superadmin/acciones-masivas' && $method === 'POST') {
     $controller = new \App\Controllers\SuperAdminController();
     $controller->accionesMasivas();
+    exit;
+}
+
+if ($path === '/superadmin/reportes' && $method === 'GET') {
+    $controller = new \App\Controllers\SuperAdminController();
+    $controller->obtenerReportes();
+    exit;
+}
+
+if (preg_match('#^/superadmin/reportes/(\d+)$#', $path, $matches) && $method === 'GET') {
+    $solicitudId = (int)$matches[1];
+    $controller = new \App\Controllers\SuperAdminController();
+    $controller->verReporte($solicitudId);
     exit;
 }
 

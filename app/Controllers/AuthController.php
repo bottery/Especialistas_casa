@@ -2,24 +2,32 @@
 
 namespace App\Controllers;
 
+use App\Core\BaseController;
+use App\Core\RateLimiter;
+use App\Core\Validator;
 use App\Models\Usuario;
 use App\Services\JWTService;
 use App\Services\MailService;
+use App\Services\TokenBlacklistService;
 
 /**
  * Controlador de Autenticación
  */
-class AuthController
+class AuthController extends BaseController
 {
     private $usuarioModel;
     private $jwtService;
     private $mailService;
+    private $tokenBlacklist;
+    private $rateLimiter;
 
     public function __construct()
     {
         $this->usuarioModel = new Usuario();
         $this->jwtService = new JWTService();
         $this->mailService = new MailService();
+        $this->tokenBlacklist = new TokenBlacklistService();
+        $this->rateLimiter = new RateLimiter();
     }
 
     /**
@@ -28,34 +36,42 @@ class AuthController
     public function register(): void
     {
         try {
-            $data = json_decode(file_get_contents('php://input'), true);
-
-            // Validar datos requeridos
-            $required = ['email', 'password', 'nombre', 'apellido', 'rol'];
-            foreach ($required as $field) {
-                if (empty($data[$field])) {
-                    $this->sendError("El campo {$field} es requerido", 400);
-                    return;
-                }
-            }
-
-            // Validar email
-            if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-                $this->sendError("Email inválido", 400);
+            // Rate limiting
+            $rateLimitKey = RateLimiter::key('register');
+            if (!$this->rateLimiter->attempt($rateLimitKey)) {
                 return;
             }
 
-            // Verificar si el email ya existe
-            if ($this->usuarioModel->findByEmail($data['email'])) {
-                $this->sendError("El email ya está registrado", 409);
+            $data = $this->getJsonInput();
+            if (!$data) {
+                $this->sendError('Datos inválidos', 400);
                 return;
             }
 
-            // Validar rol
-            $rolesPermitidos = ['paciente', 'medico', 'enfermera', 'veterinario', 'laboratorio', 'ambulancia'];
-            if (!in_array($data['rol'], $rolesPermitidos)) {
-                $this->sendError("Rol inválido", 400);
+            // Validar con Validator
+            $validator = Validator::make($data, [
+                'email' => 'required|email|unique:usuarios,email',
+                'password' => 'required|min:6',
+                'nombre' => 'required|min:2|max:255',
+                'apellido' => 'required|min:2|max:255',
+                'rol' => 'required|in:paciente,medico,enfermera,veterinario,laboratorio,ambulancia'
+            ]);
+
+            if ($validator->fails()) {
+                $this->sendError('Errores de validación', 422, $validator->errors());
                 return;
+            }
+
+            // Sanitizar datos
+            $data['nombre'] = $this->sanitizeString($data['nombre']);
+            $data['apellido'] = $this->sanitizeString($data['apellido']);
+
+            // Determinar rol y tipo_profesional
+            $esProfesional = in_array($data['rol'], ['medico', 'enfermera', 'veterinario', 'laboratorio', 'ambulancia']);
+            
+            if ($esProfesional) {
+                $data['tipo_profesional'] = $data['rol']; // Guardar tipo específico
+                $data['rol'] = 'profesional'; // Rol unificado
             }
 
             // Los pacientes se activan automáticamente, los demás requieren aprobación
@@ -89,21 +105,31 @@ class AuthController
     public function login(): void
     {
         try {
-            $data = json_decode(file_get_contents('php://input'), true);
+            // Rate limiting más estricto para login
+            $rateLimitKey = RateLimiter::key('login');
+            $limiter = new RateLimiter(5, 15); // 5 intentos cada 15 minutos
+            
+            if (!$limiter->attempt($rateLimitKey)) {
+                return;
+            }
 
-            // Validar datos
-            if (empty($data['email']) || empty($data['password'])) {
-                $this->sendError("Email y contraseña son requeridos", 400);
+            $data = $this->getJsonInput();
+            if (!$data || !$this->validateRequired($data, ['email', 'password'])) {
                 return;
             }
 
             // Verificar credenciales
-            $user = $this->usuarioModel->verifyCredentials($data['email'], $data['password']);
+            $user = Usuario::verifyCredentials($data['email'], $data['password']);
 
             if (!$user) {
+                // Incrementar contador de intentos fallidos
+                $limiter->hit($rateLimitKey);
                 $this->sendError("Credenciales inválidas", 401);
                 return;
             }
+
+            // Login exitoso - limpiar rate limit
+            $limiter->clear($rateLimitKey);
 
             // Verificar estado del usuario
             if ($user['estado'] === 'bloqueado') {
@@ -122,7 +148,7 @@ class AuthController
             }
 
             // Actualizar último acceso
-            $this->usuarioModel->updateLastAccess($user['id']);
+            Usuario::updateLastAccess($user['id']);
 
             // Establecer sesión PHP para vistas web
             if (session_status() === PHP_SESSION_NONE) {
@@ -200,28 +226,32 @@ class AuthController
      */
     public function logout(): void
     {
-        // En JWT stateless, el logout se maneja en el cliente eliminando el token
-        // Aquí se puede implementar una blacklist de tokens si se requiere
-        $this->sendSuccess(['message' => 'Sesión cerrada exitosamente']);
+        try {
+            // Obtener token del header
+            $token = $this->jwtService->getTokenFromHeader();
+            
+            if ($token) {
+                // Verificar y obtener datos del token
+                $tokenData = $this->jwtService->verifyToken($token);
+                
+                if ($tokenData) {
+                    // Agregar token a blacklist hasta su expiración
+                    $expiresAt = time() + 3600; // 1 hora por defecto
+                    $this->tokenBlacklist->add($token, $expiresAt);
+                }
+            }
+            
+            // Cerrar sesión PHP si existe
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_destroy();
+            }
+            
+            $this->sendSuccess(['message' => 'Sesión cerrada exitosamente']);
+        } catch (\Exception $e) {
+            $this->logError('Error en logout: ' . $e->getMessage());
+            $this->sendSuccess(['message' => 'Sesión cerrada']);
+        }
     }
 
-    /**
-     * Enviar respuesta exitosa
-     */
-    private function sendSuccess(array $data, int $code = 200): void
-    {
-        http_response_code($code);
-        header('Content-Type: application/json');
-        echo json_encode(['success' => true, ...$data]);
-    }
-
-    /**
-     * Enviar respuesta de error
-     */
-    private function sendError(string $message, int $code = 400): void
-    {
-        http_response_code($code);
-        header('Content-Type: application/json');
-        echo json_encode(['success' => false, 'message' => $message]);
-    }
 }
+

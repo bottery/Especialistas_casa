@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Profesional - Especialistas en Casa</title>
+    <title>Dashboard Especialista - Especialistas en Casa</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/css/skeleton.css">
     <link rel="stylesheet" href="/css/breadcrumbs.css">
@@ -30,6 +30,19 @@ window.profesionalDashboard = function() {
         activeTab: 'pendientes',
         notificaciones: 0,
         audio: null,
+        
+        // Modal de detalles
+        mostrarModalDetalle: false,
+        solicitudDetalle: null,
+        
+        // Modal de completar servicio
+        mostrarModalCompletar: false,
+        solicitudACompletar: null,
+        formCompletar: {
+            reporte: '',
+            diagnostico: '',
+            notas: ''
+        },
         
         // Filtros y búsqueda
         searchQuery: '',
@@ -68,8 +81,8 @@ window.profesionalDashboard = function() {
                 });
                 
                 if (statsResponse.ok) {
-                    const data = await statsResponse.json();
-                    this.stats = data.stats || this.stats;
+                    const response = await statsResponse.json();
+                    this.stats = response.stats || response.data?.stats || this.stats;
                 }
 
                 // Cargar solicitudes
@@ -78,9 +91,14 @@ window.profesionalDashboard = function() {
                 });
                 
                 if (solicitudesResponse.ok) {
-                    const data = await solicitudesResponse.json();
-                    this.solicitudes = data.solicitudes || [];
-                    this.filtrarSolicitudes();
+                    const response = await solicitudesResponse.json();
+                    // La respuesta puede venir como {success: true, data: {solicitudes: []}} o {success: true, solicitudes: []}
+                    const solicitudesData = response.solicitudes || response.data?.solicitudes || [];
+                    // Convertir a array normal para evitar problemas con Proxy
+                    this.solicitudes = Array.isArray(solicitudesData) ? [...solicitudesData] : [];
+                    console.log('Solicitudes cargadas:', this.solicitudes.length);
+                    this.separarPorEstado();
+                    console.log('Separadas - Pendientes:', this.solicitudesPendientes.length, 'Activas:', this.solicitudesActivas.length);
                     
                     // Actualizar contador de notificaciones
                     this.notificaciones = this.solicitudesPendientes.length;
@@ -92,16 +110,39 @@ window.profesionalDashboard = function() {
             }
         },
 
-        filtrarSolicitudes() {
-            this.solicitudesPendientes = this.solicitudes.filter(s => 
-                s.estado === 'pendiente' && (s.pagado || s.metodo_pago_preferido === 'pse')
-            );
-            this.solicitudesActivas = this.solicitudes.filter(s => 
-                s.estado === 'confirmada' || s.estado === 'en_progreso'
-            );
-            this.solicitudesCompletadas = this.solicitudes.filter(s => 
-                s.estado === 'completada'
-            );
+        separarPorEstado() {
+            // Crear arrays nuevos para evitar problemas con el Proxy de Alpine.js
+            this.solicitudesPendientes = [];
+            this.solicitudesActivas = [];
+            this.solicitudesCompletadas = [];
+            
+            // Filtrar manualmente con logs de debug
+            console.log('=== SEPARANDO POR ESTADO ===');
+            console.log('Total solicitudes a procesar:', this.solicitudes.length);
+            
+            for (let i = 0; i < this.solicitudes.length; i++) {
+                const solicitud = this.solicitudes[i];
+                const estado = String(solicitud.estado || '').trim();
+                console.log(`Solicitud ${solicitud.id}: estado="${estado}"`);
+                
+                if (estado === 'asignado') {
+                    console.log('  ✓ Agregada a PENDIENTES');
+                    this.solicitudesPendientes.push(solicitud);
+                } else if (estado === 'en_proceso') {
+                    console.log('  ✓ Agregada a ACTIVAS');
+                    this.solicitudesActivas.push(solicitud);
+                } else if (estado === 'completado') {
+                    console.log('  ✓ Agregada a COMPLETADAS');
+                    this.solicitudesCompletadas.push(solicitud);
+                } else {
+                    console.log(`  ✗ Estado no reconocido: "${estado}"`);
+                }
+            }
+            
+            console.log('=== RESULTADO ===');
+            console.log('Pendientes:', this.solicitudesPendientes.length);
+            console.log('Activas:', this.solicitudesActivas.length);
+            console.log('Completadas:', this.solicitudesCompletadas.length);
         },
 
         iniciarPollingNotificaciones() {
@@ -250,25 +291,39 @@ window.profesionalDashboard = function() {
         },
 
         async completarServicio(solicitudId) {
-            const notas = prompt('Notas finales del servicio (opcional):');
-            if (notas === null) return;
+            // Abrir modal de completar servicio
+            this.solicitudACompletar = this.solicitudesActivas.find(s => s.id === solicitudId);
+            this.mostrarModalCompletar = true;
+        },
+        
+        async enviarCompletarServicio() {
+            // Validar campos requeridos
+            if (!this.formCompletar.reporte.trim()) {
+                alert('⚠️ El reporte del servicio es obligatorio');
+                return;
+            }
+            if (!this.formCompletar.diagnostico.trim()) {
+                alert('⚠️ El diagnóstico o conclusión es obligatorio');
+                return;
+            }
 
             this.loading = true;
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`/api/profesional/solicitudes/${solicitudId}/completar`, {
+                const response = await fetch(`/api/profesional/solicitudes/${this.solicitudACompletar.id}/completar`, {
                     method: 'POST',
                     headers: { 
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ notas })
+                    body: JSON.stringify(this.formCompletar)
                 });
 
                 const data = await response.json();
                 
                 if (response.ok) {
                     alert('✅ Servicio completado exitosamente');
+                    this.cerrarModalCompletar();
                     await this.cargarDatos();
                 } else {
                     alert(data.message || 'Error al completar el servicio');
@@ -280,9 +335,25 @@ window.profesionalDashboard = function() {
                 this.loading = false;
             }
         },
+        
+        cerrarModalCompletar() {
+            this.mostrarModalCompletar = false;
+            this.solicitudACompletar = null;
+            this.formCompletar = {
+                reporte: '',
+                diagnostico: '',
+                notas: ''
+            };
+        },
 
         verDetalle(solicitud) {
-            alert(`Detalles de la solicitud:\n\nServicio: ${solicitud.servicio_nombre}\nPaciente: ${solicitud.paciente_nombre}\nFecha: ${this.formatDate(solicitud.fecha_programada)}\nMonto: ${this.formatMonto(solicitud.monto_total)}\nSíntomas: ${solicitud.sintomas || 'No especificado'}`);
+            this.solicitudDetalle = solicitud;
+            this.mostrarModalDetalle = true;
+        },
+        
+        cerrarModalDetalle() {
+            this.mostrarModalDetalle = false;
+            this.solicitudDetalle = null;
         },
 
         get solicitudesPendientesFiltradas() {
@@ -351,9 +422,11 @@ window.profesionalDashboard = function() {
         getEstadoColor(estado) {
             const colores = {
                 'pendiente': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+                'asignado': 'bg-yellow-100 text-yellow-800 border-yellow-300',
                 'confirmada': 'bg-blue-100 text-blue-800 border-blue-300',
-                'en_progreso': 'bg-indigo-100 text-indigo-800 border-indigo-300',
-                'completada': 'bg-green-100 text-green-800 border-green-300',
+                'en_proceso': 'bg-indigo-100 text-indigo-800 border-indigo-300',
+                'completado': 'bg-green-100 text-green-800 border-green-300',
+                'cancelado': 'bg-red-100 text-red-800 border-red-300',
                 'rechazada': 'bg-red-100 text-red-800 border-red-300'
             };
             return colores[estado] || 'bg-gray-100 text-gray-800 border-gray-300';
@@ -362,9 +435,11 @@ window.profesionalDashboard = function() {
         getEstadoTexto(estado) {
             const textos = {
                 'pendiente': '⏳ Pendiente',
+                'asignado': '📌 Asignado',
                 'confirmada': '✅ Confirmada',
-                'en_progreso': '🔄 En Progreso',
-                'completada': '✔️ Completada',
+                'en_proceso': '🔄 En Proceso',
+                'completado': '✔️ Completado',
+                'cancelado': '❌ Cancelado',
                 'rechazada': '❌ Rechazada'
             };
             return textos[estado] || estado;
@@ -408,7 +483,7 @@ window.profesionalDashboard = function() {
                         <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
                     </svg>
                     <div>
-                        <h1 class="text-lg font-semibold text-gray-900">Dashboard Profesional</h1>
+                        <h1 class="text-lg font-semibold text-gray-900">Dashboard Especialista</h1>
                         <p class="text-xs text-gray-500" x-text="usuario.nombre"></p>
                     </div>
                 </div>
@@ -459,19 +534,18 @@ window.profesionalDashboard = function() {
                 <a href="/profesional/dashboard">Inicio</a>
             </div>
             <span class="breadcrumb-separator">/</span>
-            <div class="breadcrumb-item active">Dashboard Profesional</div>
+            <div class="breadcrumb-item active">Dashboard Especialista</div>
         </nav>
 
         <!-- Skeletons para estadísticas -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8" x-show="loading">
-            <div class="skeleton-stat-card"></div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" x-show="loading">
             <div class="skeleton-stat-card"></div>
             <div class="skeleton-stat-card"></div>
             <div class="skeleton-stat-card"></div>
         </div>
 
         <!-- Tarjetas de estadísticas -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8" x-show="!loading">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" x-show="!loading">
             <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-yellow-500">
                 <div class="flex items-center justify-between">
                     <div>
@@ -489,7 +563,7 @@ window.profesionalDashboard = function() {
             <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-gray-500 text-sm font-medium">En Progreso</p>
+                        <p class="text-gray-500 text-sm font-medium">En Proceso</p>
                         <p class="text-3xl font-bold text-gray-900 mt-2" x-text="stats.solicitudesEnProgreso">0</p>
                     </div>
                     <div class="bg-blue-100 p-3 rounded-full">
@@ -509,21 +583,6 @@ window.profesionalDashboard = function() {
                     <div class="bg-green-100 p-3 rounded-full">
                         <svg class="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-indigo-500">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-gray-500 text-sm font-medium">Ingresos del Mes</p>
-                        <p class="text-2xl font-bold text-gray-900 mt-2" x-text="formatMonto(stats.ingresosDelMes)">$0</p>
-                    </div>
-                    <div class="bg-indigo-100 p-3 rounded-full">
-                        <svg class="w-8 h-8 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"/>
                         </svg>
                     </div>
                 </div>
@@ -739,20 +798,16 @@ window.profesionalDashboard = function() {
                         </div>
                         
                         <div class="flex gap-3 pt-4 border-t">
-                            <button x-show="solicitud.estado === 'confirmada'" 
-                                    @click="iniciarServicio(solicitud.id)" 
-                                    class="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition font-medium">
-                                ▶️ Iniciar Servicio
-                            </button>
-                            <button x-show="solicitud.estado === 'en_progreso'" 
+                            <button x-show="solicitud.estado === 'en_proceso'" 
                                     @click="completarServicio(solicitud.id)" 
                                     class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-medium">
-                                ✔️ Completar
+                                ✔️ Completar Servicio
                             </button>
                             <button @click="verDetalle(solicitud)" 
                                     class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-                                👁️ Ver
+                                👁️ Ver Detalles
                             </button>
+                        </div>
                         </div>
                     </div>
                 </template>
@@ -787,6 +842,244 @@ window.profesionalDashboard = function() {
                         </div>
                     </div>
                 </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Detalles -->
+    <div x-show="mostrarModalDetalle" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 overflow-y-auto" 
+         style="display: none;">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-black bg-opacity-50" @click="cerrarModalDetalle()"></div>
+            
+            <div class="relative bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 z-10"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 transform scale-95"
+                 x-transition:enter-end="opacity-100 transform scale-100">
+                
+                <div class="flex justify-between items-start mb-4">
+                    <h2 class="text-2xl font-bold text-gray-900">Detalles del Servicio</h2>
+                    <button @click="cerrarModalDetalle()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="space-y-4" x-show="solicitudDetalle">
+                    <!-- Información del Servicio -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="font-semibold text-gray-900 mb-3">📋 Información del Servicio</h3>
+                        <div class="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                                <p class="text-gray-500">Servicio</p>
+                                <p class="font-medium" x-text="solicitudDetalle?.servicio_nombre"></p>
+                            </div>
+                            <div>
+                                <p class="text-gray-500">Tipo</p>
+                                <p class="font-medium capitalize" x-text="solicitudDetalle?.servicio_tipo"></p>
+                            </div>
+                            <div>
+                                <p class="text-gray-500">Modalidad</p>
+                                <p class="font-medium capitalize" x-text="solicitudDetalle?.modalidad"></p>
+                            </div>
+                            <div>
+                                <p class="text-gray-500">Monto</p>
+                                <p class="font-medium text-green-600" x-text="formatMonto(solicitudDetalle?.monto_total)"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Información del Paciente -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="font-semibold text-gray-900 mb-3">👤 Información del Paciente</h3>
+                        <div class="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                                <p class="text-gray-500">Nombre</p>
+                                <p class="font-medium" x-text="solicitudDetalle?.paciente_nombre + ' ' + solicitudDetalle?.paciente_apellido"></p>
+                            </div>
+                            <div>
+                                <p class="text-gray-500">Teléfono</p>
+                                <p class="font-medium" x-text="solicitudDetalle?.paciente_telefono || 'No especificado'"></p>
+                            </div>
+                            <div class="col-span-2">
+                                <p class="text-gray-500">Email</p>
+                                <p class="font-medium" x-text="solicitudDetalle?.paciente_email"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detalles de la Cita -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="font-semibold text-gray-900 mb-3">📅 Detalles de la Cita</h3>
+                        <div class="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                                <p class="text-gray-500">Fecha Programada</p>
+                                <p class="font-medium" x-text="formatDate(solicitudDetalle?.fecha_programada)"></p>
+                            </div>
+                            <div x-show="solicitudDetalle?.hora_programada">
+                                <p class="text-gray-500">Hora</p>
+                                <p class="font-medium" x-text="solicitudDetalle?.hora_programada"></p>
+                            </div>
+                            <div class="col-span-2" x-show="solicitudDetalle?.direccion_servicio">
+                                <p class="text-gray-500">Dirección</p>
+                                <p class="font-medium" x-text="solicitudDetalle?.direccion_servicio"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Síntomas / Observaciones -->
+                    <div class="bg-gray-50 rounded-lg p-4" x-show="solicitudDetalle?.sintomas || solicitudDetalle?.observaciones">
+                        <h3 class="font-semibold text-gray-900 mb-3">📝 Información Adicional</h3>
+                        <div class="space-y-3 text-sm">
+                            <div x-show="solicitudDetalle?.sintomas">
+                                <p class="text-gray-500">Síntomas</p>
+                                <p class="font-medium" x-text="solicitudDetalle?.sintomas"></p>
+                            </div>
+                            <div x-show="solicitudDetalle?.observaciones">
+                                <p class="text-gray-500">Observaciones</p>
+                                <p class="font-medium" x-text="solicitudDetalle?.observaciones"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Estado Actual -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="font-semibold text-gray-900 mb-3">📊 Estado</h3>
+                        <div class="flex items-center gap-2">
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold"
+                                  :class="{
+                                      'bg-yellow-100 text-yellow-800': solicitudDetalle?.estado === 'asignado',
+                                      'bg-blue-100 text-blue-800': solicitudDetalle?.estado === 'en_proceso',
+                                      'bg-green-100 text-green-800': solicitudDetalle?.estado === 'completado'
+                                  }"
+                                  x-text="solicitudDetalle?.estado === 'asignado' ? 'Pendiente de Aceptar' : 
+                                         solicitudDetalle?.estado === 'en_proceso' ? 'En Proceso' : 
+                                         'Completado'">
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end">
+                    <button @click="cerrarModalDetalle()" 
+                            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Completar Servicio -->
+    <div x-show="mostrarModalCompletar" 
+         x-cloak
+         class="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50 p-4"
+         @click.self="cerrarModalCompletar()">
+        <div class="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+             @click.stop>
+            <div class="p-6">
+                <!-- Header -->
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900">✅ Completar Servicio</h2>
+                        <p class="text-sm text-gray-600 mt-1">
+                            Servicio: <span x-text="solicitudACompletar?.servicio_nombre" class="font-medium"></span>
+                        </p>
+                        <p class="text-sm text-gray-600">
+                            Paciente: <span x-text="solicitudACompletar?.paciente_nombre" class="font-medium"></span>
+                        </p>
+                    </div>
+                    <button @click="cerrarModalCompletar()" 
+                            class="text-gray-400 hover:text-gray-600 transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Formulario -->
+                <div class="space-y-6">
+                    <!-- Reporte del Servicio (OBLIGATORIO) -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            📋 Reporte del Servicio <span class="text-red-500">*</span>
+                        </label>
+                        <textarea 
+                            x-model="formCompletar.reporte"
+                            rows="5"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                            placeholder="Describe detalladamente el servicio prestado, procedimientos realizados, hallazgos relevantes...&#10;&#10;Ejemplo: Se realizó consulta general. El paciente presentó síntomas de gripe común. Se examinaron vías respiratorias, temperatura y presión arterial. Todos los signos vitales dentro de parámetros normales..."
+                        ></textarea>
+                        <p class="text-xs text-gray-500 mt-1">Este reporte será visible para el paciente y la plataforma</p>
+                    </div>
+
+                    <!-- Diagnóstico o Conclusiones (OBLIGATORIO) -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            🩺 Diagnóstico / Conclusiones <span class="text-red-500">*</span>
+                        </label>
+                        <textarea 
+                            x-model="formCompletar.diagnostico"
+                            rows="4"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                            placeholder="Diagnóstico médico o conclusiones profesionales...&#10;&#10;Ejemplo: Diagnóstico: Rinofaringitis aguda (Gripe común)&#10;&#10;Evolución esperada: Mejoría en 5-7 días con el tratamiento indicado."
+                        ></textarea>
+                        <p class="text-xs text-gray-500 mt-1">Diagnóstico final o conclusiones del servicio</p>
+                    </div>
+
+                    <!-- Notas Adicionales (OPCIONAL) -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            📝 Notas Adicionales (Opcional)
+                        </label>
+                        <textarea 
+                            x-model="formCompletar.notas"
+                            rows="3"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                            placeholder="Recomendaciones, medicamentos recetados, indicaciones de seguimiento...&#10;&#10;Ejemplo:&#10;- Paracetamol 500mg cada 8 horas por 5 días&#10;- Abundantes líquidos&#10;- Reposo relativo&#10;- Control en 7 días si persisten síntomas"
+                        ></textarea>
+                        <p class="text-xs text-gray-500 mt-1">Información adicional, recetas, recomendaciones</p>
+                    </div>
+
+                    <!-- Aviso Importante -->
+                    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-yellow-700">
+                                    <strong>Importante:</strong> Una vez completado el servicio, el paciente podrá ver este reporte y calificar tu atención. Asegúrate de incluir toda la información relevante.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones -->
+                <div class="mt-8 flex gap-3">
+                    <button @click="cerrarModalCompletar()" 
+                            class="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium">
+                        ❌ Cancelar
+                    </button>
+                    <button @click="enviarCompletarServicio()" 
+                            :disabled="loading"
+                            :class="loading ? 'opacity-50 cursor-not-allowed' : ''"
+                            class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium">
+                        <span x-show="!loading">✅ Completar Servicio</span>
+                        <span x-show="loading">⏳ Procesando...</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
