@@ -164,6 +164,22 @@ class Database
     }
 
     /**
+     * Ejecutar una consulta (alias de query para compatibilidad)
+     */
+    public function execute(string $query, array $params = []): bool
+    {
+        return $this->query($query, $params);
+    }
+
+    /**
+     * Obtener el ID del último registro insertado
+     */
+    public function lastInsertId(): int
+    {
+        return (int) $this->connection->lastInsertId();
+    }
+
+    /**
      * Iniciar transacción
      */
     public function beginTransaction(): bool

@@ -60,6 +60,7 @@
     <script src="/js/auth-interceptor.js"></script>
     <link rel="stylesheet" href="/css/skeleton.css">
     <link rel="stylesheet" href="/css/dark-mode.css">
+    <link rel="stylesheet" href="/css/kanban.css">
     <script src="/js/dark-mode.js"></script>
     <script src="/js/keyboard-shortcuts.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -265,6 +266,26 @@
                               class="ml-2 py-0.5 px-2.5 rounded-full text-xs font-semibold"
                               :class="activeTab === 'completados' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'"
                               x-text="reportes.length"></span>
+                    </button>
+                    
+                    <button @click="activeTab = 'profesionales'; cargarListaProfesionales()" 
+                            :class="activeTab === 'profesionales' ? 'border-indigo-500 text-indigo-600 bg-indigo-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition-colors flex items-center gap-2">
+                        <span>👨‍⚕️</span>
+                        <span>Gestión de Profesionales</span>
+                        <span x-show="profesionales.length > 0" 
+                              class="ml-2 py-0.5 px-2.5 rounded-full text-xs font-semibold"
+                              :class="activeTab === 'profesionales' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-600'"
+                              x-text="profesionales.length"></span>
+                    </button>
+                    
+                    <!-- Tab Kanban - Oculto temporalmente -->
+                    <button @click="activeTab = 'kanban'; iniciarKanban()" 
+                            :class="activeTab === 'kanban' ? 'border-pink-500 text-pink-600 bg-pink-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition-colors flex items-center gap-2"
+                            style="display: none;">
+                        <span>📊</span>
+                        <span>Vista Kanban</span>
                     </button>
                 </nav>
             </div>
@@ -627,6 +648,203 @@
                 </table>
             </div>
         </div>
+
+        <!-- Tab Content: Gestión de Profesionales -->
+        <div x-show="activeTab === 'profesionales'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-indigo-50">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800">👨‍⚕️ Gestión de Profesionales</h3>
+                    <p class="text-sm text-gray-600 mt-1">Administra médicos, enfermeras, veterinarios y demás profesionales</p>
+                </div>
+                <div class="flex gap-2">
+                    <button @click="cargarProfesionales()" class="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition text-sm font-medium">
+                        🔄 Actualizar
+                    </button>
+                    <button @click="abrirModalNuevoProfesional()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-medium flex items-center gap-2">
+                        <span>➕</span> Nuevo Profesional
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filtros -->
+            <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Buscar</label>
+                        <input type="text" x-model="filtrosProfesionales.busqueda" @input="cargarProfesionales()"
+                               placeholder="Nombre, email, especialidad..."
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo</label>
+                        <select x-model="filtrosProfesionales.tipo" @change="cargarProfesionales()"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                            <option value="">Todos</option>
+                            <option value="medico">Médico</option>
+                            <option value="enfermera">Enfermera</option>
+                            <option value="veterinario">Veterinario</option>
+                            <option value="laboratorio">Laboratorio</option>
+                            <option value="ambulancia">Ambulancia</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+                        <select x-model="filtrosProfesionales.estado" @change="cargarProfesionales()"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                            <option value="">Todos</option>
+                            <option value="activo">Activo</option>
+                            <option value="inactivo">Inactivo</option>
+                            <option value="bloqueado">Bloqueado</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Especialidad</label>
+                        <input type="text" x-model="filtrosProfesionales.especialidad" @input="cargarProfesionales()"
+                               placeholder="Cardiología, Pediatría..."
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla de Profesionales -->
+            <div x-show="!loadingProfesionales && profesionales.length === 0">
+                <div class="text-center py-12">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    <p class="mt-2 text-sm text-gray-500">No se encontraron profesionales</p>
+                    <button @click="abrirModalNuevoProfesional()" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                        Agregar Primer Profesional
+                    </button>
+                </div>
+            </div>
+
+            <div x-show="!loadingProfesionales && profesionales.length > 0" class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Profesional</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo / Especialidad</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contacto</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Servicios</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Calificación</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <template x-for="prof in profesionales" :key="prof.id">
+                            <tr class="hover:bg-indigo-50">
+                                <td class="px-6 py-4 text-sm font-medium text-gray-900" x-text="'#' + prof.id"></td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                                            <span class="text-lg" x-text="prof.tipo_profesional === 'medico' ? '👨‍⚕️' : prof.tipo_profesional === 'enfermera' ? '👩‍⚕️' : prof.tipo_profesional === 'veterinario' ? '🐾' : prof.tipo_profesional === 'laboratorio' ? '🔬' : '🚑'"></span>
+                                        </div>
+                                        <div class="ml-3">
+                                            <div class="text-sm font-medium text-gray-900" x-text="prof.nombre + ' ' + prof.apellido"></div>
+                                            <div class="text-xs text-gray-500" x-text="prof.profesion || 'Sin especificar'"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm font-medium text-gray-900 capitalize" x-text="prof.tipo_profesional"></div>
+                                    <div class="text-xs text-gray-500" x-text="prof.especialidad || 'General'"></div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="text-sm text-gray-900" x-text="prof.email"></div>
+                                    <div class="text-xs text-gray-500" x-text="prof.telefono_whatsapp || prof.telefono || 'Sin teléfono'"></div>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-500">
+                                    <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800" x-text="prof.total_servicios + ' completados'"></span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center">
+                                        <span class="text-yellow-500 text-sm">⭐</span>
+                                        <span class="ml-1 text-sm font-medium" x-text="prof.puntuacion_promedio || '5.00'"></span>
+                                        <span class="ml-1 text-xs text-gray-400" x-text="'(' + (prof.total_calificaciones || 0) + ')'"></span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2 py-1 text-xs rounded-full" 
+                                          :class="{
+                                              'bg-green-100 text-green-800': prof.estado === 'activo',
+                                              'bg-gray-100 text-gray-800': prof.estado === 'inactivo',
+                                              'bg-red-100 text-red-800': prof.estado === 'bloqueado'
+                                          }"
+                                          x-text="prof.estado"></span>
+                                </td>
+                                <td class="px-6 py-4 text-sm">
+                                    <div class="flex gap-2">
+                                        <button @click="editarProfesional(prof)" 
+                                                class="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-xs">
+                                            ✏️ Editar
+                                        </button>
+                                        <button @click="cambiarEstadoProfesional(prof)" 
+                                                class="px-3 py-1.5 rounded-lg transition text-xs"
+                                                :class="prof.estado === 'activo' ? 'bg-yellow-600 text-white hover:bg-yellow-700' : 'bg-green-600 text-white hover:bg-green-700'"
+                                                x-text="prof.estado === 'activo' ? '⏸️ Desactivar' : '▶️ Activar'"></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tab Content: Vista Kanban -->
+        <div x-show="activeTab === 'kanban'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-pink-50">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800">📊 Vista Kanban - Gestión Visual</h3>
+                    <p class="text-sm text-gray-600 mt-1">Arrastra y suelta las tarjetas para cambiar el estado de las solicitudes</p>
+                </div>
+                <div class="flex gap-2">
+                    <button @click="kanbanBoard?.cargarSolicitudes()" class="px-4 py-2 bg-pink-100 text-pink-700 rounded-lg hover:bg-pink-200 transition text-sm font-medium">
+                        🔄 Actualizar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filtros del Kanban -->
+            <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">🔍 Buscar</label>
+                        <input type="text" 
+                               @input="kanbanBoard?.aplicarFiltro('busqueda', $event.target.value)"
+                               placeholder="ID, paciente, profesional, servicio..."
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">🏥 Especialidad</label>
+                        <select @change="kanbanBoard?.aplicarFiltro('especialidad', $event.target.value)"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500">
+                            <option value="">Todas las especialidades</option>
+                            <template x-for="esp in especialidades" :key="esp.id">
+                                <option :value="esp.nombre" x-text="esp.icono + ' ' + esp.nombre"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">👨‍⚕️ Profesional</label>
+                        <select @change="kanbanBoard?.aplicarFiltro('profesional', $event.target.value)"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500">
+                            <option value="">Todos los profesionales</option>
+                            <template x-for="prof in profesionales" :key="prof.id">
+                                <option :value="prof.id" x-text="prof.nombre + ' ' + prof.apellido"></option>
+                            </template>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Container del Kanban Board -->
+            <div id="kanban-container" class="p-6"></div>
+        </div>
+
         </div>
         <!-- Fin del sistema de pestañas -->
     </div>
@@ -877,7 +1095,7 @@
                 </div>
 
                 <!-- Información de filtrado -->
-                <div x-show="solicitudSeleccionada?.especialidad && solicitudSeleccionada?.servicio_tipo !== 'ambulancia'" 
+                <div x-show="solicitudSeleccionada?.especialidad_solicitada && solicitudSeleccionada?.servicio_tipo !== 'ambulancia'" 
                      class="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
                     <div class="flex items-start">
                         <svg class="w-5 h-5 text-blue-600 mt-0.5 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -885,7 +1103,7 @@
                         </svg>
                         <div>
                             <p class="text-sm font-medium text-blue-900">
-                                Filtrado por especialidad: <span class="font-bold" x-text="solicitudSeleccionada?.especialidad"></span>
+                                Filtrado por especialidad: <span class="font-bold" x-text="solicitudSeleccionada?.especialidad_solicitada"></span>
                             </p>
                             <p class="text-xs text-blue-700 mt-1">
                                 Mostrando solo profesionales con esta especialidad, ordenados por calificación
@@ -931,11 +1149,11 @@
                                             <div class="flex-1">
                                                 <div class="flex items-center gap-2 mb-1">
                                                     <h5 class="text-xl font-bold text-gray-900" x-text="prof.nombre + ' ' + prof.apellido"></h5>
-                                                    <span x-show="prof.rol === 'ambulancia'" class="px-2 py-1 text-xs font-semibold bg-red-100 text-red-800 rounded-full">🚑 OPERADOR</span>
-                                                    <span x-show="prof.rol === 'medico'" class="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">👨‍⚕️ MÉDICO</span>
-                                                    <span x-show="prof.rol === 'enfermera'" class="px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">💉 ENFERMERA</span>
-                                                    <span x-show="prof.rol === 'veterinario'" class="px-2 py-1 text-xs font-semibold bg-purple-100 text-purple-800 rounded-full">🐾 VETERINARIO</span>
-                                                    <span x-show="prof.rol === 'laboratorio'" class="px-2 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded-full">🔬 LAB</span>
+                                                    <span x-show="prof.tipo_profesional === 'ambulancia'" class="px-2 py-1 text-xs font-semibold bg-red-100 text-red-800 rounded-full">🚑 OPERADOR</span>
+                                                    <span x-show="prof.tipo_profesional === 'medico'" class="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">👨‍⚕️ MÉDICO</span>
+                                                    <span x-show="prof.tipo_profesional === 'enfermera'" class="px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">💉 ENFERMERA</span>
+                                                    <span x-show="prof.tipo_profesional === 'veterinario'" class="px-2 py-1 text-xs font-semibold bg-purple-100 text-purple-800 rounded-full">🐾 VETERINARIO</span>
+                                                    <span x-show="prof.tipo_profesional === 'laboratorio'" class="px-2 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded-full">🔬 LAB</span>
                                                 </div>
                                                 <p class="text-sm font-medium text-blue-600 mb-1" x-text="prof.especialidad || 'Especialidad no especificada'"></p>
                                                 <p class="text-xs text-gray-500" x-text="prof.telefono"></p>
@@ -1153,6 +1371,187 @@
         </div>
     </div>
 
+    <!-- Modal de Crear/Editar Profesional -->
+    <div x-show="modalProfesionalAbierto" 
+         x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20">
+            <div @click="cerrarModalProfesional()" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+
+            <div class="relative w-full max-w-4xl bg-white rounded-2xl shadow-xl">
+                <!-- Header -->
+                <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-indigo-500 to-purple-600">
+                    <h3 class="text-2xl font-bold text-white" x-text="profesionalEditando ? '✏️ Editar Profesional' : '➕ Nuevo Profesional'"></h3>
+                    <button @click="cerrarModalProfesional()" class="text-white hover:text-gray-200 transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Body -->
+                <form @submit.prevent="guardarProfesional()" class="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+                    <!-- Información Personal -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h4 class="font-bold text-gray-800 mb-4 flex items-center">
+                            <span class="text-lg mr-2">👤</span> Información Personal
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Nombre(s) *</label>
+                                <input type="text" x-model="formProfesional.nombre" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                       placeholder="Juan Carlos">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Apellidos *</label>
+                                <input type="text" x-model="formProfesional.apellido" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                       placeholder="García López">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                                <input type="email" x-model="formProfesional.email" required
+                                       :disabled="profesionalEditando"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
+                                       placeholder="juan.garcia@ejemplo.com">
+                                <p class="text-xs text-gray-500 mt-1" x-show="profesionalEditando">El email no se puede modificar</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Contraseña <span x-show="!profesionalEditando" class="text-red-500">*</span></label>
+                                <input type="password" x-model="formProfesional.password" 
+                                       :required="!profesionalEditando"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                       placeholder="Mínimo 6 caracteres">
+                                <p class="text-xs text-gray-500 mt-1" x-show="profesionalEditando">Dejar vacío para mantener la actual</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Información Profesional -->
+                    <div class="bg-blue-50 rounded-lg p-4">
+                        <h4 class="font-bold text-gray-800 mb-4 flex items-center">
+                            <span class="text-lg mr-2">🩺</span> Información Profesional
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Profesional *</label>
+                                <select x-model="formProfesional.tipo_profesional" required
+                                        @change="formProfesional.especialidad = ''"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                    <option value="">Seleccione...</option>
+                                    <option value="medico">Médico</option>
+                                    <option value="enfermera">Enfermera</option>
+                                    <option value="veterinario">Veterinario</option>
+                                    <option value="laboratorio">Técnico de Laboratorio</option>
+                                    <option value="ambulancia">Operador de Ambulancia</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Profesión / Título *</label>
+                                <input type="text" x-model="formProfesional.profesion" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                       placeholder="Ej: Médico Cirujano, Enfermera Jefe">
+                            </div>
+                            <div x-show="formProfesional.tipo_profesional === 'medico'">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Especialidad Médica *</label>
+                                <input type="text" x-model="formProfesional.especialidad" 
+                                       :required="formProfesional.tipo_profesional === 'medico'"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                       placeholder="Ej: Cardiología, Pediatría, Medicina General">
+                                <p class="text-xs text-gray-500 mt-1">Será visible para los pacientes al buscar</p>
+                            </div>
+                            <div x-show="formProfesional.tipo_profesional !== 'medico' && formProfesional.tipo_profesional !== ''">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Área/Especialidad</label>
+                                <input type="text" x-model="formProfesional.especialidad"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                       placeholder="Ej: Cuidados Intensivos, Emergencias">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contacto -->
+                    <div class="bg-green-50 rounded-lg p-4">
+                        <h4 class="font-bold text-gray-800 mb-4 flex items-center">
+                            <span class="text-lg mr-2">📱</span> Información de Contacto
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono/WhatsApp *</label>
+                                <input type="tel" x-model="formProfesional.telefono_whatsapp" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                       placeholder="+57 300 1234567">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono Adicional</label>
+                                <input type="tel" x-model="formProfesional.telefono"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                       placeholder="+57 601 1234567">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Dirección Residencial</label>
+                                <input type="text" x-model="formProfesional.direccion"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                       placeholder="Calle 123 #45-67, Apto 801">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Dirección Consultorio/Oficina</label>
+                                <input type="text" x-model="formProfesional.direccion_consultorio"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                       placeholder="Carrera 10 #20-30, Consultorio 201">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Documentos -->
+                    <div class="bg-purple-50 rounded-lg p-4">
+                        <h4 class="font-bold text-gray-800 mb-4 flex items-center">
+                            <span class="text-lg mr-2">📄</span> Documentos y Archivos
+                        </h4>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Hoja de Vida Digital (PDF)</label>
+                            <div class="flex items-center gap-3">
+                                <input type="file" @change="manejarArchivoHojaVida($event)" accept=".pdf"
+                                       class="flex-1 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                                <span x-show="formProfesional.hoja_vida_url" class="text-xs text-green-600">✓ Archivo cargado</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Formato: PDF. Tamaño máximo: 5MB</p>
+                        </div>
+                    </div>
+
+                    <!-- Estado -->
+                    <div class="bg-yellow-50 rounded-lg p-4">
+                        <h4 class="font-bold text-gray-800 mb-4 flex items-center">
+                            <span class="text-lg mr-2">⚙️</span> Estado del Profesional
+                        </h4>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Estado *</label>
+                            <select x-model="formProfesional.estado" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                <option value="activo">✅ Activo - Puede recibir solicitudes</option>
+                                <option value="inactivo">⏸️ Inactivo - No recibe solicitudes</option>
+                                <option value="bloqueado">🚫 Bloqueado - Sin acceso al sistema</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="flex justify-end gap-3 pt-4 border-t">
+                        <button type="button" @click="cerrarModalProfesional()" 
+                                class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium">
+                            Cancelar
+                        </button>
+                        <button type="submit" :disabled="guardandoProfesional"
+                                class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span x-show="!guardandoProfesional" x-text="profesionalEditando ? '💾 Guardar Cambios' : '➕ Crear Profesional'"></span>
+                            <span x-show="guardandoProfesional">Guardando...</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script>
         function adminDashboard() {
             return {
@@ -1189,9 +1588,63 @@
                     fecha_hasta: '',
                     calificado: ''
                 },
-                estadisticasReportes: null,
+                estadisticasReportes: {
+                    total: 0,
+                    con_calificacion: 0,
+                    sin_calificacion: 0,
+                    promedio_calificacion: 0,
+                    total_ingresos: 0
+                },
                 modalReporteAbierto: false,
-                reporteDetalle: null,
+                reporteDetalle: {
+                    solicitud_id: 0,
+                    paciente: { nombre: '', email: '', telefono: '' },
+                    profesional: { nombre: '', especialidad: '', puntuacion_promedio: 0, total_calificaciones: 0, servicios_completados: 0 },
+                    servicio: { nombre: '', modalidad: '' },
+                    fecha_programada: '',
+                    fecha_completada: '',
+                    reporte_profesional: '',
+                    diagnostico: '',
+                    notas_adicionales: '',
+                    calificacion: { calificado: false },
+                    finanzas: { monto_total: 0, monto_profesional: 0, monto_plataforma: 0, pagado: false }
+                },
+
+                // Gestión de Profesionales
+                profesionales: [],
+                loadingProfesionales: false,
+                filtrosProfesionales: {
+                    busqueda: '',
+                    tipo: '',
+                    estado: '',
+                    especialidad: ''
+                },
+                modalProfesionalAbierto: false,
+                profesionalEditando: null,
+                guardandoProfesional: false,
+                formProfesional: {
+                    nombre: '',
+                    apellido: '',
+                    email: '',
+                    password: '',
+                    tipo_profesional: '',
+                    profesion: '',
+                    especialidad: '',
+                    telefono_whatsapp: '',
+                    telefono: '',
+                    direccion: '',
+                    direccion_consultorio: '',
+                    hoja_vida_url: '',
+                    estado: 'activo'
+                },
+
+                // Variables para gráficas
+                solicitudesChartInstance: null,
+                serviciosChartInstance: null,
+
+                // Variables para Kanban
+                especialidades: [],
+                kanbanBoard: null,
 
                 async init() {
                     await this.cargarStats();
@@ -1199,6 +1652,17 @@
                     await this.cargarSolicitudesEnProceso();
                     await this.cargarSolicitudesPendientesPago();
                     await this.cargarReportes();
+                    await this.cargarEspecialidades();
+                    
+                    // Escuchar eventos del Kanban
+                    window.addEventListener('ver-detalle-solicitud', (e) => {
+                        this.verDetallesSolicitud({ id: e.detail.solicitudId });
+                    });
+                    
+                    window.addEventListener('asignar-profesional', (e) => {
+                        const solicitud = { id: e.detail.solicitudId };
+                        this.abrirModalAsignacion(solicitud);
+                    });
                     
                     // Auto-refresh cada 30 segundos
                     setInterval(() => {
@@ -1234,10 +1698,18 @@
                 },
 
                 inicializarGraficas() {
+                    // Destruir gráficas existentes antes de crear nuevas
+                    if (this.solicitudesChartInstance) {
+                        this.solicitudesChartInstance.destroy();
+                    }
+                    if (this.serviciosChartInstance) {
+                        this.serviciosChartInstance.destroy();
+                    }
+
                     // Gráfica de Solicitudes por Día
                     const ctx1 = document.getElementById('solicitudesChart');
                     if (ctx1) {
-                        new Chart(ctx1, {
+                        this.solicitudesChartInstance = new Chart(ctx1, {
                             type: 'line',
                             data: {
                                 labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
@@ -1273,7 +1745,7 @@
                     // Gráfica de Servicios
                     const ctx2 = document.getElementById('serviciosChart');
                     if (ctx2) {
-                        new Chart(ctx2, {
+                        this.serviciosChartInstance = new Chart(ctx2, {
                             type: 'doughnut',
                             data: {
                                 labels: ['Médico', 'Enfermería', 'Veterinario', 'Laboratorio', 'Ambulancia'],
@@ -1462,12 +1934,16 @@
                 },
 
                 async abrirModalAsignacion(solicitud) {
+                    console.log('📋 Solicitud completa:', solicitud);
+                    console.log('🔍 servicio_id:', solicitud.servicio_id);
+                    console.log('🔍 especialidad_solicitada:', solicitud.especialidad_solicitada);
+                    
                     this.solicitudSeleccionada = solicitud;
                     this.modalAsignacionAbierto = true;
                     this.profesionalSeleccionado = null;
                     this.motivoAsignacion = '';
                     
-                    await this.cargarProfesionales(solicitud.servicio_id, solicitud.especialidad);
+                    await this.cargarProfesionales(solicitud.servicio_id, solicitud.especialidad_solicitada);
                 },
 
                 async cargarProfesionales(servicioId, especialidad) {
@@ -1479,18 +1955,47 @@
                             url += `&especialidad=${encodeURIComponent(especialidad)}`;
                         }
                         
+                        console.log('Cargando profesionales:', { url, servicioId, especialidad });
+                        
                         const response = await fetch(url, {
                             headers: {
                                 'Authorization': `Bearer ${token}`
                             }
                         });
                         
+                        console.log('✅ Response recibida');
+                        console.log('Response status:', response.status);
+                        console.log('Response ok:', response.ok);
+                        
                         if (response.ok) {
+                            console.log('📥 Parseando JSON...');
                             const data = await response.json();
-                            this.profesionalesDisponibles = data.profesionales || [];
+                            console.log('✅ JSON parseado exitosamente');
+                            console.log('Profesionales en data:', data.profesionales?.length || 0);
+                            
+                            if (data.profesionales && Array.isArray(data.profesionales)) {
+                                this.profesionalesDisponibles = data.profesionales;
+                                console.log('Profesionales cargados:', this.profesionalesDisponibles.length);
+                            } else {
+                                console.error('❌ data.profesionales no es un array:', data);
+                                this.profesionalesDisponibles = [];
+                            }
+                        } else {
+                            const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
+                            console.error('❌ Error en respuesta:', errorData);
+                            this.profesionalesDisponibles = [];
                         }
                     } catch (error) {
-                        console.error('Error al cargar profesionales:', error);
+                        console.error('💥 Error CATCH al cargar profesionales:');
+                        console.error('Error type:', error.constructor.name);
+                        console.error('Error message:', error.message);
+                        console.error('Error stack:', error.stack);
+                        this.profesionalesDisponibles = [];
+                        
+                        // Mostrar mensaje de error al usuario
+                        if (window.showToast) {
+                            window.showToast('Error al cargar profesionales: ' + error.message, 'error');
+                        }
                     } finally {
                         this.loadingProfesionales = false;
                     }
@@ -1608,11 +2113,252 @@
 
                 cerrarModalReporte() {
                     this.modalReporteAbierto = false;
-                    this.reporteDetalle = null;
+                    this.reporteDetalle = {
+                        solicitud_id: 0,
+                        paciente: { nombre: '', email: '', telefono: '' },
+                        profesional: { nombre: '', especialidad: '', puntuacion_promedio: 0, total_calificaciones: 0, servicios_completados: 0 },
+                        servicio: { nombre: '', modalidad: '' },
+                        fecha_programada: '',
+                        fecha_completada: '',
+                        reporte_profesional: '',
+                        diagnostico: '',
+                        notas_adicionales: '',
+                        calificacion: { calificado: false },
+                        finanzas: { monto_total: 0, monto_profesional: 0, monto_plataforma: 0, pagado: false }
+                    };
+                },
+
+                // ============================================
+                // FUNCIONES DE GESTIÓN DE PROFESIONALES
+                // ============================================
+
+                async cargarListaProfesionales() {
+                    this.loadingProfesionales = true;
+                    try {
+                        const token = localStorage.getItem('token');
+                        let url = '/api/admin/profesionales?';
+                        
+                        if (this.filtrosProfesionales.busqueda) {
+                            url += `busqueda=${encodeURIComponent(this.filtrosProfesionales.busqueda)}&`;
+                        }
+                        if (this.filtrosProfesionales.tipo) {
+                            url += `tipo=${this.filtrosProfesionales.tipo}&`;
+                        }
+                        if (this.filtrosProfesionales.estado) {
+                            url += `estado=${this.filtrosProfesionales.estado}&`;
+                        }
+                        if (this.filtrosProfesionales.especialidad) {
+                            url += `especialidad=${encodeURIComponent(this.filtrosProfesionales.especialidad)}&`;
+                        }
+                        
+                        const response = await fetch(url, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.profesionales = data.profesionales || [];
+                            console.log('Profesionales cargados:', this.profesionales.length);
+                        } else {
+                            this.showToast('Error al cargar profesionales', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Error al cargar profesionales:', error);
+                        this.showToast('Error de conexión', 'error');
+                    } finally {
+                        this.loadingProfesionales = false;
+                    }
+                },
+
+                abrirModalNuevoProfesional() {
+                    this.profesionalEditando = null;
+                    this.formProfesional = {
+                        nombre: '',
+                        apellido: '',
+                        email: '',
+                        password: '',
+                        tipo_profesional: '',
+                        profesion: '',
+                        especialidad: '',
+                        telefono_whatsapp: '',
+                        telefono: '',
+                        direccion: '',
+                        direccion_consultorio: '',
+                        hoja_vida_url: '',
+                        estado: 'activo'
+                    };
+                    this.modalProfesionalAbierto = true;
+                },
+
+                editarProfesional(profesional) {
+                    this.profesionalEditando = profesional;
+                    this.formProfesional = {
+                        nombre: profesional.nombre,
+                        apellido: profesional.apellido,
+                        email: profesional.email,
+                        password: '',
+                        tipo_profesional: profesional.tipo_profesional,
+                        profesion: profesional.profesion || '',
+                        especialidad: profesional.especialidad || '',
+                        telefono_whatsapp: profesional.telefono_whatsapp || '',
+                        telefono: profesional.telefono || '',
+                        direccion: profesional.direccion || '',
+                        direccion_consultorio: profesional.direccion_consultorio || '',
+                        hoja_vida_url: profesional.hoja_vida_url || '',
+                        estado: profesional.estado
+                    };
+                    this.modalProfesionalAbierto = true;
+                },
+
+                async guardarProfesional() {
+                    this.guardandoProfesional = true;
+                    try {
+                        const token = localStorage.getItem('token');
+                        const url = this.profesionalEditando 
+                            ? `/api/admin/profesionales/${this.profesionalEditando.id}`
+                            : '/api/admin/profesionales';
+                        
+                        const method = this.profesionalEditando ? 'PUT' : 'POST';
+                        
+                        // Preparar datos
+                        const data = { ...this.formProfesional };
+                        if (this.profesionalEditando && !data.password) {
+                            delete data.password; // No actualizar contraseña si está vacía
+                        }
+                        
+                        const response = await fetch(url, {
+                            method: method,
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify(data)
+                        });
+                        
+                        if (response.ok) {
+                            const result = await response.json();
+                            this.showToast(result.message || 'Profesional guardado exitosamente', 'success');
+                            this.cerrarModalProfesional();
+                            await this.cargarListaProfesionales();
+                        } else {
+                            const error = await response.json();
+                            this.showToast(error.error || 'Error al guardar profesional', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Error al guardar profesional:', error);
+                        this.showToast('Error de conexión', 'error');
+                    } finally {
+                        this.guardandoProfesional = false;
+                    }
+                },
+
+                async cambiarEstadoProfesional(profesional) {
+                    const nuevoEstado = profesional.estado === 'activo' ? 'inactivo' : 'activo';
+                    const confirmar = confirm(`¿Estás seguro de ${nuevoEstado === 'activo' ? 'activar' : 'desactivar'} a ${profesional.nombre} ${profesional.apellido}?`);
+                    
+                    if (!confirmar) return;
+                    
+                    try {
+                        const token = localStorage.getItem('token');
+                        const response = await fetch(`/api/admin/profesionales/${profesional.id}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({ estado: nuevoEstado })
+                        });
+                        
+                        if (response.ok) {
+                            this.showToast(`Profesional ${nuevoEstado === 'activo' ? 'activado' : 'desactivado'} exitosamente`, 'success');
+                            await this.cargarListaProfesionales();
+                        } else {
+                            this.showToast('Error al cambiar estado', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        this.showToast('Error de conexión', 'error');
+                    }
+                },
+
+                manejarArchivoHojaVida(event) {
+                    const file = event.target.files[0];
+                    if (file) {
+                        if (file.type !== 'application/pdf') {
+                            this.showToast('Solo se permiten archivos PDF', 'error');
+                            event.target.value = '';
+                            return;
+                        }
+                        if (file.size > 5 * 1024 * 1024) {
+                            this.showToast('El archivo no puede superar 5MB', 'error');
+                            event.target.value = '';
+                            return;
+                        }
+                        
+                        // Aquí deberías implementar la carga al servidor
+                        // Por ahora, solo guardamos el nombre
+                        this.formProfesional.hoja_vida_url = file.name;
+                        this.showToast('Archivo listo para subir', 'info');
+                    }
+                },
+
+                cerrarModalProfesional() {
+                    this.modalProfesionalAbierto = false;
+                    this.profesionalEditando = null;
+                },
+
+                // FUNCIONES DE KANBAN Y ESPECIALIDADES
+                // ============================================
+
+                async cargarEspecialidades() {
+                    try {
+                        const response = await fetch('/api/admin/especialidades');
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.especialidades = data.data || [];
+                            console.log('Especialidades cargadas:', this.especialidades.length);
+                        }
+                    } catch (error) {
+                        console.error('Error al cargar especialidades:', error);
+                    }
+                },
+
+                async iniciarKanban() {
+                    // Esperar a que el DOM se actualice
+                    await this.$nextTick();
+                    
+                    // Cargar profesionales y especialidades si no están cargados
+                    if (this.profesionales.length === 0) {
+                        await this.cargarListaProfesionales();
+                    }
+                    if (this.especialidades.length === 0) {
+                        await this.cargarEspecialidades();
+                    }
+                    
+                    // Inicializar el Kanban si existe
+                    if (typeof KanbanBoard !== 'undefined') {
+                        if (!this.kanbanBoard) {
+                            this.kanbanBoard = new KanbanBoard();
+                            await this.kanbanBoard.init();
+                        } else {
+                            await this.kanbanBoard.cargarSolicitudes();
+                        }
+                    } else {
+                        console.error('KanbanBoard no está cargado');
+                        this.showToast('Error al cargar vista Kanban', 'error');
+                    }
                 }
             }
         }
     </script>
+
+    <!-- Toast Notifications -->
+    <script src="/js/toast.js"></script>
+    
+    <!-- Script del Kanban Board -->
+    <script src="/js/kanban-board.js"></script>
 
     <style>
         [x-cloak] { display: none !important; }

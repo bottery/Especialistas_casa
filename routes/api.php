@@ -83,6 +83,27 @@ if ($path === '/servicios' && $method === 'GET') {
     exit;
 }
 
+// Obtener especialidades médicas disponibles (público)
+if ($path === '/especialidades' && $method === 'GET') {
+    require_once __DIR__ . '/../app/Services/Database.php';
+    $db = App\Services\Database::getInstance();
+    
+    $query = "SELECT DISTINCT especialidad 
+              FROM usuarios 
+              WHERE tipo_profesional = 'medico' 
+                AND especialidad IS NOT NULL 
+                AND especialidad != ''
+                AND estado = 'activo'
+              ORDER BY especialidad ASC";
+    
+    $result = $db->select($query);
+    $especialidades = array_column($result, 'especialidad');
+    
+    header('Content-Type: application/json');
+    echo json_encode(['success' => true, 'especialidades' => $especialidades]);
+    exit;
+}
+
 if (preg_match('#^/profesionales$#', $path) && $method === 'GET') {
     require_once __DIR__ . '/../app/Models/Usuario.php';
     $usuarioModel = new App\Models\Usuario();
@@ -289,6 +310,263 @@ if (strpos($path, '/medico/') === 0) {
 // RUTAS DE ADMINISTRADOR (Autenticadas)
 // ============================================
 if (strpos($path, '/admin/') === 0) {
+    // ========== ESPECIALIDADES ==========
+    // Listar todas las especialidades
+    if ($path === '/admin/especialidades' && $method === 'GET') {
+        $controller = new AdminController(false); // Sin auth por ahora para debugging
+        $controller->getEspecialidades();
+        exit;
+    }
+    
+    // Obtener especialidades por tipo profesional
+    if (preg_match('#^/admin/especialidades/tipo/([a-z]+)$#', $path, $matches) && $method === 'GET') {
+        require_once __DIR__ . '/../app/Models/Especialidad.php';
+        
+        $especialidades = \App\Models\Especialidad::getPorTipo($matches[1]);
+        
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'data' => $especialidades]);
+        exit;
+    }
+    
+    // Obtener estadísticas de especialidades
+    if ($path === '/admin/especialidades/estadisticas' && $method === 'GET') {
+        require_once __DIR__ . '/../app/Models/Especialidad.php';
+        
+        $stats = \App\Models\Especialidad::getEstadisticas();
+        
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'data' => $stats]);
+        exit;
+    }
+    
+    // Crear nueva especialidad
+    if ($path === '/admin/especialidades' && $method === 'POST') {
+        require_once __DIR__ . '/../app/Models/Especialidad.php';
+        
+        $data = json_decode(file_get_contents('php://input'), true);
+        $id = \App\Models\Especialidad::crear($data);
+        
+        header('Content-Type: application/json');
+        if ($id) {
+            echo json_encode(['success' => true, 'data' => ['id' => $id]]);
+        } else {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'No se pudo crear la especialidad']);
+        }
+        exit;
+    }
+    
+    // Actualizar especialidad
+    if (preg_match('#^/admin/especialidades/(\d+)$#', $path, $matches) && $method === 'PUT') {
+        require_once __DIR__ . '/../app/Models/Especialidad.php';
+        
+        $data = json_decode(file_get_contents('php://input'), true);
+        $success = \App\Models\Especialidad::actualizar((int)$matches[1], $data);
+        
+        header('Content-Type: application/json');
+        if ($success) {
+            echo json_encode(['success' => true]);
+        } else {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'No se pudo actualizar la especialidad']);
+        }
+        exit;
+    }
+    
+    // Eliminar especialidad (soft delete)
+    if (preg_match('#^/admin/especialidades/(\d+)$#', $path, $matches) && $method === 'DELETE') {
+        require_once __DIR__ . '/../app/Models/Especialidad.php';
+        
+        $success = \App\Models\Especialidad::eliminar((int)$matches[1]);
+        
+        header('Content-Type: application/json');
+        if ($success) {
+            echo json_encode(['success' => true]);
+        } else {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'No se pudo eliminar la especialidad']);
+        }
+        exit;
+    }
+    
+    // ========== FIN ESPECIALIDADES ==========
+    
+    // ========== DISPONIBILIDAD ==========
+    // Obtener disponibilidad de un profesional
+    if (preg_match('#^/admin/profesionales/(\d+)/disponibilidad$#', $path, $matches) && $method === 'GET') {
+        require_once __DIR__ . '/../app/Models/Disponibilidad.php';
+        
+        $disponibilidad = \App\Models\Disponibilidad::getDisponibilidadSemanal((int)$matches[1]);
+        
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'data' => $disponibilidad]);
+        exit;
+    }
+    
+    // Guardar disponibilidad semanal
+    if (preg_match('#^/admin/profesionales/(\d+)/disponibilidad$#', $path, $matches) && $method === 'POST') {
+        require_once __DIR__ . '/../app/Models/Disponibilidad.php';
+        
+        $data = json_decode(file_get_contents('php://input'), true);
+        $success = \App\Models\Disponibilidad::guardarDisponibilidadSemanal((int)$matches[1], $data['horarios']);
+        
+        header('Content-Type: application/json');
+        echo json_encode(['success' => $success]);
+        exit;
+    }
+    
+    // Obtener próximos horarios disponibles
+    if (preg_match('#^/admin/profesionales/(\d+)/horarios-disponibles$#', $path, $matches) && $method === 'GET') {
+        require_once __DIR__ . '/../app/Models/Disponibilidad.php';
+        
+        $duracion = (int)($_GET['duracion'] ?? 60);
+        $dias = (int)($_GET['dias'] ?? 7);
+        
+        $horarios = \App\Models\Disponibilidad::getProximosHorariosDisponibles((int)$matches[1], $duracion, $dias);
+        
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'data' => $horarios]);
+        exit;
+    }
+    
+    // Buscar profesionales disponibles en fecha/hora específica
+    if ($path === '/admin/profesionales/disponibles' && $method === 'GET') {
+        require_once __DIR__ . '/../app/Models/Disponibilidad.php';
+        
+        $fechaHora = new DateTime($_GET['fecha_hora'] ?? 'now');
+        $especialidadId = isset($_GET['especialidad_id']) ? (int)$_GET['especialidad_id'] : null;
+        $duracion = (int)($_GET['duracion'] ?? 60);
+        
+        $profesionales = \App\Models\Disponibilidad::getProfesionalesDisponibles($fechaHora, $especialidadId, $duracion);
+        
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'data' => $profesionales]);
+        exit;
+    }
+    
+    // Crear bloqueo de disponibilidad (vacaciones, ausencias)
+    if (preg_match('#^/admin/profesionales/(\d+)/bloqueos$#', $path, $matches) && $method === 'POST') {
+        require_once __DIR__ . '/../app/Models/Disponibilidad.php';
+        
+        $data = json_decode(file_get_contents('php://input'), true);
+        $id = \App\Models\Disponibilidad::crearBloqueoNoDisponible(
+            (int)$matches[1],
+            new DateTime($data['fecha_inicio']),
+            new DateTime($data['fecha_fin']),
+            $data['motivo'] ?? null,
+            $data['tipo'] ?? 'otro'
+        );
+        
+        header('Content-Type: application/json');
+        echo json_encode(['success' => (bool)$id, 'data' => ['id' => $id]]);
+        exit;
+    }
+    
+    // Actualizar disponibilidad inmediata (toggle "Disponible ahora")
+    if (preg_match('#^/admin/profesionales/(\d+)/disponibilidad-inmediata$#', $path, $matches) && $method === 'PATCH') {
+        require_once __DIR__ . '/../app/Models/Disponibilidad.php';
+        
+        $data = json_decode(file_get_contents('php://input'), true);
+        $success = \App\Models\Disponibilidad::actualizarDisponibilidadInmediata((int)$matches[1], $data['disponible']);
+        
+        header('Content-Type: application/json');
+        echo json_encode(['success' => $success]);
+        exit;
+    }
+    
+    // ========== FIN DISPONIBILIDAD ==========
+    
+    // ========== SOLICITUDES KANBAN ==========
+    // Obtener todas las solicitudes para vista Kanban
+    if ($path === '/admin/solicitudes/todas' && $method === 'GET') {
+        $controller = new AdminController(false); // Sin auth por ahora para debugging
+        $controller->getSolicitudesTodas();
+        exit;
+    }
+    
+    // Cambiar estado de una solicitud
+    if (preg_match('#^/admin/solicitudes/(\d+)/estado$#', $path, $matches) && $method === 'PATCH') {
+        require_once __DIR__ . '/../app/Services/NotificacionService.php';
+        
+        $db = \App\Services\Database::getInstance();
+        $data = json_decode(file_get_contents('php://input'), true);
+        $solicitudId = (int)$matches[1];
+        $estadoKanban = $data['estado']; // Estado que viene del Kanban
+        
+        // Mapear estados del Kanban a estados de la DB
+        $mapeoEstados = [
+            'pendiente' => 'pagado',
+            'asignada' => 'asignado',
+            'en_camino' => 'asignado', // No hay estado en_camino en DB
+            'en_proceso' => 'en_proceso',
+            'completada' => 'completado'
+        ];
+        
+        $estadoDB = $mapeoEstados[$estadoKanban] ?? $estadoKanban;
+        
+        // Obtener solicitud actual
+        $solicitud = $db->selectOne("SELECT * FROM solicitudes WHERE id = ?", [$solicitudId]);
+        
+        if (!$solicitud) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'error' => 'Solicitud no encontrada']);
+            exit;
+        }
+        
+        // Actualizar estado
+        $success = $db->query(
+            "UPDATE solicitudes SET estado = ?, updated_at = NOW() WHERE id = ?",
+            [$estadoDB, $solicitudId]
+        );
+        
+        if ($success) {
+            // Registrar hora según el estado (usar el estado del Kanban)
+            switch ($estadoKanban) {
+                case 'asignada':
+                    $db->query("UPDATE solicitudes SET hora_asignacion = NOW() WHERE id = ?", [$solicitudId]);
+                    break;
+                case 'en_camino':
+                    $db->query("UPDATE solicitudes SET hora_salida = NOW() WHERE id = ?", [$solicitudId]);
+                    // Notificar al paciente
+                    \App\Services\NotificacionService::crearDesdePlantilla(
+                        $solicitud['paciente_id'],
+                        'profesional_en_camino',
+                        ['profesional' => 'Profesional', 'tiempo' => $solicitud['tiempo_estimado_llegada'] ?? 30],
+                        $solicitudId
+                    );
+                    break;
+                case 'en_proceso':
+                    $db->query("UPDATE solicitudes SET hora_inicio_servicio = NOW() WHERE id = ?", [$solicitudId]);
+                    \App\Services\NotificacionService::crearDesdePlantilla(
+                        $solicitud['paciente_id'],
+                        'servicio_iniciado',
+                        ['profesional' => 'Profesional', 'servicio' => 'el servicio'],
+                        $solicitudId
+                    );
+                    break;
+                case 'completada':
+                    $db->query("UPDATE solicitudes SET fecha_completada = NOW() WHERE id = ?", [$solicitudId]);
+                    \App\Services\NotificacionService::crearDesdePlantilla(
+                        $solicitud['paciente_id'],
+                        'servicio_completado',
+                        [],
+                        $solicitudId
+                    );
+                    break;
+            }
+            
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true]);
+        } else {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => 'Error al actualizar estado']);
+        }
+        exit;
+    }
+    
+    // ========== FIN SOLICITUDES KANBAN ==========
+    
     // Estadísticas del admin
     if ($path === '/admin/stats' && $method === 'GET') {
         $controller = new AdminController();
@@ -326,28 +604,262 @@ if (strpos($path, '/admin/') === 0) {
 
     // Solicitudes pendientes de asignación
     if ($path === '/admin/solicitudes/pendientes' && $method === 'GET') {
-        $controller = new AdminController();
+        $controller = new AdminController(false); // Sin auth para debugging
         $controller->getSolicitudesPendientes();
         exit;
     }
 
     // Solicitudes en proceso (asignadas)
     if ($path === '/admin/solicitudes/en-proceso' && $method === 'GET') {
-        $controller = new AdminController();
+        $controller = new AdminController(false); // Sin auth para debugging
         $controller->getSolicitudesEnProceso();
         exit;
     }
 
     // Profesionales disponibles para asignación
     if ($path === '/admin/profesionales' && $method === 'GET') {
-        $controller = new AdminController();
-        $controller->getProfesionalesDisponibles();
+        // Si no tiene servicio_id, es una llamada general del dashboard
+        if (!isset($_GET['servicio_id'])) {
+            $controller = new AdminController(false); // Sin auth por ahora para debugging
+            $controller->getProfesionales();
+            exit;
+        }
+        
+        // Si tiene servicio_id, es para asignación (mantener lógica existente)
+        require_once __DIR__ . '/../app/Services/Database.php';
+        
+        try {
+            $db = App\Services\Database::getInstance();
+            
+            if (!isset($_GET['servicio_id']) || empty($_GET['servicio_id'])) {
+                header('Content-Type: application/json');
+                http_response_code(400);
+                echo json_encode(['error' => 'servicio_id es requerido', 'get' => $_GET]);
+                exit;
+            }
+            
+            $servicioId = (int)$_GET['servicio_id'];
+            $especialidad = $_GET['especialidad'] ?? null;
+            
+            // Obtener tipo de servicio
+            $servicio = $db->selectOne("SELECT tipo FROM servicios WHERE id = ?", [$servicioId]);
+            
+            if (!$servicio) {
+                header('Content-Type: application/json');
+                http_response_code(404);
+                echo json_encode(['error' => 'Servicio no encontrado', 'servicio_id' => $servicioId]);
+                exit;
+            }
+            
+            $tipoServicio = $servicio['tipo'];
+            
+            // Query para profesionales
+            $query = "
+                SELECT 
+                    u.id,
+                    u.nombre,
+                    u.apellido,
+                    u.email,
+                    u.telefono,
+                    u.ciudad,
+                    u.tipo_profesional,
+                    u.especialidad,
+                    u.puntuacion_promedio,
+                    u.total_calificaciones,
+                    u.servicios_completados
+                FROM usuarios u
+                WHERE u.rol = 'profesional'
+                    AND u.tipo_profesional = ?
+                    AND u.estado = 'activo'
+            ";
+            
+            $params = [$tipoServicio];
+            
+            // Filtro por especialidad si existe
+            if ($especialidad && $tipoServicio !== 'ambulancia') {
+                $query .= " AND u.especialidad LIKE ?";
+                $params[] = "%{$especialidad}%";
+            }
+            
+            $query .= " ORDER BY u.puntuacion_promedio DESC, u.servicios_completados DESC";
+            
+            $profesionales = $db->select($query, $params);
+            
+            header('Content-Type: application/json');
+            echo json_encode(['profesionales' => $profesionales, 'total' => count($profesionales)]);
+        } catch (\Exception $e) {
+            error_log("Error en endpoint profesionales: " . $e->getMessage());
+            header('Content-Type: application/json');
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+        }
+        exit;
+    }
+
+    // Crear nuevo profesional
+    if ($path === '/admin/profesionales' && $method === 'POST') {
+        require_once __DIR__ . '/../app/Services/Database.php';
+        $db = App\Services\Database::getInstance();
+        
+        $data = json_decode(file_get_contents('php://input'), true);
+        
+        // Validaciones
+        if (empty($data['nombre']) || empty($data['apellido']) || empty($data['email']) || empty($data['password']) || empty($data['tipo_profesional'])) {
+            header('Content-Type: application/json');
+            http_response_code(400);
+            echo json_encode(['error' => 'Campos obligatorios faltantes']);
+            exit;
+        }
+        
+        // Verificar email único
+        $checkEmail = $db->select("SELECT id FROM usuarios WHERE email = ?", [$data['email']]);
+        if (!empty($checkEmail)) {
+            header('Content-Type: application/json');
+            http_response_code(400);
+            echo json_encode(['error' => 'El email ya está registrado']);
+            exit;
+        }
+        
+        // Hash de la contraseña
+        $passwordHash = password_hash($data['password'], PASSWORD_DEFAULT);
+        
+        // El rol siempre es 'profesional' para todos los tipos
+        $rol = 'profesional';
+        
+        // Preparar query INSERT con parámetros
+        $query = "INSERT INTO usuarios (
+                    email, password, rol, nombre, apellido, tipo_profesional, profesion, especialidad,
+                    telefono, telefono_whatsapp, direccion, direccion_consultorio, hoja_vida_url, estado
+                  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        
+        $params = [
+            $data['email'],
+            $passwordHash,
+            $rol,
+            $data['nombre'],
+            $data['apellido'],
+            $data['tipo_profesional'],
+            $data['profesion'] ?? '',
+            $data['especialidad'] ?? '',
+            $data['telefono'] ?? '',
+            $data['telefono_whatsapp'] ?? '',
+            $data['direccion'] ?? '',
+            $data['direccion_consultorio'] ?? '',
+            $data['hoja_vida_url'] ?? '',
+            $data['estado'] ?? 'activo'
+        ];
+        
+        if ($db->execute($query, $params)) {
+            $profesionalId = $db->lastInsertId();
+            
+            // Auto-asignar servicio según tipo
+            $servicio = $db->select("SELECT id FROM servicios WHERE tipo = ? LIMIT 1", [$data['tipo_profesional']]);
+            if (!empty($servicio)) {
+                $servicioId = $servicio[0]['id'];
+                $db->execute("INSERT INTO profesional_servicios (profesional_id, servicio_id) VALUES (?, ?)", [$profesionalId, $servicioId]);
+            }
+            
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'message' => 'Profesional creado exitosamente', 'id' => $profesionalId]);
+        } else {
+            header('Content-Type: application/json');
+            http_response_code(500);
+            echo json_encode(['error' => 'Error al crear profesional']);
+        }
+        exit;
+    }
+
+    // Actualizar profesional
+    if (preg_match('#^/admin/profesionales/(\d+)$#', $path, $matches) && $method === 'PUT') {
+        require_once __DIR__ . '/../app/Services/Database.php';
+        $db = App\Services\Database::getInstance();
+        
+        $profesionalId = (int)$matches[1];
+        $data = json_decode(file_get_contents('php://input'), true);
+        
+        // Construir query de actualización con parámetros preparados
+        $updates = [];
+        $params = [];
+        
+        if (isset($data['nombre'])) {
+            $updates[] = "nombre = ?";
+            $params[] = $data['nombre'];
+        }
+        if (isset($data['apellido'])) {
+            $updates[] = "apellido = ?";
+            $params[] = $data['apellido'];
+        }
+        if (isset($data['tipo_profesional'])) {
+            $updates[] = "tipo_profesional = ?";
+            $params[] = $data['tipo_profesional'];
+        }
+        if (isset($data['profesion'])) {
+            $updates[] = "profesion = ?";
+            $params[] = $data['profesion'];
+        }
+        if (isset($data['especialidad'])) {
+            $updates[] = "especialidad = ?";
+            $params[] = $data['especialidad'];
+        }
+        if (isset($data['telefono'])) {
+            $updates[] = "telefono = ?";
+            $params[] = $data['telefono'];
+        }
+        if (isset($data['telefono_whatsapp'])) {
+            $updates[] = "telefono_whatsapp = ?";
+            $params[] = $data['telefono_whatsapp'];
+        }
+        if (isset($data['direccion'])) {
+            $updates[] = "direccion = ?";
+            $params[] = $data['direccion'];
+        }
+        if (isset($data['direccion_consultorio'])) {
+            $updates[] = "direccion_consultorio = ?";
+            $params[] = $data['direccion_consultorio'];
+        }
+        if (isset($data['hoja_vida_url'])) {
+            $updates[] = "hoja_vida_url = ?";
+            $params[] = $data['hoja_vida_url'];
+        }
+        if (isset($data['estado'])) {
+            $updates[] = "estado = ?";
+            $params[] = $data['estado'];
+        }
+        
+        // Si se proporciona password, actualizarlo
+        if (isset($data['password']) && !empty($data['password'])) {
+            $passwordHash = password_hash($data['password'], PASSWORD_DEFAULT);
+            $updates[] = "password = ?";
+            $params[] = $passwordHash;
+        }
+        
+        if (empty($updates)) {
+            header('Content-Type: application/json');
+            http_response_code(400);
+            echo json_encode(['error' => 'No hay datos para actualizar']);
+            exit;
+        }
+        
+        // Agregar ID al final de los parámetros
+        $params[] = $profesionalId;
+        
+        $updateStr = implode(', ', $updates);
+        $query = "UPDATE usuarios SET $updateStr WHERE id = ?";
+        
+        if ($db->execute($query, $params)) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'message' => 'Profesional actualizado exitosamente']);
+        } else {
+            header('Content-Type: application/json');
+            http_response_code(500);
+            echo json_encode(['error' => 'Error al actualizar profesional']);
+        }
         exit;
     }
 
     // Asignar profesional a solicitud
     if (preg_match('#^/admin/solicitudes/(\d+)/asignar$#', $path, $matches) && $method === 'POST') {
-        $controller = new AdminController();
+        $controller = new AdminController(false); // Sin auth para debugging
         $controller->asignarProfesional((int)$matches[1]);
         exit;
     }

@@ -54,6 +54,7 @@ class AuthController extends BaseController
                 'password' => 'required|min:6',
                 'nombre' => 'required|min:2|max:255',
                 'apellido' => 'required|min:2|max:255',
+                'ciudad' => 'required|min:2|max:255',
                 'rol' => 'required|in:paciente,medico,enfermera,veterinario,laboratorio,ambulancia'
             ]);
 

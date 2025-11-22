@@ -82,28 +82,24 @@ class AsignacionProfesionalController extends BaseController
                     u.email,
                     u.telefono,
                     u.foto_perfil,
+                    u.tipo_profesional,
                     pp.especialidad,
-                    pp.experiencia_anos,
-                    pp.tarifa_base,
-                    pp.modalidad_virtual,
-                    pp.modalidad_presencial,
-                    pp.modalidad_consultorio,
-                    pp.direccion_consultorio,
-                    pp.activo,
-                    COALESCE(AVG(c.calificacion), 0) as calificacion_promedio,
-                    COUNT(c.id) as total_calificaciones,
-                    COUNT(DISTINCT s.id) as servicios_completados
+                    pp.años_experiencia,
+                    pp.tarifa_consulta_virtual,
+                    pp.tarifa_consulta_presencial,
+                    pp.tarifa_consultorio,
+                    pp.aprobado,
+                    u.puntuacion_promedio as calificacion_promedio,
+                    u.total_calificaciones,
+                    0 as servicios_completados
                 FROM usuarios u
-                INNER JOIN perfil_profesional pp ON u.id = pp.usuario_id
-                LEFT JOIN solicitudes s ON u.id = s.profesional_id AND s.estado = 'completada'
-                LEFT JOIN calificaciones c ON s.id = c.solicitud_id
+                INNER JOIN perfiles_profesionales pp ON u.id = pp.usuario_id
                 WHERE u.rol = 'profesional'
-                  AND u.activo = TRUE
-                  AND pp.activo = TRUE
-                  AND pp.tipo_servicio = :servicio_tipo
+                  AND u.estado = 'activo'
+                  AND pp.aprobado = TRUE
             ";
             
-            $params = ['servicio_tipo' => $servicioTipo];
+            $params = [];
             
             // Filtrar por especialidad si se proporciona
             if ($especialidad) {
@@ -115,24 +111,22 @@ class AsignacionProfesionalController extends BaseController
             if ($modalidad) {
                 switch ($modalidad) {
                     case 'virtual':
-                        $sql .= " AND pp.modalidad_virtual = TRUE";
+                        $sql .= " AND pp.tarifa_consulta_virtual > 0";
                         break;
                     case 'presencial':
-                        $sql .= " AND pp.modalidad_presencial = TRUE";
+                        $sql .= " AND pp.tarifa_consulta_presencial > 0";
                         break;
                     case 'consultorio':
-                        $sql .= " AND pp.modalidad_consultorio = TRUE";
+                        $sql .= " AND pp.tarifa_consultorio > 0";
                         break;
                 }
             }
             
             $sql .= " 
-                GROUP BY u.id, pp.especialidad, pp.experiencia_anos, pp.tarifa_base
                 ORDER BY 
-                    calificacion_promedio DESC,  -- Mejor calificación primero
-                    total_calificaciones DESC,    -- Más calificaciones después
-                    servicios_completados DESC,   -- Más experiencia después
-                    pp.experiencia_anos DESC      -- Más años de experiencia al final
+                    u.puntuacion_promedio DESC,  -- Mejor calificación primero
+                    u.total_calificaciones DESC,    -- Más calificaciones después
+                    pp.años_experiencia DESC      -- Más años de experiencia al final
             ";
             
             $stmt = $pdo->prepare($sql);
@@ -143,6 +137,17 @@ class AsignacionProfesionalController extends BaseController
             foreach ($profesionales as &$prof) {
                 $prof['calificacion_promedio'] = round((float)$prof['calificacion_promedio'], 1);
                 $prof['modalidades_disponibles'] = [];
+                
+                // Determinar modalidades según tarifas
+                if ($prof['tarifa_consulta_virtual'] > 0) {
+                    $prof['modalidades_disponibles'][] = 'virtual';
+                }
+                if ($prof['tarifa_consulta_presencial'] > 0) {
+                    $prof['modalidades_disponibles'][] = 'presencial';
+                }
+                if ($prof['tarifa_consultorio'] > 0) {
+                    $prof['modalidades_disponibles'][] = 'consultorio';
+                }
                 
                 if ($prof['modalidad_virtual']) $prof['modalidades_disponibles'][] = 'virtual';
                 if ($prof['modalidad_presencial']) $prof['modalidades_disponibles'][] = 'presencial';
@@ -219,17 +224,17 @@ class AsignacionProfesionalController extends BaseController
             
             // Verificar que el profesional existe y está activo
             $stmt = $pdo->prepare("
-                SELECT u.*, pp.activo as perfil_activo
+                SELECT u.*, pp.aprobado as perfil_aprobado
                 FROM usuarios u
-                INNER JOIN perfil_profesional pp ON u.id = pp.usuario_id
+                INNER JOIN perfiles_profesionales pp ON u.id = pp.usuario_id
                 WHERE u.id = :prof_id 
                   AND u.rol = 'profesional'
-                  AND u.activo = TRUE
+                  AND u.estado = 'activo'
             ");
             $stmt->execute(['prof_id' => $data['profesional_id']]);
             $profesional = $stmt->fetch(\PDO::FETCH_ASSOC);
             
-            if (!$profesional || !$profesional['perfil_activo']) {
+            if (!$profesional || !$profesional['perfil_aprobado']) {
                 $pdo->rollBack();
                 $this->sendError("Profesional no encontrado o no está activo", 404);
                 return;
@@ -361,8 +366,8 @@ class AsignacionProfesionalController extends BaseController
             // Verificar nuevo profesional
             $stmt = $pdo->prepare("
                 SELECT u.nombre FROM usuarios u
-                INNER JOIN perfil_profesional pp ON u.id = pp.usuario_id
-                WHERE u.id = :prof_id AND u.rol = 'profesional' AND u.activo = TRUE
+                INNER JOIN perfiles_profesionales pp ON u.id = pp.usuario_id
+                WHERE u.id = :prof_id AND u.rol = 'profesional' AND u.estado = 'activo'
             ");
             $stmt->execute(['prof_id' => $data['profesional_id']]);
             $nuevoProfesional = $stmt->fetch(\PDO::FETCH_ASSOC);

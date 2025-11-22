@@ -1,0 +1,308 @@
+<!-- ========================================
+     EJEMPLO DE INTEGRACIÓN DEL KANBAN
+     ======================================== -->
+
+<!-- 
+   Este es un ejemplo de cómo integrar la vista Kanban 
+   en tu dashboard admin existente.
+   
+   Archivo: resources/views/admin/dashboard.php
+-->
+
+<!-- 1. AGREGAR TOGGLE ENTRE VISTAS -->
+<div class="container-fluid p-4">
+    
+    <!-- Barra de herramientas con toggle -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Gestión de Solicitudes</h1>
+        
+        <!-- Toggle Vista Lista/Kanban -->
+        <div class="view-toggle">
+            <button 
+                @click="vista = 'lista'" 
+                :class="{'active': vista === 'lista'}"
+                class="btn btn-sm">
+                📋 Lista
+            </button>
+            <button 
+                @click="vista = 'kanban'" 
+                :class="{'active': vista === 'kanban'}"
+                class="btn btn-sm">
+                📊 Kanban
+            </button>
+        </div>
+    </div>
+    
+    <!-- 2. VISTA LISTA (La que ya tienes) -->
+    <div x-show="vista === 'lista'" id="lista-solicitudes">
+        <!-- Tu código actual de lista aquí -->
+        <table class="table">
+            <!-- ... -->
+        </table>
+    </div>
+    
+    <!-- 3. VISTA KANBAN (Nueva) -->
+    <div x-show="vista === 'kanban'" id="kanban-container">
+        <!-- El JavaScript creará el contenido aquí automáticamente -->
+    </div>
+    
+</div>
+
+<!-- 4. CARGAR LOS ARCHIVOS NECESARIOS -->
+<!-- Al final del archivo, antes de </body> -->
+
+<!-- CSS del Kanban -->
+<link rel="stylesheet" href="/css/kanban.css">
+
+<!-- JavaScript del Kanban -->
+<script src="/js/kanban-board.js"></script>
+
+<!-- 5. INICIALIZAR ALPINE.JS CON LA VARIABLE DE VISTA -->
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('dashboardAdmin', () => ({
+        // Tus variables existentes...
+        solicitudes: [],
+        
+        // Nueva variable para controlar la vista
+        vista: 'lista', // 'lista' o 'kanban'
+        
+        // Tus métodos existentes...
+        async cargarSolicitudes() {
+            // Tu código actual...
+        },
+        
+        // Eventos personalizados del Kanban
+        init() {
+            // Escuchar eventos del Kanban
+            window.addEventListener('ver-detalle-solicitud', (e) => {
+                this.verDetalleSolicitud(e.detail.solicitudId);
+            });
+            
+            window.addEventListener('asignar-profesional', (e) => {
+                this.abrirModalAsignacion(e.detail.solicitudId);
+            });
+        }
+    }));
+});
+</script>
+
+<!-- ========================================
+     EJEMPLO DE USO DE ESPECIALIDADES
+     ======================================== -->
+
+<!-- 
+   Cambiar el campo de especialidad en el modal de asignación
+   De texto libre a selector
+-->
+
+<!-- ANTES (texto libre): -->
+<!--
+<input 
+    type="text" 
+    name="especialidad" 
+    placeholder="Ej: Cardiología"
+    x-model="solicitudSeleccionada.especialidad_solicitada">
+-->
+
+<!-- DESPUÉS (selector): -->
+<select 
+    name="especialidad_id" 
+    x-model="filtroEspecialidad"
+    @change="cargarProfesionales(solicitudSeleccionada.servicio_id, $event.target.value)">
+    
+    <option value="">Todas las especialidades</option>
+    
+    <template x-for="especialidad in especialidades" :key="especialidad.id">
+        <option 
+            :value="especialidad.id" 
+            x-text="especialidad.icono + ' ' + especialidad.nombre">
+        </option>
+    </template>
+</select>
+
+<!-- Agregar método para cargar especialidades -->
+<script>
+// Dentro de tu componente Alpine
+async cargarEspecialidades() {
+    try {
+        const response = await fetch('/api/admin/especialidades/tipo/medico');
+        const data = await response.json();
+        this.especialidades = data.data;
+    } catch (error) {
+        console.error('Error cargando especialidades:', error);
+    }
+},
+
+// Modificar cargarProfesionales para filtrar por especialidad
+async cargarProfesionales(servicioId, especialidadId) {
+    let url = `/api/admin/profesionales?servicio_id=${servicioId}`;
+    if (especialidadId) {
+        url += `&especialidad_id=${especialidadId}`;
+    }
+    
+    const response = await fetch(url);
+    const data = await response.json();
+    this.profesionales = data.data;
+}
+</script>
+
+<!-- ========================================
+     EJEMPLO DE BÚSQUEDA DE DISPONIBLES
+     ======================================== -->
+
+<!-- 
+   Agregar un botón para buscar profesionales disponibles
+   en una fecha/hora específica
+-->
+
+<div class="mb-3">
+    <label>Buscar Profesionales Disponibles</label>
+    
+    <div class="input-group">
+        <input 
+            type="datetime-local" 
+            x-model="fechaHoraBusqueda"
+            class="form-control">
+        
+        <button 
+            @click="buscarDisponibles()"
+            class="btn btn-primary">
+            🔍 Buscar
+        </button>
+    </div>
+</div>
+
+<script>
+// Método para buscar profesionales disponibles
+async buscarDisponibles() {
+    const especialidadId = this.filtroEspecialidad || '';
+    const fechaHora = this.fechaHoraBusqueda;
+    
+    if (!fechaHora) {
+        showToast('Selecciona una fecha y hora', 'warning');
+        return;
+    }
+    
+    try {
+        const url = `/api/admin/profesionales/disponibles?` +
+                    `fecha_hora=${encodeURIComponent(fechaHora)}&` +
+                    `especialidad_id=${especialidadId}&` +
+                    `duracion=60`;
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        this.profesionalesDisponibles = data.data;
+        
+        showToast(
+            `${data.data.length} profesionales disponibles`, 
+            'success'
+        );
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Error al buscar disponibles', 'error');
+    }
+}
+</script>
+
+<!-- ========================================
+     EJEMPLO DE NOTIFICACIONES
+     ======================================== -->
+
+<!-- 
+   Las notificaciones se envían automáticamente cuando
+   cambias el estado de una solicitud
+-->
+
+<script>
+// Ejemplo: Cambiar estado y enviar notificación automática
+async cambiarEstado(solicitudId, nuevoEstado) {
+    try {
+        const response = await fetch(`/api/admin/solicitudes/${solicitudId}/estado`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ estado: nuevoEstado })
+        });
+        
+        if (response.ok) {
+            // La notificación se envía automáticamente en el backend
+            showToast('Estado actualizado y notificación enviada', 'success');
+            await this.cargarSolicitudes();
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Error al cambiar estado', 'error');
+    }
+}
+</script>
+
+<!-- ========================================
+     ESTILOS CSS ADICIONALES (opcional)
+     ======================================== -->
+
+<style>
+/* Estilos para el toggle de vistas */
+.view-toggle {
+    display: flex;
+    gap: 0.5rem;
+    background: #f3f4f6;
+    padding: 0.25rem;
+    border-radius: 6px;
+}
+
+.view-toggle button {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: #6b7280;
+    transition: all 0.2s;
+}
+
+.view-toggle button.active {
+    background: white;
+    color: #111827;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Asegurar que el container del Kanban tenga altura */
+#kanban-container {
+    min-height: 600px;
+}
+
+/* Selector de especialidades más bonito */
+select[name="especialidad_id"] {
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    background: white;
+}
+
+select[name="especialidad_id"]:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+</style>
+
+<!-- ========================================
+     RESUMEN
+     ======================================== -->
+
+<!-- 
+   PASOS PARA INTEGRAR:
+   
+   1. Agregar variable 'vista' en tu componente Alpine
+   2. Agregar el toggle de vistas
+   3. Envolver tu lista actual en x-show="vista === 'lista'"
+   4. Agregar <div id="kanban-container" x-show="vista === 'kanban'">
+   5. Cargar kanban-board.js y kanban.css
+   6. (Opcional) Cambiar input de especialidad por selector
+   7. (Opcional) Agregar búsqueda de profesionales disponibles
+   
+   ¡Y listo! El Kanban funcionará automáticamente.
+-->

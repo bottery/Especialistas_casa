@@ -17,9 +17,13 @@ window.nuevaSolicitudApp = function() {
         paso: 1,
         servicios: [],
         profesionales: [],
+        especialidadesDisponibles: [],
+        mostrarSelectorEspecialidad: false,
+        especialidadSeleccionada: null,
         formData: {
             servicio_id: '',
             servicio_tipo: '',
+            especialidad_solicitada: null,
             modalidad: 'presencial',
             fecha_programada: '',
             hora_programada: '',
@@ -154,10 +158,53 @@ window.nuevaSolicitudApp = function() {
         },
 
         async seleccionarServicio(servicio) {
+            // Validar que el servicio existe y tiene un ID válido
+            if (!servicio || !servicio.id || servicio.id === 0) {
+                ToastNotification.error('No hay servicios disponibles de este tipo. Por favor, contacta con el administrador.');
+                return;
+            }
+            
             this.formData.servicio_id = servicio.id;
             this.formData.servicio_tipo = servicio.tipo;
             this.servicioSeleccionado = servicio;
+            
+            // Si es médico, cargar especialidades disponibles
+            if (servicio.tipo === 'medico') {
+                await this.cargarEspecialidades();
+                this.mostrarSelectorEspecialidad = true;
+            } else {
+                this.mostrarSelectorEspecialidad = false;
+                this.formData.especialidad_solicitada = null;
+                this.paso = 2;
+            }
+        },
+
+        async cargarEspecialidades() {
+            try {
+                const response = await fetch('/api/especialidades');
+                if (response.ok) {
+                    const data = await response.json();
+                    this.especialidadesDisponibles = data.especialidades || [];
+                } else {
+                    ToastNotification.error('Error al cargar especialidades');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                ToastNotification.error('Error de conexión al cargar especialidades');
+            }
+        },
+
+        seleccionarEspecialidad(especialidad) {
+            this.formData.especialidad_solicitada = especialidad;
+            this.especialidadSeleccionada = especialidad;
             this.paso = 2;
+        },
+
+        volverAServicios() {
+            this.paso = 1;
+            this.mostrarSelectorEspecialidad = false;
+            this.servicioSeleccionado = null;
+            this.especialidadSeleccionada = null;
         },
 
 
@@ -455,8 +502,25 @@ window.nuevaSolicitudApp = function() {
         <div x-show="paso === 1 && !loading">
             <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">¿Qué tipo de servicio necesitas?</h2>
             
+            <!-- Mensaje cuando no hay servicios -->
+            <div x-show="servicios.length === 0" class="mb-6 p-6 bg-yellow-50 border-2 border-yellow-200 rounded-xl max-w-2xl mx-auto">
+                <div class="flex items-start gap-4">
+                    <div class="flex-shrink-0">
+                        <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-yellow-900 mb-2">⚠️ No hay servicios disponibles</h3>
+                        <p class="text-yellow-800 mb-2">Actualmente no hay servicios registrados en el sistema.</p>
+                        <p class="text-yellow-700 text-sm">Por favor, contacta con el administrador para que agregue los servicios disponibles.</p>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Categorías principales - Grid compacto -->
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-3xl mx-auto"
+                 :class="servicios.length === 0 ? 'opacity-50 pointer-events-none' : ''">
                 <!-- MÉDICOS -->
                 <div @click="seleccionarServicio(obtenerServicioPorTipo('medico'))" 
                      class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200 border-2 border-transparent hover:border-blue-500">
@@ -525,6 +589,75 @@ window.nuevaSolicitudApp = function() {
                         <h3 class="font-bold text-gray-900 text-lg mb-1">Laboratorio</h3>
                         <p class="text-xs text-gray-600">Exámenes a domicilio</p>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Paso 1.5: Selector de Especialidad Médica -->
+        <div x-show="mostrarSelectorEspecialidad && !loading">
+            <div class="max-w-4xl mx-auto">
+                <!-- Breadcrumb -->
+                <div class="mb-6 flex items-center gap-2 text-sm">
+                    <button @click="volverAServicios()" class="text-blue-600 hover:text-blue-700 font-medium">
+                        ← Servicios
+                    </button>
+                    <span class="text-gray-400">/</span>
+                    <span class="text-gray-600">Médico</span>
+                    <span class="text-gray-400">/</span>
+                    <span class="font-medium text-gray-900">Especialidad</span>
+                </div>
+
+                <h2 class="text-2xl font-bold text-gray-900 mb-3 text-center">¿Qué especialidad médica necesitas?</h2>
+                <p class="text-gray-600 text-center mb-8">Selecciona la especialidad que mejor se ajuste a tu necesidad</p>
+                
+                <!-- Grid de Especialidades -->
+                <div x-show="especialidadesDisponibles.length === 0" class="text-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p class="text-gray-500">Cargando especialidades...</p>
+                </div>
+
+                <div x-show="especialidadesDisponibles.length > 0" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <template x-for="esp in especialidadesDisponibles" :key="esp">
+                        <div @click="seleccionarEspecialidad(esp)" 
+                             class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-200 border-2 border-transparent hover:border-blue-500 group">
+                            <div class="flex flex-col items-center text-center">
+                                <div class="bg-blue-600 group-hover:bg-blue-700 p-3 rounded-full mb-3 transition-colors">
+                                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                </div>
+                                <h3 class="font-bold text-gray-900 text-base mb-1 group-hover:text-blue-700 transition-colors" x-text="esp"></h3>
+                                <p class="text-xs text-gray-600">Click para seleccionar</p>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Opción de Medicina General -->
+                <div class="mt-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border-2 border-green-200">
+                    <div class="flex items-start gap-3">
+                        <div class="flex-shrink-0">
+                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-bold text-green-900 mb-1">¿No estás seguro de qué especialidad necesitas?</h4>
+                            <p class="text-sm text-green-800 mb-3">Un médico general puede evaluar tu caso y referirte a la especialidad correcta si es necesario.</p>
+                            <button @click="seleccionarEspecialidad('Medicina General')" 
+                                    class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium text-sm transition-colors">
+                                Continuar con Medicina General
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botón volver -->
+                <div class="mt-6 text-center">
+                    <button @click="volverAServicios()" 
+                            class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors">
+                        ← Volver a Servicios
+                    </button>
                 </div>
             </div>
         </div>

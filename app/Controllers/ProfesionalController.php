@@ -138,7 +138,30 @@ class ProfesionalController extends BaseController
             
             $stmt->execute(['id' => $solicitudId]);
             
-            // TODO: Enviar notificación al paciente
+            // Enviar notificación al paciente
+            try {
+                $stmt = $this->db->prepare("
+                    INSERT INTO notificaciones 
+                    (usuario_id, tipo, titulo, mensaje, datos)
+                    VALUES (:usuario_id, 'sistema', 'Servicio Aceptado', :mensaje, :datos)
+                ");
+                
+                $mensajePaciente = sprintf(
+                    'El profesional %s %s ha aceptado tu solicitud y está en camino. Pronto te contactará.',
+                    $this->user->nombre,
+                    $this->user->apellido ?? ''
+                );
+                
+                $datos = json_encode(['solicitud_id' => $solicitudId, 'tipo' => 'aceptacion']);
+                
+                $stmt->execute([
+                    'usuario_id' => $solicitud['paciente_id'],
+                    'mensaje' => $mensajePaciente,
+                    'datos' => $datos
+                ]);
+            } catch (\Exception $e) {
+                error_log("Error al crear notificación: " . $e->getMessage());
+            }
             
             $this->sendSuccess([
                 'message' => 'Solicitud aceptada exitosamente',
