@@ -245,6 +245,110 @@
             </div>
         </div>
 
+        <!-- Configuración de Pagos -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8" x-show="!loading">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-teal-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z"/>
+                    </svg>
+                    Configuración de Pagos por Transferencia
+                </h3>
+                <span class="text-xs text-gray-500">Solo tú puedes modificar estos datos</span>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Formulario de datos bancarios -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del Banco</label>
+                        <input type="text" x-model="configPagos.banco_nombre" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                               placeholder="Ej: Bancolombia">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Cuenta</label>
+                        <select x-model="configPagos.banco_tipo_cuenta" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                            <option value="Ahorros">Ahorros</option>
+                            <option value="Corriente">Corriente</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Número de Cuenta</label>
+                        <input type="text" x-model="configPagos.banco_cuenta" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                               placeholder="Ej: 123-456789-00">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Titular de la Cuenta</label>
+                        <input type="text" x-model="configPagos.banco_titular" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                               placeholder="Ej: VitaHome S.A.S">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">WhatsApp de Contacto</label>
+                        <input type="text" x-model="configPagos.whatsapp_contacto" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                               placeholder="Ej: +57 300 123 4567">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Instrucciones de Transferencia</label>
+                        <textarea x-model="configPagos.instrucciones_transferencia" rows="3"
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                                  placeholder="Instrucciones para el usuario..."></textarea>
+                    </div>
+                    <button @click="guardarConfigPagos()" 
+                            :disabled="guardandoConfig"
+                            class="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50">
+                        <span x-show="!guardandoConfig">💾 Guardar Configuración</span>
+                        <span x-show="guardandoConfig">Guardando...</span>
+                    </button>
+                </div>
+                
+                <!-- Vista previa y QR -->
+                <div class="space-y-4">
+                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <h4 class="font-medium text-gray-800 mb-3">👁️ Vista Previa (lo que ve el usuario)</h4>
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <p class="text-xs font-semibold text-blue-900 mb-2">📋 Datos para transferencia:</p>
+                            <p class="text-xs text-blue-800">🏦 Banco: <strong x-text="configPagos.banco_nombre || 'Sin configurar'"></strong></p>
+                            <p class="text-xs text-blue-800">📁 Tipo: <strong x-text="configPagos.banco_tipo_cuenta || 'Sin configurar'"></strong></p>
+                            <p class="text-xs text-blue-800">🔢 Cuenta: <strong x-text="configPagos.banco_cuenta || 'Sin configurar'"></strong></p>
+                            <p class="text-xs text-blue-800">👤 Titular: <strong x-text="configPagos.banco_titular || 'Sin configurar'"></strong></p>
+                            <p class="text-xs text-blue-800 mt-2">📱 WhatsApp: <strong x-text="configPagos.whatsapp_contacto || 'Sin configurar'"></strong></p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <h4 class="font-medium text-gray-800 mb-3">📱 Código QR de Pago</h4>
+                        <div class="text-center">
+                            <template x-if="configPagos.qr_imagen_path">
+                                <div>
+                                    <img :src="BASE_URL + configPagos.qr_imagen_path" alt="QR de pago" class="w-40 h-40 mx-auto border-2 border-teal-200 rounded-lg">
+                                    <p class="text-xs text-gray-500 mt-2">QR actual configurado</p>
+                                </div>
+                            </template>
+                            <template x-if="!configPagos.qr_imagen_path">
+                                <div class="bg-gray-200 w-40 h-40 mx-auto rounded-lg flex items-center justify-center">
+                                    <span class="text-gray-500 text-sm">Sin QR</span>
+                                </div>
+                            </template>
+                            <div class="mt-3">
+                                <label class="cursor-pointer bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded-lg inline-flex items-center">
+                                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                    Subir nuevo QR
+                                    <input type="file" class="hidden" accept="image/*" @change="subirQR($event)">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
 <script>
@@ -270,6 +374,18 @@ window.dashboardApp = function() {
             pagos: []
         },
         charts: {},
+        
+        // Configuración de pagos
+        configPagos: {
+            banco_nombre: '',
+            banco_cuenta: '',
+            banco_tipo_cuenta: 'Ahorros',
+            banco_titular: '',
+            qr_imagen_path: '',
+            whatsapp_contacto: '',
+            instrucciones_transferencia: ''
+        },
+        guardandoConfig: false,
 
         async init() {
             const token = localStorage.getItem('token');
@@ -289,6 +405,7 @@ window.dashboardApp = function() {
 
             await this.loadDashboardData();
             await this.loadChartData();
+            await this.cargarConfigPagos();
         },
 
         async loadDashboardData() {
@@ -513,6 +630,109 @@ window.dashboardApp = function() {
             setTimeout(() => {
                 this.message = '';
             }, 5000);
+        },
+
+        // Funciones de configuración de pagos
+        async cargarConfigPagos() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(BASE_URL + '/api/admin/configuracion-pagos', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    const data = result.data || result;
+                    this.configPagos = {
+                        banco_nombre: data.banco_nombre || '',
+                        banco_cuenta: data.banco_cuenta || '',
+                        banco_tipo_cuenta: data.banco_tipo_cuenta || 'Ahorros',
+                        banco_titular: data.banco_titular || '',
+                        qr_imagen_path: data.qr_imagen_path || '',
+                        whatsapp_contacto: data.whatsapp_contacto || '',
+                        instrucciones_transferencia: data.instrucciones_transferencia || ''
+                    };
+                }
+            } catch (error) {
+                console.error('Error cargando configuración de pagos:', error);
+            }
+        },
+
+        async guardarConfigPagos() {
+            this.guardandoConfig = true;
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(BASE_URL + '/api/admin/configuracion-pagos', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(this.configPagos)
+                });
+
+                if (response.ok) {
+                    this.showMessage('Configuración de pagos actualizada correctamente', 'success');
+                } else {
+                    const error = await response.json();
+                    this.showMessage(error.message || 'Error al guardar configuración', 'error');
+                }
+            } catch (error) {
+                console.error('Error guardando configuración:', error);
+                this.showMessage('Error de conexión al guardar', 'error');
+            } finally {
+                this.guardandoConfig = false;
+            }
+        },
+
+        async subirQR(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Validar tipo de archivo
+            if (!file.type.startsWith('image/')) {
+                this.showMessage('Por favor seleccione una imagen válida', 'error');
+                return;
+            }
+
+            // Validar tamaño (max 2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                this.showMessage('La imagen no debe superar los 2MB', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('qr_imagen', file);
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(BASE_URL + '/api/admin/configuracion-pagos/qr', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    this.configPagos.qr_imagen_path = result.data?.qr_imagen_path || result.qr_imagen_path;
+                    this.showMessage('QR subido correctamente', 'success');
+                } else {
+                    const error = await response.json();
+                    this.showMessage(error.message || 'Error al subir QR', 'error');
+                }
+            } catch (error) {
+                console.error('Error subiendo QR:', error);
+                this.showMessage('Error de conexión al subir QR', 'error');
+            }
+
+            // Limpiar el input
+            event.target.value = '';
         },
 
         logout() {

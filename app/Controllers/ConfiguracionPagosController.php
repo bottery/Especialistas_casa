@@ -7,14 +7,63 @@
 namespace App\Controllers;
 
 use App\Services\Database;
+use App\Middleware\AuthMiddleware;
 
-class ConfiguracionPagosController extends BaseController
+class ConfiguracionPagosController
 {
     private $db;
+    private $authMiddleware;
+    private $user;
 
     public function __construct()
     {
         $this->db = Database::getInstance();
+        $this->authMiddleware = new AuthMiddleware();
+    }
+
+    /**
+     * Verificar autenticación con roles específicos
+     */
+    private function requireAuth(array $roles): void
+    {
+        $this->user = $this->authMiddleware->checkRole($roles);
+        if (!$this->user) {
+            exit;
+        }
+    }
+
+    /**
+     * Enviar respuesta JSON de éxito
+     */
+    private function sendSuccess($data, int $code = 200): void
+    {
+        http_response_code($code);
+        header('Content-Type: application/json');
+        if (is_array($data) && !isset($data['success'])) {
+            echo json_encode(['success' => true, 'data' => $data]);
+        } else {
+            echo json_encode(array_merge(['success' => true], $data));
+        }
+    }
+
+    /**
+     * Enviar respuesta JSON de error
+     */
+    private function sendError(string $message, int $code = 400): void
+    {
+        http_response_code($code);
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => $message, 'message' => $message]);
+    }
+
+    /**
+     * Obtener datos del request (JSON body)
+     */
+    private function getRequestData(): array
+    {
+        $input = file_get_contents('php://input');
+        $data = json_decode($input, true);
+        return $data ?? [];
     }
 
     /**
@@ -27,12 +76,13 @@ class ConfiguracionPagosController extends BaseController
             // Solo superadmin puede acceder
             $this->requireAuth(['superadmin']);
             
-            $result = $this->db->select("SELECT * FROM configuracion_pagos WHERE id = 1 LIMIT 1");
-            $config = $result[0] ?? null;
+            $pdo = $this->db->getConnection();
+            $stmt = $pdo->query("SELECT * FROM configuracion_pagos WHERE id = 1 LIMIT 1");
+            $config = $stmt->fetch(\PDO::FETCH_ASSOC);
             
             if (!$config) {
                 // Crear configuración por defecto si no existe
-                $this->db->insert("INSERT INTO configuracion_pagos (id, activo) VALUES (1, 1)", []);
+                $pdo->exec("INSERT INTO configuracion_pagos (id, activo) VALUES (1, 1)");
                 $config = [
                     'id' => 1,
                     'qr_imagen_path' => null,
@@ -63,7 +113,7 @@ class ConfiguracionPagosController extends BaseController
             $this->requireAuth(['superadmin']);
             
             $data = $this->getRequestData();
-            $userId = $_SESSION['user_id'] ?? null;
+            $userId = $this->user['id'] ?? null;
             
             $updates = [];
             $params = [];
@@ -114,7 +164,9 @@ class ConfiguracionPagosController extends BaseController
             }
             
             $sql = "UPDATE configuracion_pagos SET " . implode(', ', $updates) . " WHERE id = 1";
-            $this->db->query($sql, $params);
+            $pdo = $this->db->getConnection();
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
             
             $this->sendSuccess(['message' => 'Configuración actualizada exitosamente']);
             
@@ -139,7 +191,7 @@ class ConfiguracionPagosController extends BaseController
             }
             
             $file = $_FILES['qr_imagen'];
-            $allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+            $allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/svg+xml'];
             $maxSize = 5 * 1024 * 1024; // 5MB
             
             // Validar tipo de archivo
@@ -148,7 +200,7 @@ class ConfiguracionPagosController extends BaseController
             finfo_close($finfo);
             
             if (!in_array($mimeType, $allowedTypes)) {
-                $this->sendError("Tipo de archivo no permitido. Solo se aceptan imágenes JPG y PNG", 400);
+                $this->sendError("Tipo de archivo no permitido. Solo se aceptan imágenes JPG, PNG y SVG", 400);
                 return;
             }
             
@@ -175,26 +227,28 @@ class ConfiguracionPagosController extends BaseController
                 return;
             }
             
-            $userId = $_SESSION['user_id'] ?? null;
+            $userId = $this->user['id'] ?? null;
             $relativePath = '/uploads/pagos/' . $filename;
             
+            $pdo = $this->db->getConnection();
+            
             // Eliminar QR anterior si existe
-            $oldConfig = $this->db->select("SELECT qr_imagen_path FROM configuracion_pagos WHERE id = 1");
-            if (!empty($oldConfig) && $oldConfig[0]['qr_imagen_path']) {
-                $oldFile = __DIR__ . '/../../public' . $oldConfig[0]['qr_imagen_path'];
+            $stmt = $pdo->query("SELECT qr_imagen_path FROM configuracion_pagos WHERE id = 1");
+            $oldConfig = $stmt->fetch(\PDO::FETCH_ASSOC);
+            
+            if ($oldConfig && $oldConfig['qr_imagen_path']) {
+                $oldFile = __DIR__ . '/../../public' . $oldConfig['qr_imagen_path'];
                 if (file_exists($oldFile) && strpos($oldFile, '/uploads/') !== false) {
-                    unlink($oldFile);
+                    @unlink($oldFile);
                 }
             }
             
-            $this->db->query(
-                "UPDATE configuracion_pagos SET qr_imagen_path = ?, updated_by = ? WHERE id = 1",
-                [$relativePath, $userId]
-            );
+            $stmt = $pdo->prepare("UPDATE configuracion_pagos SET qr_imagen_path = ?, updated_by = ? WHERE id = 1");
+            $stmt->execute([$relativePath, $userId]);
             
             $this->sendSuccess([
                 'message' => 'Código QR actualizado exitosamente',
-                'qr_path' => $relativePath
+                'qr_imagen_path' => $relativePath
             ]);
             
         } catch (\Exception $e) {
@@ -212,21 +266,22 @@ class ConfiguracionPagosController extends BaseController
         try {
             $this->requireAuth(['superadmin']);
             
-            // Obtener ruta actual
-            $config = $this->db->select("SELECT qr_imagen_path FROM configuracion_pagos WHERE id = 1");
+            $pdo = $this->db->getConnection();
             
-            if (!empty($config) && $config[0]['qr_imagen_path']) {
-                $filepath = __DIR__ . '/../../public' . $config[0]['qr_imagen_path'];
+            // Obtener ruta actual
+            $stmt = $pdo->query("SELECT qr_imagen_path FROM configuracion_pagos WHERE id = 1");
+            $config = $stmt->fetch(\PDO::FETCH_ASSOC);
+            
+            if ($config && $config['qr_imagen_path']) {
+                $filepath = __DIR__ . '/../../public' . $config['qr_imagen_path'];
                 if (file_exists($filepath) && strpos($filepath, '/uploads/') !== false) {
-                    unlink($filepath);
+                    @unlink($filepath);
                 }
                 
                 // Actualizar BD
-                $userId = $_SESSION['user_id'] ?? null;
-                $this->db->query(
-                    "UPDATE configuracion_pagos SET qr_imagen_path = NULL, updated_by = ? WHERE id = 1",
-                    [$userId]
-                );
+                $userId = $this->user['id'] ?? null;
+                $stmt = $pdo->prepare("UPDATE configuracion_pagos SET qr_imagen_path = NULL, updated_by = ? WHERE id = 1");
+                $stmt->execute([$userId]);
             }
             
             $this->sendSuccess(['message' => 'Código QR eliminado exitosamente']);
@@ -244,7 +299,8 @@ class ConfiguracionPagosController extends BaseController
     public function getDatosBancariosPublico(): void
     {
         try {
-            $result = $this->db->select("
+            $pdo = $this->db->getConnection();
+            $stmt = $pdo->query("
                 SELECT 
                     banco_nombre,
                     banco_cuenta,
@@ -257,7 +313,7 @@ class ConfiguracionPagosController extends BaseController
                 WHERE id = 1 AND activo = 1 
                 LIMIT 1
             ");
-            $config = $result[0] ?? null;
+            $config = $stmt->fetch(\PDO::FETCH_ASSOC);
             
             if (!$config) {
                 // Datos por defecto si no hay configuración
