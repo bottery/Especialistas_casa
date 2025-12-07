@@ -263,7 +263,7 @@ class SuperAdminController
 
     private function getProfesionalesActivos(): int
     {
-        $result = $this->db->selectOne("SELECT COUNT(*) as total FROM usuarios WHERE rol = 'profesional' AND estado = 'activo'");
+        $result = $this->db->selectOne("SELECT COUNT(*) as total FROM usuarios WHERE rol IN ('medico', 'enfermera', 'veterinario', 'laboratorio', 'ambulancia') AND estado = 'activo'");
         return (int) ($result['total'] ?? 0);
     }
 
@@ -333,8 +333,8 @@ class SuperAdminController
                     p.telefono as paciente_telefono,
                     prof.nombre as profesional_nombre,
                     prof.apellido as profesional_apellido,
-                    prof.tipo_profesional,
-                    prof.especialidad,
+                    prof.rol as tipo_profesional,
+                    pp.especialidad,
                     prof.puntuacion_promedio,
                     prof.total_calificaciones,
                     srv.nombre as servicio_nombre,
@@ -346,6 +346,7 @@ class SuperAdminController
                 FROM solicitudes s
                 INNER JOIN usuarios p ON s.paciente_id = p.id
                 INNER JOIN usuarios prof ON s.profesional_id = prof.id
+                LEFT JOIN perfiles_profesionales pp ON prof.id = pp.usuario_id
                 INNER JOIN servicios srv ON s.servicio_id = srv.id
                 WHERE s.estado = 'completado' AND s.fecha_completada IS NOT NULL
             ";
@@ -432,21 +433,22 @@ class SuperAdminController
                     p.apellido as paciente_apellido,
                     p.email as paciente_email,
                     p.telefono as paciente_telefono,
-                    p.puntuacion_promedio_paciente,
-                    p.total_calificaciones_paciente,
+                    0 as puntuacion_promedio_paciente,
+                    0 as total_calificaciones_paciente,
                     prof.nombre as profesional_nombre,
                     prof.apellido as profesional_apellido,
-                    prof.tipo_profesional,
-                    prof.especialidad,
+                    prof.rol as tipo_profesional,
+                    pp.especialidad,
                     prof.puntuacion_promedio,
                     prof.total_calificaciones,
-                    prof.servicios_completados,
+                    0 as servicios_completados,
                     srv.nombre as servicio_nombre,
                     srv.tipo as servicio_tipo,
                     srv.descripcion as servicio_descripcion
                 FROM solicitudes s
                 INNER JOIN usuarios p ON s.paciente_id = p.id
                 INNER JOIN usuarios prof ON s.profesional_id = prof.id
+                LEFT JOIN perfiles_profesionales pp ON prof.id = pp.usuario_id
                 INNER JOIN servicios srv ON s.servicio_id = srv.id
                 WHERE s.id = :id AND s.estado = 'completado' AND s.fecha_completada IS NOT NULL
             ");

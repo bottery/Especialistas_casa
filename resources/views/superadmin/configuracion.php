@@ -1,9 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configuración - Especialistas en Casa</title>
+    <script>const BASE_URL = '<?= rtrim(BASE_URL, "/") ?>';</script>
     <script src="https://cdn.tailwindcss.com"></script>
 <script>
 window.configuracionApp = function() {
@@ -69,7 +70,7 @@ window.configuracionApp = function() {
         async init() {
             const token = localStorage.getItem('token');
             if (!token) {
-                window.location.href = '/login';
+                window.location.href = BASE_URL + '/login';
                 return;
             }
             await this.cargarConfiguracion();
@@ -79,7 +80,7 @@ window.configuracionApp = function() {
             this.loading = true;
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('/api/configuracion', {
+                const response = await fetch(BASE_URL + '/api/configuracion', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -98,7 +99,7 @@ window.configuracionApp = function() {
             this.loading = true;
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('/api/configuracion', {
+                const response = await fetch(BASE_URL + '/api/configuracion', {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -128,7 +129,7 @@ window.configuracionApp = function() {
         logout() {
             localStorage.removeItem('token');
             localStorage.removeItem('usuario');
-            window.location.href = '/login';
+            window.location.href = BASE_URL + '/login';
         }
     }
 }
@@ -140,7 +141,7 @@ window.configuracionApp = function() {
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center space-x-4">
-                    <a href="/superadmin/dashboard" class="flex items-center space-x-2">
+                    <a href="<?= url('/superadmin/dashboard') ?>" class="flex items-center space-x-2">
                         <svg class="h-8 w-8 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
                         </svg>

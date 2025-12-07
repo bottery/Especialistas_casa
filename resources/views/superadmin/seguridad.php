@@ -1,9 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Centro de Notificaciones y Seguridad - Especialistas en Casa</title>
+    <script>const BASE_URL = '<?= rtrim(BASE_URL, "/") ?>';</script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
@@ -29,7 +30,7 @@
                             </svg>
                         </button>
                     </div>
-                    <a href="/superadmin/dashboard" class="text-gray-600 hover:text-gray-900">← Dashboard</a>
+                    <a href="<?= url('/superadmin/dashboard') ?>" class="text-gray-600 hover:text-gray-900">← Dashboard</a>
                     <button @click="logout()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium">Salir</button>
                 </div>
             </div>
@@ -390,7 +391,7 @@ window.seguridadApp = function() {
         async init() {
             const token = localStorage.getItem('token');
             if (!token) {
-                window.location.href = '/login';
+                window.location.href = BASE_URL + '/login';
                 return;
             }
             await this.cargarDashboard();
@@ -403,7 +404,7 @@ window.seguridadApp = function() {
         async cargarDashboard() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('/api/seguridad/dashboard', {
+                const response = await fetch(BASE_URL + '/api/seguridad/dashboard', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (response.ok) {
@@ -418,7 +419,7 @@ window.seguridadApp = function() {
         async cargarNotificaciones() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('/api/seguridad/notificaciones', {
+                const response = await fetch(BASE_URL + '/api/seguridad/notificaciones', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (response.ok) {
@@ -436,7 +437,7 @@ window.seguridadApp = function() {
                 const params = new URLSearchParams({ limit: 50 });
                 if (this.filtroTipo) params.append('tipo', this.filtroTipo);
                 
-                const response = await fetch(`/api/seguridad/logs?${params}`, {
+                const response = await fetch(`${BASE_URL}/api/seguridad/logs?${params}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (response.ok) {
@@ -451,7 +452,7 @@ window.seguridadApp = function() {
         async cargarSesiones() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('/api/seguridad/sesiones', {
+                const response = await fetch(BASE_URL + '/api/seguridad/sesiones', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (response.ok) {
@@ -466,7 +467,7 @@ window.seguridadApp = function() {
         async cargarIPs() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('/api/seguridad/ips', {
+                const response = await fetch(BASE_URL + '/api/seguridad/ips', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (response.ok) {
@@ -487,8 +488,8 @@ window.seguridadApp = function() {
             try {
                 const token = localStorage.getItem('token');
                 const endpoint = this.notifForm.modo === 'individual' 
-                    ? '/api/seguridad/notificacion'
-                    : '/api/seguridad/notificacion-masiva';
+                    ? BASE_URL + '/api/seguridad/notificacion'
+                    : BASE_URL + '/api/seguridad/notificacion-masiva';
                 
                 const response = await fetch(endpoint, {
                     method: 'POST',
@@ -514,7 +515,7 @@ window.seguridadApp = function() {
         async marcarLeida(id) {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('/api/seguridad/notificacion/leida', {
+                const response = await fetch(BASE_URL + '/api/seguridad/notificacion/leida', {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -537,7 +538,7 @@ window.seguridadApp = function() {
             
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('/api/seguridad/sesion/cerrar', {
+                const response = await fetch(BASE_URL + '/api/seguridad/sesion/cerrar', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -563,7 +564,7 @@ window.seguridadApp = function() {
         async guardarBloqueoIP() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('/api/seguridad/ip/bloquear', {
+                const response = await fetch(BASE_URL + '/api/seguridad/ip/bloquear', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -590,7 +591,7 @@ window.seguridadApp = function() {
             
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('/api/seguridad/ip/desbloquear', {
+                const response = await fetch(BASE_URL + '/api/seguridad/ip/desbloquear', {
                     method: 'DELETE',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -612,7 +613,7 @@ window.seguridadApp = function() {
         exportarLogs() {
             const params = new URLSearchParams({ formato: 'csv' });
             if (this.filtroTipo) params.append('tipo', this.filtroTipo);
-            window.location.href = `/api/seguridad/logs/exportar?${params}`;
+            window.location.href = `${BASE_URL}/api/seguridad/logs/exportar?${params}`;
         },
 
         formatFecha(fecha) {
@@ -634,7 +635,7 @@ window.seguridadApp = function() {
         logout() {
             localStorage.removeItem('token');
             localStorage.removeItem('usuario');
-            window.location.href = '/login';
+            window.location.href = BASE_URL + '/login';
         }
     }
 }

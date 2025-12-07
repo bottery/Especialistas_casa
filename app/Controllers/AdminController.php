@@ -87,12 +87,13 @@ class AdminController
                     prof.apellido as profesional_apellido,
                     prof.email as profesional_email,
                     prof.telefono as profesional_telefono,
-                    prof.especialidad as profesional_especialidad,
+                    pp.especialidad as profesional_especialidad,
                     5.0 as calificacion_promedio
                 FROM solicitudes s
                 INNER JOIN servicios srv ON s.servicio_id = srv.id
                 INNER JOIN usuarios p ON s.paciente_id = p.id
                 INNER JOIN usuarios prof ON s.profesional_id = prof.id
+                LEFT JOIN perfiles_profesionales pp ON prof.id = pp.usuario_id
                 WHERE s.estado IN ('asignado', 'en_proceso')
                 ORDER BY s.fecha_programada ASC, s.created_at DESC
             ");
@@ -120,14 +121,14 @@ class AdminController
                 SELECT 
                     id,
                     nombre,
-                    tipo_profesional,
+                    tipo as tipo_profesional,
                     descripcion,
                     icono,
                     activo,
-                    orden
+                    id as orden
                 FROM especialidades
                 WHERE activo = TRUE
-                ORDER BY orden ASC, nombre ASC
+                ORDER BY nombre ASC
             ");
             
             $stmt->execute();
@@ -162,32 +163,32 @@ class AdminController
                     u.apellido,
                     u.email,
                     u.telefono,
-                    u.tipo_profesional,
-                    u.especialidad,
+                    u.rol as tipo_profesional,
+                    pp.especialidad,
                     u.puntuacion_promedio,
                     u.total_calificaciones,
                     u.estado,
-                    u.disponible_ahora
+                    1 as disponible_ahora
                 FROM usuarios u
-                WHERE u.rol = 'profesional'
-                    AND u.rol NOT IN ('admin', 'superadmin')
+                LEFT JOIN perfiles_profesionales pp ON u.id = pp.usuario_id
+                WHERE u.rol IN ('medico', 'enfermera', 'veterinario', 'laboratorio', 'ambulancia')
             ";
             
             $params = [];
             
             if ($tipo) {
-                $query .= " AND u.tipo_profesional = ?";
+                $query .= " AND u.rol = ?";
                 $params[] = $tipo;
             }
             
             if ($especialidad) {
-                $query .= " AND u.especialidad = ?";
-                $params[] = $especialidad;
+                $query .= " AND pp.especialidad LIKE ?";
+                $params[] = "%$especialidad%";
             }
             
             if ($disponible !== null) {
-                $query .= " AND u.disponible_ahora = ?";
-                $params[] = $disponible ? 1 : 0;
+                $query .= " AND u.estado = ?";
+                $params[] = $disponible ? 'activo' : 'inactivo';
             }
             
             $query .= " ORDER BY u.puntuacion_promedio DESC, u.nombre ASC";
@@ -345,14 +346,15 @@ class AdminController
                     u.email,
                     u.telefono,
                     u.ciudad,
-                    u.tipo_profesional,
-                    u.especialidad,
+                    u.rol as tipo_profesional,
+                    pp.especialidad,
                     u.puntuacion_promedio,
                     u.total_calificaciones,
-                    u.servicios_completados
+                    0 as servicios_completados
                 FROM usuarios u
-                WHERE u.rol = 'profesional'
-                    AND u.tipo_profesional = :tipo_profesional
+                LEFT JOIN perfiles_profesionales pp ON u.id = pp.usuario_id
+                WHERE u.rol IN ('medico', 'enfermera', 'veterinario', 'laboratorio', 'ambulancia')
+                    AND u.rol = :tipo_profesional
                     AND u.estado = 'activo'
             ";
             
@@ -360,12 +362,12 @@ class AdminController
             
             // Filtro adicional por especialidad si es proporcionado (excepto para ambulancias)
             if ($especialidad && $tipoServicio !== 'ambulancia') {
-                $query .= " AND u.especialidad LIKE :especialidad";
+                $query .= " AND pp.especialidad LIKE :especialidad";
                 $params['especialidad'] = "%{$especialidad}%";
             }
             
             $query .= "
-                ORDER BY u.puntuacion_promedio DESC, u.servicios_completados DESC, u.total_calificaciones DESC
+                ORDER BY u.puntuacion_promedio DESC, u.total_calificaciones DESC
             ";
             
             $stmt = $this->db->prepare($query);
@@ -650,8 +652,8 @@ class AdminController
                     p.telefono as paciente_telefono,
                     prof.nombre as profesional_nombre,
                     prof.apellido as profesional_apellido,
-                    prof.tipo_profesional,
-                    prof.especialidad,
+                    prof.rol as tipo_profesional,
+                    pp.especialidad,
                     prof.puntuacion_promedio,
                     prof.total_calificaciones,
                     srv.nombre as servicio_nombre,
@@ -663,6 +665,7 @@ class AdminController
                 FROM solicitudes s
                 INNER JOIN usuarios p ON s.paciente_id = p.id
                 INNER JOIN usuarios prof ON s.profesional_id = prof.id
+                LEFT JOIN perfiles_profesionales pp ON prof.id = pp.usuario_id
                 INNER JOIN servicios srv ON s.servicio_id = srv.id
                 WHERE s.estado = 'completado' AND s.fecha_completada IS NOT NULL
             ";
@@ -747,21 +750,22 @@ class AdminController
                     p.apellido as paciente_apellido,
                     p.email as paciente_email,
                     p.telefono as paciente_telefono,
-                    p.puntuacion_promedio_paciente,
-                    p.total_calificaciones_paciente,
+                    0 as puntuacion_promedio_paciente,
+                    0 as total_calificaciones_paciente,
                     prof.nombre as profesional_nombre,
                     prof.apellido as profesional_apellido,
-                    prof.tipo_profesional,
-                    prof.especialidad,
+                    prof.rol as tipo_profesional,
+                    pp.especialidad,
                     prof.puntuacion_promedio,
                     prof.total_calificaciones,
-                    prof.servicios_completados,
+                    0 as servicios_completados,
                     srv.nombre as servicio_nombre,
                     srv.tipo as servicio_tipo,
                     srv.descripcion as servicio_descripcion
                 FROM solicitudes s
                 INNER JOIN usuarios p ON s.paciente_id = p.id
                 INNER JOIN usuarios prof ON s.profesional_id = prof.id
+                LEFT JOIN perfiles_profesionales pp ON prof.id = pp.usuario_id
                 INNER JOIN servicios srv ON s.servicio_id = srv.id
                 WHERE s.id = :id AND s.estado = 'completado' AND s.fecha_completada IS NOT NULL
             ");

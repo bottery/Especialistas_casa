@@ -1,15 +1,16 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nueva Solicitud - Especialistas en Casa</title>
+    <script>const BASE_URL = '<?= rtrim(BASE_URL, "/") ?>';</script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="/js/auth-interceptor.js"></script>
-    <script src="/js/validator.js"></script>
-    <script src="/js/toast.js"></script>
-    <link rel="stylesheet" href="/css/breadcrumbs.css">
-    <link rel="stylesheet" href="/css/progress.css">
+    <script src="<?= asset('/js/auth-interceptor.js') ?>"></script>
+    <script src="<?= asset('/js/validator.js') ?>"></script>
+    <script src="<?= asset('/js/toast.js') ?>"></script>
+    <link rel="stylesheet" href="<?= url('/css/breadcrumbs.css') ?>">
+    <link rel="stylesheet" href="<?= url('/css/progress.css') ?>">
 <script>
 window.nuevaSolicitudApp = function() {
     return {
@@ -112,7 +113,7 @@ window.nuevaSolicitudApp = function() {
         async init() {
             const token = localStorage.getItem('token');
             if (!token) {
-                window.location.href = '/login';
+                window.location.href = BASE_URL + '/login';
                 return;
             }
 
@@ -122,7 +123,7 @@ window.nuevaSolicitudApp = function() {
         async cargarServicios() {
             this.loading = true;
             try {
-                const response = await fetch('/api/servicios');
+                const response = await fetch(BASE_URL + '/api/servicios');
                 if (response.ok) {
                     const data = await response.json();
                     this.servicios = data.servicios || data || [];
@@ -181,7 +182,7 @@ window.nuevaSolicitudApp = function() {
 
         async cargarEspecialidades() {
             try {
-                const response = await fetch('/api/especialidades');
+                const response = await fetch(BASE_URL + '/api/especialidades');
                 if (response.ok) {
                     const data = await response.json();
                     this.especialidadesDisponibles = data.especialidades || [];
@@ -238,7 +239,7 @@ window.nuevaSolicitudApp = function() {
                     requiere_aprobacion: this.formData.servicio_tipo === 'medico'
                 };
                 
-                const response = await fetch('/api/solicitudes', {
+                const response = await fetch(BASE_URL + '/api/solicitudes', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -264,7 +265,7 @@ window.nuevaSolicitudApp = function() {
                     
                     // Redirigir después de 2 segundos
                     setTimeout(() => {
-                        window.location.href = '/paciente/dashboard';
+                        window.location.href = BASE_URL + '/paciente/dashboard';
                     }, 2000);
                 } else {
                     // Mostrar error detallado
@@ -380,7 +381,7 @@ window.nuevaSolicitudApp = function() {
             if (this.paso > 1) {
                 this.paso--;
             } else {
-                window.location.href = '/paciente/dashboard';
+                window.location.href = BASE_URL + '/paciente/dashboard';
             }
         },
 
@@ -403,7 +404,7 @@ window.nuevaSolicitudApp = function() {
                     <h1 class="text-xl font-bold text-gray-900">Nueva Solicitud</h1>
                 </div>
                 <div class="flex items-center">
-                    <button @click="window.location.href='/paciente/dashboard'" class="text-gray-600 hover:text-gray-900">
+                    <button @click="window.location.href = BASE_URL + '/paciente/dashboard'" class="text-gray-600 hover:text-gray-900">
                         Volver al Dashboard
                     </button>
                 </div>
@@ -418,7 +419,7 @@ window.nuevaSolicitudApp = function() {
                 <svg class="breadcrumb-icon" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
                 </svg>
-                <a href="/paciente/dashboard">Inicio</a>
+                <a href="<?= url('/paciente/dashboard') ?>">Inicio</a>
             </div>
             <span class="breadcrumb-separator">/</span>
             <div class="breadcrumb-item active">Nueva Solicitud</div>

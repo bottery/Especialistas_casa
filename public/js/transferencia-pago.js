@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Utilidad para gestión de pagos por transferencia
  * Frontend para pacientes: Mostrar QR, subir comprobante
  */
@@ -236,7 +236,7 @@ class TransferenciaPago {
                 formData.append('numero_referencia', numeroReferencia);
             }
             
-            const response = await fetch(`/api/pagos/${this.pagoId}/comprobante`, {
+            const response = await fetch(`${typeof BASE_URL !== 'undefined' ? BASE_URL : ''}/api/pagos/${this.pagoId}/comprobante`, {
                 method: 'POST',
                 body: formData,
                 credentials: 'include'
@@ -278,7 +278,7 @@ class TransferenciaPago {
      */
     async verificarEstadoPago(pagoId) {
         try {
-            const response = await fetch(`/api/admin/pagos/${pagoId}`, {
+            const response = await fetch(`${typeof BASE_URL !== 'undefined' ? BASE_URL : ''}/api/admin/pagos/${pagoId}`, {
                 credentials: 'include'
             });
             

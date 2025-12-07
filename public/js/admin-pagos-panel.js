@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Panel de administración: Gestión de pagos por transferencia
  * Admin/Superadmin: Aprobar o rechazar pagos pendientes
  */
@@ -20,7 +20,7 @@ class AdminPagosPanel {
      */
     async cargarPagosPendientes() {
         try {
-            const response = await fetch('/api/admin/pagos/pendientes', {
+            const response = await fetch((typeof BASE_URL !== 'undefined' ? BASE_URL : '') + '/api/admin/pagos/pendientes', {
                 credentials: 'include'
             });
             
@@ -175,7 +175,7 @@ class AdminPagosPanel {
      */
     async verDetalle(pagoId) {
         try {
-            const response = await fetch(`/api/admin/pagos/${pagoId}`, {
+            const response = await fetch(`${typeof BASE_URL !== 'undefined' ? BASE_URL : ''}/api/admin/pagos/${pagoId}`, {
                 credentials: 'include'
             });
             
@@ -287,7 +287,7 @@ class AdminPagosPanel {
         if (!confirm('¿Confirmar aprobación de este pago?')) return;
         
         try {
-            const response = await fetch(`/api/admin/pagos/${pagoId}/aprobar`, {
+            const response = await fetch(`${typeof BASE_URL !== 'undefined' ? BASE_URL : ''}/api/admin/pagos/${pagoId}/aprobar`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 credentials: 'include',
@@ -342,7 +342,7 @@ class AdminPagosPanel {
         if (!confirm('¿Confirmar rechazo de este pago?')) return;
         
         try {
-            const response = await fetch(`/api/admin/pagos/${pagoId}/rechazar`, {
+            const response = await fetch(`${typeof BASE_URL !== 'undefined' ? BASE_URL : ''}/api/admin/pagos/${pagoId}/rechazar`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 credentials: 'include',

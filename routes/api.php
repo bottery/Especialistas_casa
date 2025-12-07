@@ -19,8 +19,16 @@ use App\Controllers\HealthController;
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $method = $_SERVER['REQUEST_METHOD'];
 
+// Remover prefijo BASE_URL si existe
+if (defined('BASE_URL') && BASE_URL !== '' && strpos($path, BASE_URL) === 0) {
+    $path = substr($path, strlen(BASE_URL));
+}
+
 // Remover prefijo /api
-$path = str_replace('/api', '', $path);
+$path = preg_replace('#^/api#', '', $path);
+if ($path === '') {
+    $path = '/';
+}
 
 // ============================================
 // HEALTH CHECK (Sin autenticación)

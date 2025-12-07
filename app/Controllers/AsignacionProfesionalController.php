@@ -82,7 +82,7 @@ class AsignacionProfesionalController extends BaseController
                     u.email,
                     u.telefono,
                     u.foto_perfil,
-                    u.tipo_profesional,
+                    u.rol as tipo_profesional,
                     pp.especialidad,
                     pp.años_experiencia,
                     pp.tarifa_consulta_virtual,
@@ -94,7 +94,7 @@ class AsignacionProfesionalController extends BaseController
                     0 as servicios_completados
                 FROM usuarios u
                 INNER JOIN perfiles_profesionales pp ON u.id = pp.usuario_id
-                WHERE u.rol = 'profesional'
+                WHERE u.rol IN ('medico', 'enfermera', 'veterinario', 'laboratorio', 'ambulancia')
                   AND u.estado = 'activo'
                   AND pp.aprobado = TRUE
             ";
@@ -228,7 +228,7 @@ class AsignacionProfesionalController extends BaseController
                 FROM usuarios u
                 INNER JOIN perfiles_profesionales pp ON u.id = pp.usuario_id
                 WHERE u.id = :prof_id 
-                  AND u.rol = 'profesional'
+                  AND u.rol IN ('medico', 'enfermera', 'veterinario', 'laboratorio', 'ambulancia')
                   AND u.estado = 'activo'
             ");
             $stmt->execute(['prof_id' => $data['profesional_id']]);
@@ -367,7 +367,7 @@ class AsignacionProfesionalController extends BaseController
             $stmt = $pdo->prepare("
                 SELECT u.nombre FROM usuarios u
                 INNER JOIN perfiles_profesionales pp ON u.id = pp.usuario_id
-                WHERE u.id = :prof_id AND u.rol = 'profesional' AND u.estado = 'activo'
+                WHERE u.id = :prof_id AND u.rol IN ('medico', 'enfermera', 'veterinario', 'laboratorio', 'ambulancia') AND u.estado = 'activo'
             ");
             $stmt->execute(['prof_id' => $data['profesional_id']]);
             $nuevoProfesional = $stmt->fetch(\PDO::FETCH_ASSOC);

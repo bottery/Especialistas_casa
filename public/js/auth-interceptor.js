@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Auth Interceptor - Auto-refresh de JWT tokens
  * Intercepta todas las peticiones fetch y renueva el token automáticamente si está próximo a expirar
  */
@@ -48,7 +48,7 @@
             throw new Error('No refresh token available');
         }
 
-        const response = await fetch('/api/auth/refresh', {
+        const response = await fetch((typeof BASE_URL !== 'undefined' ? BASE_URL : '') + '/api/auth/refresh', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -61,7 +61,7 @@
             localStorage.removeItem('token');
             localStorage.removeItem('refresh_token');
             localStorage.removeItem('refreshToken');
-            window.location.href = '/login';
+            window.location.href = (typeof BASE_URL !== 'undefined' ? BASE_URL : '') + '/login';
             throw new Error('Failed to refresh token');
         }
 
@@ -91,6 +91,15 @@
     }
 
     /**
+     * Verificar si la URL es de nuestra API
+     */
+    function isApiUrl(url) {
+        if (typeof url !== 'string') return false;
+        const baseUrl = typeof BASE_URL !== 'undefined' ? BASE_URL : '';
+        return url.includes('/api/') || url.startsWith(baseUrl + '/api/');
+    }
+
+    /**
      * Interceptor de fetch
      */
     const originalFetch = window.fetch;
@@ -98,7 +107,7 @@
         let [url, options = {}] = args;
 
         // Solo interceptar peticiones a nuestra API
-        if (typeof url === 'string' && url.startsWith('/api/')) {
+        if (isApiUrl(url)) {
             const token = localStorage.getItem('token');
             
             if (token && isTokenExpiringSoon(token)) {
@@ -137,7 +146,7 @@
         const response = await originalFetch(url, options);
 
         // Si recibimos 401 Unauthorized, intentar renovar token
-        if (response.status === 401 && typeof url === 'string' && url.startsWith('/api/')) {
+        if (response.status === 401 && isApiUrl(url)) {
             const token = localStorage.getItem('token');
             if (token && !isRefreshing) {
                 isRefreshing = true;

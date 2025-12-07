@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Panel de administración: Asignación de profesionales a solicitudes
  * Admin/Superadmin: Asignar profesionales ordenados por calificación
  */
@@ -22,7 +22,7 @@ class AdminAsignacionPanel {
      */
     async cargarSolicitudesPendientes() {
         try {
-            const response = await fetch('/api/admin/solicitudes/pendientes', {
+            const response = await fetch((typeof BASE_URL !== 'undefined' ? BASE_URL : '') + '/api/admin/solicitudes/pendientes', {
                 credentials: 'include'
             });
             
@@ -168,7 +168,7 @@ class AdminAsignacionPanel {
                 modalidad: modalidad
             });
             
-            const response = await fetch(`/api/admin/profesionales/disponibles?${params}`, {
+            const response = await fetch(`${typeof BASE_URL !== 'undefined' ? BASE_URL : ''}/api/admin/profesionales/disponibles?${params}`, {
                 credentials: 'include'
             });
             
@@ -241,11 +241,11 @@ class AdminAsignacionPanel {
                             <div class="col-md-2 text-center">
                                 <p class="mb-1">
                                     <i class="fas fa-check-circle text-success me-1"></i>
-                                    <strong>${prof.servicios_completados}</strong> servicios
+                                    <strong>${prof.servicios_completados || 0}</strong> servicios
                                 </p>
                                 <p class="mb-0">
                                     <i class="fas fa-clock text-info me-1"></i>
-                                    ${prof.servicios_activos} activos
+                                    ${prof.servicios_activos || 0} activos
                                 </p>
                             </div>
                             <div class="col-md-1 text-center">
@@ -305,7 +305,7 @@ class AdminAsignacionPanel {
         if (!confirm(`¿Asignar este servicio a ${profesionalNombre}?`)) return;
         
         try {
-            const response = await fetch(`/api/admin/solicitudes/${this.solicitudSeleccionada}/asignar`, {
+            const response = await fetch(`${typeof BASE_URL !== 'undefined' ? BASE_URL : ''}/api/admin/solicitudes/${this.solicitudSeleccionada}/asignar`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 credentials: 'include',

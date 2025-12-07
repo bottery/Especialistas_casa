@@ -23,7 +23,7 @@ class Usuario extends Model
         $hash = password_hash($datos['password'], PASSWORD_BCRYPT);
         
         $query = "INSERT INTO {$this->table} 
-                  (nombre, apellido, email, password, telefono, documento, direccion, ciudad, rol) 
+                  (nombre, apellido, email, password, telefono, documento_numero, direccion, ciudad, rol) 
                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         return $this->db->insert($query, [
@@ -36,6 +36,33 @@ class Usuario extends Model
             $datos['direccion'] ?? null,
             $datos['ciudad'] ?? null,
             $datos['rol'] ?? 'paciente'
+        ]);
+    }
+
+    /**
+     * Crear un nuevo usuario (método extendido)
+     */
+    public function createUser(array $datos): int
+    {
+        $hash = password_hash($datos['password'], PASSWORD_BCRYPT);
+        
+        $query = "INSERT INTO {$this->table} 
+                  (nombre, apellido, email, password, telefono, documento_numero, direccion, ciudad, rol, tipo_profesional, estado, verificado, created_at) 
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+        
+        return $this->db->insert($query, [
+            $datos['nombre'],
+            $datos['apellido'],
+            $datos['email'],
+            $hash,
+            $datos['telefono'] ?? null,
+            $datos['documento'] ?? null,
+            $datos['direccion'] ?? null,
+            $datos['ciudad'] ?? null,
+            $datos['rol'] ?? 'paciente',
+            $datos['tipo_profesional'] ?? null,
+            $datos['estado'] ?? 'activo',
+            $datos['verificado'] ?? false
         ]);
     }
 

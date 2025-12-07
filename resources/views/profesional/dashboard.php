@@ -1,17 +1,18 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Especialista - Especialistas en Casa</title>
+    <script>const BASE_URL = '<?= rtrim(BASE_URL, "/") ?>';</script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="/css/skeleton.css">
-    <link rel="stylesheet" href="/css/breadcrumbs.css">
-    <link rel="stylesheet" href="/css/progress.css">
-    <link rel="stylesheet" href="/css/dark-mode.css">
-    <script src="/js/dark-mode.js"></script>
-    <script src="/js/keyboard-shortcuts.js"></script>
-    <script src="/js/confirmation-modal.js"></script>
+    <link rel="stylesheet" href="<?= url('/css/skeleton.css') ?>">
+    <link rel="stylesheet" href="<?= url('/css/breadcrumbs.css') ?>">
+    <link rel="stylesheet" href="<?= url('/css/progress.css') ?>">
+    <link rel="stylesheet" href="<?= url('/css/dark-mode.css') ?>">
+    <script src="<?= asset('/js/dark-mode.js') ?>"></script>
+    <script src="<?= asset('/js/keyboard-shortcuts.js') ?>"></script>
+    <script src="<?= asset('/js/confirmation-modal.js') ?>"></script>
 <script>
 window.profesionalDashboard = function() {
     return {
@@ -56,7 +57,7 @@ window.profesionalDashboard = function() {
         async init() {
             const token = localStorage.getItem('token');
             if (!token) {
-                window.location.href = '/login';
+                window.location.href = BASE_URL + '/login';
                 return;
             }
 
@@ -76,7 +77,7 @@ window.profesionalDashboard = function() {
                 const token = localStorage.getItem('token');
                 
                 // Cargar estadísticas
-                const statsResponse = await fetch('/api/profesional/stats', {
+                const statsResponse = await fetch(BASE_URL + '/api/profesional/stats', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 
@@ -86,7 +87,7 @@ window.profesionalDashboard = function() {
                 }
 
                 // Cargar solicitudes
-                const solicitudesResponse = await fetch('/api/profesional/solicitudes', {
+                const solicitudesResponse = await fetch(BASE_URL + '/api/profesional/solicitudes', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 
@@ -194,7 +195,7 @@ window.profesionalDashboard = function() {
             this.loading = true;
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`/api/profesional/solicitudes/${solicitudId}/aceptar`, {
+                const response = await fetch(`${BASE_URL}/api/profesional/solicitudes/${solicitudId}/aceptar`, {
                     method: 'POST',
                     headers: { 
                         'Authorization': `Bearer ${token}`,
@@ -227,7 +228,7 @@ window.profesionalDashboard = function() {
             this.loading = true;
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`/api/profesional/solicitudes/${solicitudId}/rechazar`, {
+                const response = await fetch(`${BASE_URL}/api/profesional/solicitudes/${solicitudId}/rechazar`, {
                     method: 'POST',
                     headers: { 
                         'Authorization': `Bearer ${token}`,
@@ -266,7 +267,7 @@ window.profesionalDashboard = function() {
             this.loading = true;
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`/api/profesional/solicitudes/${solicitudId}/iniciar`, {
+                const response = await fetch(`${BASE_URL}/api/profesional/solicitudes/${solicitudId}/iniciar`, {
                     method: 'POST',
                     headers: { 
                         'Authorization': `Bearer ${token}`,
@@ -310,7 +311,7 @@ window.profesionalDashboard = function() {
             this.loading = true;
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`/api/profesional/solicitudes/${this.solicitudACompletar.id}/completar`, {
+                const response = await fetch(`${BASE_URL}/api/profesional/solicitudes/${this.solicitudACompletar.id}/completar`, {
                     method: 'POST',
                     headers: { 
                         'Authorization': `Bearer ${token}`,
@@ -466,7 +467,7 @@ window.profesionalDashboard = function() {
         logout() {
             localStorage.removeItem('token');
             localStorage.removeItem('usuario');
-            window.location.href = '/login';
+            window.location.href = BASE_URL + '/login';
         }
     }
 }
@@ -508,7 +509,7 @@ window.profesionalDashboard = function() {
                         </svg>
                     </button>
                     
-                    <button @click="window.location.href='/profesional/dashboard'" class="text-gray-600 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 transition" title="Inicio">
+                    <button @click="window.location.href = BASE_URL + '/profesional/dashboard'" class="text-gray-600 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 transition" title="Inicio">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                         </svg>
@@ -531,7 +532,7 @@ window.profesionalDashboard = function() {
                 <svg class="breadcrumb-icon" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
                 </svg>
-                <a href="/profesional/dashboard">Inicio</a>
+                <a href="<?= url('/profesional/dashboard') ?>">Inicio</a>
             </div>
             <span class="breadcrumb-separator">/</span>
             <div class="breadcrumb-item active">Dashboard Especialista</div>

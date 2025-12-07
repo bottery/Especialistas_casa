@@ -1,11 +1,12 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iniciar Sesión - Especialistas en Casa</title>
+    <script>const BASE_URL = '<?= rtrim(BASE_URL, "/") ?>';</script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="/js/validator.js"></script>
+    <script src="<?= asset('/js/validator.js') ?>"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="bg-gradient-to-br from-indigo-100 to-blue-100 min-h-screen flex items-center justify-center p-4">
@@ -68,12 +69,12 @@
         <div class="mt-6 text-center">
             <p class="text-gray-600">
                 ¿No tienes cuenta? 
-                <a href="/register" class="text-indigo-600 font-semibold hover:text-indigo-700">Regístrate aquí</a>
+                <a href="<?= url('/register') ?>" class="text-indigo-600 font-semibold hover:text-indigo-700">Regístrate aquí</a>
             </p>
         </div>
 
         <div class="mt-6">
-            <a href="/" class="text-gray-600 hover:text-gray-900 flex items-center justify-center">
+            <a href="<?= url('/') ?>" class="text-gray-600 hover:text-gray-900 flex items-center justify-center">
                 <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"/>
                 </svg>
@@ -98,7 +99,7 @@
                     this.message = '';
 
                     try {
-                        const response = await fetch('/api/login', {
+                        const response = await fetch(BASE_URL + '/api/login', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
@@ -128,7 +129,7 @@
                             // Redirigir según el rol
                             setTimeout(() => {
                                 const rol = data.user.rol;
-                                window.location.href = `/${rol}/dashboard`;
+                                window.location.href = BASE_URL + `/${rol}/dashboard`;
                             }, 1000);
                         } else {
                             this.success = false;

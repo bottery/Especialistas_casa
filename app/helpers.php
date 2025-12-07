@@ -145,3 +145,32 @@ if (!function_exists('dump')) {
         echo '</pre>';
     }
 }
+
+if (!function_exists('url')) {
+    /**
+     * Genera una URL completa con la base del proyecto
+     * Usa BASE_URL definida en index.php (desde .env APP_URL)
+     * 
+     * @param string $path Ruta relativa
+     * @return string URL completa
+     */
+    function url(string $path = ''): string
+    {
+        $base = defined('BASE_URL') ? BASE_URL : '';
+        return $base . '/' . ltrim($path, '/');
+    }
+}
+
+if (!function_exists('asset')) {
+    /**
+     * Genera una URL para un asset estático
+     * 
+     * @param string $path Ruta del asset
+     * @return string URL del asset
+     */
+    function asset(string $path = ''): string
+    {
+        $base = defined('BASE_URL') ? BASE_URL : '';
+        return $base . '/' . ltrim($path, '/');
+    }
+}

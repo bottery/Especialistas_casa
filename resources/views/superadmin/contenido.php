@@ -1,9 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Contenido - Especialistas en Casa</title>
+    <script>const BASE_URL = '<?= rtrim(BASE_URL, "/") ?>';</script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
@@ -21,7 +22,7 @@
                 </div>
                 
                 <div class="flex items-center space-x-4">
-                    <a href="/superadmin/dashboard" class="text-gray-600 hover:text-gray-900">← Dashboard</a>
+                    <a href="<?= url('/superadmin/dashboard') ?>" class="text-gray-600 hover:text-gray-900">← Dashboard</a>
                     <button @click="logout()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium">Salir</button>
                 </div>
             </div>
@@ -32,23 +33,23 @@
     <div class="bg-white border-b border-gray-200 sticky top-16 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex space-x-8 overflow-x-auto py-4">
-                <a href="/superadmin/dashboard" class="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700 font-medium whitespace-nowrap">
+                <a href="<?= url('/superadmin/dashboard') ?>" class="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700 font-medium whitespace-nowrap">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>
                     <span>Dashboard</span>
                 </a>
-                <a href="/superadmin/usuarios" class="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700 font-medium whitespace-nowrap">
+                <a href="<?= url('/superadmin/usuarios') ?>" class="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700 font-medium whitespace-nowrap">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
                     <span>Usuarios</span>
                 </a>
-                <a href="/superadmin/finanzas" class="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700 font-medium whitespace-nowrap">
+                <a href="<?= url('/superadmin/finanzas') ?>" class="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700 font-medium whitespace-nowrap">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/></svg>
                     <span>Finanzas</span>
                 </a>
-                <a href="/superadmin/contenido" class="flex items-center space-x-2 px-3 py-2 rounded-lg bg-indigo-50 text-indigo-700 font-medium whitespace-nowrap">
+                <a href="<?= url('/superadmin/contenido') ?>" class="flex items-center space-x-2 px-3 py-2 rounded-lg bg-indigo-50 text-indigo-700 font-medium whitespace-nowrap">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/></svg>
                     <span>Contenido</span>
                 </a>
-                <a href="/superadmin/configuracion" class="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700 font-medium whitespace-nowrap">
+                <a href="<?= url('/superadmin/configuracion') ?>" class="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700 font-medium whitespace-nowrap">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
                     <span>Configuración</span>
                 </a>
@@ -395,7 +396,7 @@ window.contenidoApp = function() {
         async init() {
             const token = localStorage.getItem('token');
             if (!token) {
-                window.location.href = '/login';
+                window.location.href = BASE_URL + '/login';
                 return;
             }
             await this.cargarServicios();
@@ -406,7 +407,7 @@ window.contenidoApp = function() {
         async cargarServicios() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('/api/contenido/servicios', {
+                const response = await fetch(BASE_URL + '/api/contenido/servicios', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (response.ok) {
@@ -431,7 +432,7 @@ window.contenidoApp = function() {
         async guardarServicio() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('/api/contenido/servicio', {
+                const response = await fetch(BASE_URL + '/api/contenido/servicio', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -457,7 +458,7 @@ window.contenidoApp = function() {
             
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('/api/contenido/servicio', {
+                const response = await fetch(BASE_URL + '/api/contenido/servicio', {
                     method: 'DELETE',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -478,7 +479,7 @@ window.contenidoApp = function() {
         async cargarBanners() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('/api/contenido/banners', {
+                const response = await fetch(BASE_URL + '/api/contenido/banners', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (response.ok) {
@@ -503,7 +504,7 @@ window.contenidoApp = function() {
         async guardarBanner() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('/api/contenido/banner', {
+                const response = await fetch(BASE_URL + '/api/contenido/banner', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -527,7 +528,7 @@ window.contenidoApp = function() {
             
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('/api/contenido/banner', {
+                const response = await fetch(BASE_URL + '/api/contenido/banner', {
                     method: 'DELETE',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -548,7 +549,7 @@ window.contenidoApp = function() {
         async cargarFAQs() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('/api/contenido/faqs', {
+                const response = await fetch(BASE_URL + '/api/contenido/faqs', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (response.ok) {
@@ -573,7 +574,7 @@ window.contenidoApp = function() {
         async guardarFAQ() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('/api/contenido/faq', {
+                const response = await fetch(BASE_URL + '/api/contenido/faq', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -597,7 +598,7 @@ window.contenidoApp = function() {
             
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('/api/contenido/faq', {
+                const response = await fetch(BASE_URL + '/api/contenido/faq', {
                     method: 'DELETE',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -618,7 +619,7 @@ window.contenidoApp = function() {
         async editarContenido(tipo) {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`/api/contenido/contenido?tipo=${tipo}`, {
+                const response = await fetch(`${BASE_URL}/api/contenido/contenido?tipo=${tipo}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 
@@ -635,7 +636,7 @@ window.contenidoApp = function() {
         async guardarContenido() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('/api/contenido/contenido', {
+                const response = await fetch(BASE_URL + '/api/contenido/contenido', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -666,7 +667,7 @@ window.contenidoApp = function() {
         logout() {
             localStorage.removeItem('token');
             localStorage.removeItem('usuario');
-            window.location.href = '/login';
+            window.location.href = BASE_URL + '/login';
         }
     }
 }

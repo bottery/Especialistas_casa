@@ -23,6 +23,16 @@ if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
     require_once __DIR__ . '/../bootstrap.php';
 }
 
+// ============================================
+// CONFIGURACIÓN DE BASE_URL (IMPORTANTE)
+// ============================================
+// En producción: BASE_URL = "" (vacío) si está en la raíz del dominio
+// En desarrollo: BASE_URL = "/VitaHome" si está en subcarpeta
+// Se configura en .env con APP_URL
+$appUrl = env('APP_URL', 'http://localhost');
+$parsedUrl = parse_url($appUrl);
+define('BASE_URL', rtrim($parsedUrl['path'] ?? '', '/'));
+
 // Inicializar manejador de errores
 App\Core\ErrorHandler::init();
 
@@ -63,8 +73,17 @@ $requestMethod = $_SERVER['REQUEST_METHOD'];
 // Remover query string
 $path = parse_url($requestUri, PHP_URL_PATH);
 
+// Remover el prefijo BASE_URL del path para el routing
+$routePath = $path;
+if (BASE_URL !== '' && strpos($path, BASE_URL) === 0) {
+    $routePath = substr($path, strlen(BASE_URL));
+    if ($routePath === '') {
+        $routePath = '/';
+    }
+}
+
 // Determinar si es una petición API o web
-if (strpos($path, '/api/') === 0) {
+if (strpos($routePath, '/api/') === 0 || strpos($routePath, '/api') === 0) {
     // Cargar rutas API
     require_once __DIR__ . '/../routes/api.php';
 } else {

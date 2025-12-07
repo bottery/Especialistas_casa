@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Vista Kanban para Dashboard Admin
  * Gestión visual de solicitudes por estados
  */
@@ -63,7 +63,7 @@ class KanbanBoard {
      */
     async cargarSolicitudes() {
         try {
-            const response = await fetch('/api/admin/solicitudes/todas');
+            const response = await fetch((typeof BASE_URL !== 'undefined' ? BASE_URL : '') + '/api/admin/solicitudes/todas');
             if (!response.ok) throw new Error('Error al cargar solicitudes');
             
             const data = await response.json();
@@ -300,7 +300,7 @@ class KanbanBoard {
         try {
             const estadoBD = this.mapearEstadoInverso(nuevoEstado);
             
-            const response = await fetch(`/api/admin/solicitudes/${solicitudId}/estado`, {
+            const response = await fetch(`${typeof BASE_URL !== 'undefined' ? BASE_URL : ''}/api/admin/solicitudes/${solicitudId}/estado`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ estado: estadoBD })

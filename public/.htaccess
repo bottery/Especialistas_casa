@@ -5,7 +5,7 @@
 
     RewriteEngine On
 
-    # Forzar HTTPS en producción
+    # Forzar HTTPS
     RewriteCond %{HTTPS} off
     RewriteCond %{HTTP:X-Forwarded-Proto} !https
     RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
@@ -59,7 +59,7 @@
     php_value max_execution_time 300
     php_value max_input_time 300
     php_value memory_limit 256M
-    php_flag display_errors Off
+    php_flag display_errors On
     php_flag log_errors On
     php_value error_reporting 32767
 </IfModule>
@@ -83,9 +83,9 @@
     ExpiresByType image/x-icon "access plus 1 year"
 </IfModule>
 
-# Prevenir hotlinking de imágenes
-<IfModule mod_rewrite.c>
-    RewriteCond %{HTTP_REFERER} !^$
-    RewriteCond %{HTTP_REFERER} !^https?://(www\.)?tudominio\.com [NC]
-    RewriteRule \.(jpg|jpeg|png|gif|svg)$ - [F,L]
-</IfModule>
+# Prevenir hotlinking de imágenes (desactivado para desarrollo local)
+# <IfModule mod_rewrite.c>
+#     RewriteCond %{HTTP_REFERER} !^$
+#     RewriteCond %{HTTP_REFERER} !^https?://(www\.)?tudominio\.com [NC]
+#     RewriteRule \.(jpg|jpeg|png|gif|svg)$ - [F,L]
+# </IfModule>

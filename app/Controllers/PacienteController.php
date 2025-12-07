@@ -715,12 +715,13 @@ class PacienteController
                     s.*,
                     u.nombre as profesional_nombre,
                     u.apellido as profesional_apellido,
-                    u.tipo_profesional,
-                    u.especialidad,
+                    u.rol as tipo_profesional,
+                    pp.especialidad,
                     u.puntuacion_promedio,
                     u.total_calificaciones
                 FROM solicitudes s
                 INNER JOIN usuarios u ON s.profesional_id = u.id
+                LEFT JOIN perfiles_profesionales pp ON u.id = pp.usuario_id
                 WHERE s.id = :id 
                     AND s.paciente_id = :paciente_id 
                     AND s.estado IN ('completado', 'cancelado')

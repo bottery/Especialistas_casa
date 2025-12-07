@@ -408,8 +408,8 @@ class ProfesionalController extends BaseController
                     srv.nombre as servicio_nombre,
                     u.nombre as paciente_nombre,
                     u.apellido as paciente_apellido,
-                    u.puntuacion_promedio_paciente,
-                    u.total_calificaciones_paciente
+                    0 as puntuacion_promedio_paciente,
+                    0 as total_calificaciones_paciente
                 FROM solicitudes s
                 INNER JOIN servicios srv ON s.servicio_id = srv.id
                 INNER JOIN usuarios u ON s.paciente_id = u.id

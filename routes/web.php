@@ -5,8 +5,21 @@
  * Todas las rutas para las vistas HTML
  */
 
-// Obtener ruta
+// Obtener ruta y limpiar el prefijo del subdirectorio
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+// Detectar el subdirectorio base (ej: /VitaHome/public)
+$scriptName = $_SERVER['SCRIPT_NAME'];
+$basePath = dirname(dirname($scriptName)); // Quita /public/index.php
+if ($basePath !== '/' && $basePath !== '\\') {
+    $path = str_replace($basePath, '', $path);
+}
+// También quitar /public si quedó
+$path = preg_replace('#^/public#', '', $path);
+// Normalizar: asegurar que empiece con /
+if (empty($path) || $path === '/public') {
+    $path = '/';
+}
 
 // Función para cargar vistas
 function view(string $viewName, array $data = []): void

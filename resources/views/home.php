@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -13,7 +13,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
-                    <a href="/" class="flex items-center space-x-2">
+                    <a href="<?= url('/') ?>" class="flex items-center space-x-2">
                         <svg class="h-8 w-8 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
                             <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
@@ -23,8 +23,8 @@
                 </div>
                 
                 <div class="flex items-center space-x-4">
-                    <a href="/login" class="text-gray-700 hover:text-indigo-600 transition font-medium">Iniciar Sesión</a>
-                    <a href="/register" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition font-medium shadow-md">Registrarse</a>
+                    <a href="<?= url('/login') ?>" class="text-gray-700 hover:text-indigo-600 transition font-medium">Iniciar Sesión</a>
+                    <a href="<?= url('/register') ?>" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition font-medium shadow-md">Registrarse</a>
                 </div>
             </div>
         </div>
@@ -43,7 +43,7 @@
                     desde la comodidad de tu casa.
                 </p>
                 <div class="flex space-x-4">
-                    <a href="/register" class="bg-indigo-600 text-white px-8 py-4 rounded-lg hover:bg-indigo-700 transition font-semibold shadow-lg text-lg">
+                    <a href="<?= url('/register') ?>" class="bg-indigo-600 text-white px-8 py-4 rounded-lg hover:bg-indigo-700 transition font-semibold shadow-lg text-lg">
                         Comenzar Ahora
                     </a>
                     <a href="#servicios" class="bg-white text-indigo-600 px-8 py-4 rounded-lg hover:bg-gray-50 transition font-semibold shadow-lg text-lg border-2 border-indigo-600">
@@ -52,7 +52,7 @@
                 </div>
             </div>
             <div class="hidden md:block">
-                <img src="/assets/images/hero-doctor.svg" alt="Médico" class="w-full" onerror="this.style.display='none'">
+                <img src="<?= asset('/images/hero-doctor.svg') ?>" alt="Médico" class="w-full" onerror="this.style.display='none'">
                 <div class="bg-white rounded-2xl shadow-2xl p-8">
                     <div class="grid grid-cols-2 gap-6">
                         <div class="text-center">
@@ -170,7 +170,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 class="text-4xl font-bold text-white mb-4">¿Listo para comenzar?</h2>
             <p class="text-xl text-indigo-100 mb-8">Regístrate ahora y recibe atención médica de calidad</p>
-            <a href="/register" class="bg-white text-indigo-600 px-8 py-4 rounded-lg hover:bg-gray-100 transition font-semibold text-lg shadow-lg inline-block">
+            <a href="<?= url('/register') ?>" class="bg-white text-indigo-600 px-8 py-4 rounded-lg hover:bg-gray-100 transition font-semibold text-lg shadow-lg inline-block">
                 Crear Cuenta Gratis
             </a>
         </div>

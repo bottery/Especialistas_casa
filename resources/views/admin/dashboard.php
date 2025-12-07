@@ -1,9 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Administrador - Especialistas en Casa</title>
+    <script>const BASE_URL = '<?= rtrim(BASE_URL, "/") ?>';</script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @keyframes slide-in {
@@ -57,12 +58,12 @@
             border-radius: 2px 2px 0 0;
         }
     </style>
-    <script src="/js/auth-interceptor.js"></script>
-    <link rel="stylesheet" href="/css/skeleton.css">
-    <link rel="stylesheet" href="/css/dark-mode.css">
-    <link rel="stylesheet" href="/css/kanban.css">
-    <script src="/js/dark-mode.js"></script>
-    <script src="/js/keyboard-shortcuts.js"></script>
+    <script src="<?= asset('/js/auth-interceptor.js') ?>"></script>
+    <link rel="stylesheet" href="<?= url('/css/skeleton.css') ?>">
+    <link rel="stylesheet" href="<?= url('/css/dark-mode.css') ?>">
+    <link rel="stylesheet" href="<?= url('/css/kanban.css') ?>">
+    <script src="<?= asset('/js/dark-mode.js') ?>"></script>
+    <script src="<?= asset('/js/keyboard-shortcuts.js') ?>"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
@@ -92,7 +93,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
-                    <a href="/admin/dashboard" class="text-2xl font-bold text-blue-600">
+                    <a href="<?= url('/admin/dashboard') ?>" class="text-2xl font-bold text-blue-600">
                         🏥 Admin Panel
                     </a>
                 </div>
@@ -120,9 +121,9 @@
                     </button>
                     
                     <span class="text-gray-700 dark:text-gray-300 font-medium"><?= htmlspecialchars($_SESSION['user']->nombre ?? '') ?></span>
-                    <a href="/logout" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition">
+                    <button @click="logout()" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition">
                         Cerrar Sesión
-                    </a>
+                    </button>
                 </div>
             </div>
         </div>
@@ -896,10 +897,10 @@
                                 <p><span class="font-semibold">Nombre:</span> <span x-text="reporteDetalle.profesional?.nombre"></span></p>
                                 <p><span class="font-semibold">Especialidad:</span> <span x-text="reporteDetalle.profesional?.especialidad"></span></p>
                                 <p><span class="font-semibold">Calificación:</span> 
-                                    <span class="text-yellow-500" x-text="'⭐ ' + reporteDetalle.profesional?.puntuacion_promedio"></span>
-                                    <span class="text-gray-500 text-xs" x-text="'(' + reporteDetalle.profesional?.total_calificaciones + ' evaluaciones)'"></span>
+                                    <span class="text-yellow-500" x-text="'⭐ ' + (reporteDetalle.profesional?.puntuacion_promedio || 0)"></span>
+                                    <span class="text-gray-500 text-xs" x-text="'(' + (reporteDetalle.profesional?.total_calificaciones || 0) + ' evaluaciones)'"></span>
                                 </p>
-                                <p><span class="font-semibold">Servicios completados:</span> <span x-text="reporteDetalle.profesional?.servicios_completados"></span></p>
+                                <p><span class="font-semibold">Servicios completados:</span> <span x-text="reporteDetalle.profesional?.servicios_completados || 0"></span></p>
                             </div>
                         </div>
                     </div>
@@ -1163,12 +1164,12 @@
                                             <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 border border-yellow-200 rounded-lg p-3 text-center">
                                                 <div class="flex items-center justify-center space-x-1 mb-1">
                                                     <span class="text-yellow-500 text-lg">⭐</span>
-                                                    <span class="text-2xl font-bold text-yellow-700" x-text="parseFloat(prof.puntuacion_promedio).toFixed(1)"></span>
+                                                    <span class="text-2xl font-bold text-yellow-700" x-text="parseFloat(prof.puntuacion_promedio || 0).toFixed(1)"></span>
                                                 </div>
-                                                <p class="text-xs font-medium text-yellow-700" x-text="prof.total_calificaciones + ' reseñas'"></p>
+                                                <p class="text-xs font-medium text-yellow-700" x-text="(prof.total_calificaciones || 0) + ' reseñas'"></p>
                                             </div>
                                             <div class="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-lg p-3 text-center">
-                                                <p class="text-2xl font-bold text-green-700 mb-1" x-text="prof.servicios_completados"></p>
+                                                <p class="text-2xl font-bold text-green-700 mb-1" x-text="prof.servicios_completados || 0"></p>
                                                 <p class="text-xs font-medium text-green-700">Completados</p>
                                             </div>
                                             <div class="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-3 text-center">
@@ -1647,6 +1648,13 @@
                 kanbanBoard: null,
 
                 async init() {
+                    // Verificar autenticación
+                    const token = localStorage.getItem('token');
+                    if (!token) {
+                        window.location.href = BASE_URL + '/login';
+                        return;
+                    }
+                    
                     await this.cargarStats();
                     await this.cargarSolicitudes();
                     await this.cargarSolicitudesEnProceso();
@@ -1681,7 +1689,7 @@
                 async cargarStats() {
                     try {
                         const token = localStorage.getItem('token');
-                        const response = await fetch('/api/admin/stats', {
+                        const response = await fetch(BASE_URL + '/api/admin/stats', {
                             headers: {
                                 'Authorization': `Bearer ${token}`
                             }
@@ -1779,7 +1787,7 @@
                     this.loading = true;
                     try {
                         const token = localStorage.getItem('token');
-                        const response = await fetch('/api/admin/solicitudes/pendientes', {
+                        const response = await fetch(BASE_URL + '/api/admin/solicitudes/pendientes', {
                             headers: {
                                 'Authorization': `Bearer ${token}`
                             }
@@ -1805,7 +1813,7 @@
                 async cargarSolicitudesPendientesPago() {
                     try {
                         const token = localStorage.getItem('token');
-                        const response = await fetch('/api/admin/pagos/pendientes-confirmacion', {
+                        const response = await fetch(BASE_URL + '/api/admin/pagos/pendientes-confirmacion', {
                             headers: {
                                 'Authorization': `Bearer ${token}`
                             }
@@ -1829,7 +1837,7 @@
                 async cargarSolicitudesEnProceso() {
                     try {
                         const token = localStorage.getItem('token');
-                        const response = await fetch('/api/admin/solicitudes/en-proceso', {
+                        const response = await fetch(BASE_URL + '/api/admin/solicitudes/en-proceso', {
                             headers: {
                                 'Authorization': `Bearer ${token}`
                             }
@@ -1862,7 +1870,7 @@
 
                     try {
                         const token = localStorage.getItem('token');
-                        const response = await fetch(`/api/admin/solicitudes/${solicitudId}/aprobar-pago`, {
+                        const response = await fetch(`${BASE_URL}/api/admin/solicitudes/${solicitudId}/aprobar-pago`, {
                             method: 'POST',
                             headers: {
                                 'Authorization': `Bearer ${token}`,
@@ -1892,7 +1900,7 @@
 
                     try {
                         const token = localStorage.getItem('token');
-                        const response = await fetch(`/api/admin/solicitudes/${solicitudId}/rechazar-pago`, {
+                        const response = await fetch(`${BASE_URL}/api/admin/solicitudes/${solicitudId}/rechazar-pago`, {
                             method: 'POST',
                             headers: {
                                 'Authorization': `Bearer ${token}`,
@@ -1917,7 +1925,7 @@
                 async verQRPago(solicitudId) {
                     try {
                         const token = localStorage.getItem('token');
-                        const response = await fetch(`/api/admin/pagos/${solicitudId}/qr`, {
+                        const response = await fetch(`${BASE_URL}/api/admin/pagos/${solicitudId}/qr`, {
                             headers: {
                                 'Authorization': `Bearer ${token}`
                             }
@@ -1950,7 +1958,7 @@
                     this.loadingProfesionales = true;
                     try {
                         const token = localStorage.getItem('token');
-                        let url = `/api/admin/profesionales?servicio_id=${servicioId}`;
+                        let url = `${BASE_URL}/api/admin/profesionales?servicio_id=${servicioId}`;
                         if (especialidad) {
                             url += `&especialidad=${encodeURIComponent(especialidad)}`;
                         }
@@ -2011,7 +2019,7 @@
                     this.asignando = true;
                     try {
                         const token = localStorage.getItem('token');
-                        const response = await fetch(`/api/admin/solicitudes/${this.solicitudSeleccionada.id}/asignar`, {
+                        const response = await fetch(`${BASE_URL}/api/admin/solicitudes/${this.solicitudSeleccionada.id}/asignar`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -2053,7 +2061,7 @@
                     this.loadingReportes = true;
                     try {
                         const token = localStorage.getItem('token');
-                        let url = '/api/admin/reportes?';
+                        let url = BASE_URL + '/api/admin/reportes?';
                         
                         if (this.filtrosReportes.fecha_desde) {
                             url += `fecha_desde=${this.filtrosReportes.fecha_desde}&`;
@@ -2091,7 +2099,7 @@
                 async verDetalleReporte(solicitudId) {
                     try {
                         const token = localStorage.getItem('token');
-                        const response = await fetch(`/api/admin/reportes/${solicitudId}`, {
+                        const response = await fetch(`${BASE_URL}/api/admin/reportes/${solicitudId}`, {
                             headers: {
                                 'Authorization': `Bearer ${token}`
                             }
@@ -2136,7 +2144,7 @@
                     this.loadingProfesionales = true;
                     try {
                         const token = localStorage.getItem('token');
-                        let url = '/api/admin/profesionales?';
+                        let url = BASE_URL + '/api/admin/profesionales?';
                         
                         if (this.filtrosProfesionales.busqueda) {
                             url += `busqueda=${encodeURIComponent(this.filtrosProfesionales.busqueda)}&`;
@@ -2217,8 +2225,8 @@
                     try {
                         const token = localStorage.getItem('token');
                         const url = this.profesionalEditando 
-                            ? `/api/admin/profesionales/${this.profesionalEditando.id}`
-                            : '/api/admin/profesionales';
+                            ? `${BASE_URL}/api/admin/profesionales/${this.profesionalEditando.id}`
+                            : BASE_URL + '/api/admin/profesionales';
                         
                         const method = this.profesionalEditando ? 'PUT' : 'POST';
                         
@@ -2262,7 +2270,7 @@
                     
                     try {
                         const token = localStorage.getItem('token');
-                        const response = await fetch(`/api/admin/profesionales/${profesional.id}`, {
+                        const response = await fetch(`${BASE_URL}/api/admin/profesionales/${profesional.id}`, {
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -2314,7 +2322,7 @@
 
                 async cargarEspecialidades() {
                     try {
-                        const response = await fetch('/api/admin/especialidades');
+                        const response = await fetch(BASE_URL + '/api/admin/especialidades');
                         if (response.ok) {
                             const data = await response.json();
                             this.especialidades = data.data || [];
@@ -2350,15 +2358,23 @@
                         this.showToast('Error al cargar vista Kanban', 'error');
                     }
                 }
+            },
+
+            logout() {
+                localStorage.removeItem('token');
+                localStorage.removeItem('refresh_token');
+                localStorage.removeItem('refreshToken');
+                localStorage.removeItem('usuario');
+                window.location.href = BASE_URL + '/';
             }
         }
     </script>
 
     <!-- Toast Notifications -->
-    <script src="/js/toast.js"></script>
+    <script src="<?= asset('/js/toast.js') ?>"></script>
     
     <!-- Script del Kanban Board -->
-    <script src="/js/kanban-board.js"></script>
+    <script src="<?= asset('/js/kanban-board.js') ?>"></script>
 
     <style>
         [x-cloak] { display: none !important; }
