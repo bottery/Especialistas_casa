@@ -48,6 +48,13 @@ window.profesionalDashboard = function() {
             notas: ''
         },
         
+        // Modal de calificación al paciente
+        mostrarModalCalificacion: false,
+        solicitudACalificar: null,
+        calificacionPaciente: 0,
+        comentarioCalificacion: '',
+        enviandoCalificacion: false,
+        
         // Filtros y búsqueda
         searchQuery: '',
         filterModalidad: '',
@@ -358,6 +365,67 @@ window.profesionalDashboard = function() {
         cerrarModalDetalle() {
             this.mostrarModalDetalle = false;
             this.solicitudDetalle = null;
+        },
+
+        // === FUNCIONES DE CALIFICACIÓN AL PACIENTE ===
+        abrirModalCalificacion(solicitud) {
+            this.solicitudACalificar = solicitud;
+            this.calificacionPaciente = 0;
+            this.comentarioCalificacion = '';
+            this.mostrarModalCalificacion = true;
+        },
+
+        cerrarModalCalificacion() {
+            this.mostrarModalCalificacion = false;
+            this.solicitudACalificar = null;
+            this.calificacionPaciente = 0;
+            this.comentarioCalificacion = '';
+        },
+
+        seleccionarCalificacion(valor) {
+            this.calificacionPaciente = valor;
+        },
+
+        async enviarCalificacion() {
+            if (this.calificacionPaciente < 1 || this.calificacionPaciente > 5) {
+                ToastNotification.warning('Por favor selecciona una calificación del 1 al 5');
+                return;
+            }
+
+            this.enviandoCalificacion = true;
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${BASE_URL}/api/profesional/solicitudes/${this.solicitudACalificar.id}/calificar-paciente`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        calificacion: this.calificacionPaciente,
+                        comentario: this.comentarioCalificacion
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    ToastNotification.success('¡Gracias por calificar al paciente!');
+                    this.cerrarModalCalificacion();
+                    await this.cargarDatos();
+                } else {
+                    ToastNotification.error(data.message || 'Error al enviar la calificación');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                ToastNotification.error('Error de conexión al enviar la calificación');
+            } finally {
+                this.enviandoCalificacion = false;
+            }
+        },
+
+        puedeCalificarPaciente(solicitud) {
+            return solicitud.estado === 'completado' && !solicitud.calificacion_profesional;
         },
 
         get solicitudesPendientesFiltradas() {
@@ -831,17 +899,40 @@ window.profesionalDashboard = function() {
             <div class="grid gap-4">
                 <template x-for="solicitud in paginatedList(solicitudesCompletadasFiltradas)" :key="solicitud.id">
                     <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-green-500">
-                        <div class="flex justify-between items-center">
+                        <div class="flex justify-between items-start">
                             <div class="flex-1">
                                 <h3 class="text-sm font-semibold text-gray-900" x-text="solicitud.servicio_nombre"></h3>
                                 <p class="text-xs text-gray-600">
                                     <span x-text="solicitud.paciente_nombre"></span> - 
                                     <span x-text="formatDate(solicitud.fecha_programada)"></span>
                                 </p>
+                                <!-- Mostrar si ya calificó al paciente -->
+                                <div class="mt-2">
+                                    <template x-if="solicitud.calificacion_profesional">
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                                            ✅ Paciente calificado: 
+                                            <template x-for="i in 5">
+                                                <span :class="i <= solicitud.calificacion_profesional ? 'text-yellow-500' : 'text-gray-300'">★</span>
+                                            </template>
+                                        </span>
+                                    </template>
+                                    <template x-if="!solicitud.calificacion_profesional">
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">
+                                            ⏳ Pendiente calificar paciente
+                                        </span>
+                                    </template>
+                                </div>
                             </div>
-                            <div class="text-right">
+                            <div class="text-right flex flex-col items-end gap-2">
                                 <p class="text-sm font-semibold text-green-600" x-text="formatMonto(solicitud.monto_total)"></p>
                                 <span class="text-xs text-gray-500">✔️ Completada</span>
+                                <!-- Botón para calificar al paciente -->
+                                <template x-if="puedeCalificarPaciente(solicitud)">
+                                    <button @click="abrirModalCalificacion(solicitud)"
+                                            class="mt-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-medium rounded-lg transition-colors">
+                                        ⭐ Calificar Paciente
+                                    </button>
+                                </template>
                             </div>
                         </div>
                     </div>
@@ -1082,6 +1173,98 @@ window.profesionalDashboard = function() {
                             class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium">
                         <span x-show="!loading">✅ Completar Servicio</span>
                         <span x-show="loading">⏳ Procesando...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Calificación al Paciente -->
+    <div x-show="mostrarModalCalificacion" 
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 overflow-y-auto" 
+         style="display: none;">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-black bg-opacity-50" @click="cerrarModalCalificacion()"></div>
+            
+            <div class="relative bg-white rounded-xl shadow-2xl max-w-md w-full p-6 z-10"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 transform scale-95"
+                 x-transition:enter-end="opacity-100 transform scale-100">
+                
+                <!-- Header -->
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-900">⭐ Calificar al Paciente</h2>
+                    <button @click="cerrarModalCalificacion()" class="text-gray-400 hover:text-gray-600 transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Info del servicio -->
+                <div class="bg-gray-50 rounded-lg p-4 mb-6" x-show="solicitudACalificar">
+                    <p class="text-sm text-gray-600">Servicio completado:</p>
+                    <p class="font-semibold text-gray-900" x-text="solicitudACalificar?.servicio_nombre"></p>
+                    <p class="text-sm text-gray-600 mt-1">
+                        Paciente: <span class="font-medium" x-text="solicitudACalificar?.paciente_nombre"></span>
+                    </p>
+                </div>
+
+                <!-- Estrellas de calificación -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-3">¿Cómo calificarías al paciente?</label>
+                    <div class="flex justify-center gap-2">
+                        <template x-for="i in 5" :key="i">
+                            <button @click="seleccionarCalificacion(i)" 
+                                    class="text-4xl transition-transform hover:scale-110 focus:outline-none"
+                                    :class="i <= calificacionPaciente ? 'text-yellow-400' : 'text-gray-300'">
+                                ★
+                            </button>
+                        </template>
+                    </div>
+                    <p class="text-center text-sm text-gray-500 mt-2" x-show="calificacionPaciente > 0">
+                        <span x-text="calificacionPaciente"></span> de 5 estrellas
+                    </p>
+                </div>
+
+                <!-- Criterios de evaluación -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <p class="text-xs font-medium text-blue-800 mb-2">💡 Criterios para calificar:</p>
+                    <ul class="text-xs text-blue-700 space-y-1">
+                        <li>• Puntualidad y disponibilidad</li>
+                        <li>• Claridad en la comunicación</li>
+                        <li>• Seguimiento de indicaciones</li>
+                        <li>• Trato respetuoso</li>
+                    </ul>
+                </div>
+
+                <!-- Comentario opcional -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Comentario (opcional)</label>
+                    <textarea x-model="comentarioCalificacion" 
+                              rows="3"
+                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                              placeholder="Comparte tu experiencia con este paciente..."></textarea>
+                </div>
+
+                <!-- Botones -->
+                <div class="flex gap-3">
+                    <button @click="cerrarModalCalificacion()" 
+                            class="flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium">
+                        Cancelar
+                    </button>
+                    <button @click="enviarCalificacion()" 
+                            :disabled="enviandoCalificacion || calificacionPaciente === 0"
+                            :class="(enviandoCalificacion || calificacionPaciente === 0) ? 'opacity-50 cursor-not-allowed' : ''"
+                            class="flex-1 px-4 py-3 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition font-medium">
+                        <span x-show="!enviandoCalificacion">⭐ Enviar Calificación</span>
+                        <span x-show="enviandoCalificacion">Enviando...</span>
                     </button>
                 </div>
             </div>
