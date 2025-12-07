@@ -1,19 +1,15 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Super Admin - VitaHome</title>
-    <link rel="icon" type="image/svg+xml" href="<?= asset('/images/vitahome-icon.svg') ?>">
+    <link rel="icon" type="image/svg+xml" href="<?= BASE_URL ?>/images/vitahome-icon.svg">
     <script>const BASE_URL = '<?= rtrim(BASE_URL, "/") ?>';</script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="<?= url('/css/vitahome-brand.css') ?>">
+    <link rel="stylesheet" href="<?= BASE_URL ?>/css/vitahome-brand.css">
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <style>
-        .gradient-bg { background: linear-gradient(135deg, #14b8a6 0%, #1e3a5f 100%); }
-        .gradient-text { background: linear-gradient(135deg, #14b8a6 0%, #1e3a5f 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    </style>
 </head>
 <body class="bg-gray-50" x-data="dashboardApp()" x-init="init()">
     
@@ -22,9 +18,12 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center space-x-4">
-                    <div class="flex items-center space-x-3">
-                        <img src="<?= asset('/images/vitahome-icon.svg') ?>" alt="VitaHome" class="h-10 w-10">
-                        <span class="text-xl font-bold gradient-text">VitaHome</span>
+                    <div class="flex items-center space-x-2">
+                        <svg class="h-8 w-8 text-teal-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+                            <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
+                        </svg>
+                        <span class="text-xl font-bold text-gray-900">Especialistas en Casa</span>
                     </div>
                     <span class="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded-full">SUPER ADMIN</span>
                 </div>
@@ -43,7 +42,7 @@
     <div class="bg-white border-b border-gray-200 sticky top-16 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex space-x-8 overflow-x-auto py-4">
-                <a href="<?= url('/superadmin/dashboard') ?>" class="flex items-center space-x-2 px-3 py-2 rounded-lg bg-indigo-50 text-indigo-700 font-medium whitespace-nowrap">
+                <a href="<?= url('/superadmin/dashboard') ?>" class="flex items-center space-x-2 px-3 py-2 rounded-lg bg-teal-50 text-teal-700 font-medium whitespace-nowrap">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
                     </svg>
@@ -72,7 +71,7 @@
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
                     </svg>
-                    <span>Configuraci�n</span>
+                    <span>Configuración</span>
                 </a>
             </div>
         </div>
@@ -83,7 +82,7 @@
         
         <!-- Loading -->
         <div x-show="loading" class="flex justify-center items-center py-12">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
         </div>
 
         <!-- Mensajes -->
@@ -159,7 +158,7 @@
             </div>
         </div>
 
-        <!-- Segunda fila de estad�sticas -->
+        <!-- Segunda fila de estadísticas -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" x-show="!loading">
             <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-green-500">
                 <div class="flex items-center justify-between">
@@ -195,7 +194,7 @@
                         <p class="text-gray-500 text-sm font-medium">Nuevos Hoy</p>
                         <p class="text-2xl font-bold text-gray-900 mt-2" x-text="stats.nuevosUsuariosHoy || 0">0</p>
                     </div>
-                    <div class="bg-indigo-100 rounded-full p-3">
+                    <div class="bg-teal-100 rounded-full p-3">
                         <svg class="w-6 h-6 text-teal-600" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"/>
                         </svg>
@@ -241,7 +240,7 @@
             </div>
 
             <div class="bg-white rounded-xl shadow-lg p-6 lg:col-span-2">
-                <h3 class="text-lg font-semibold mb-4 text-gray-800">Tendencia Semanal (�ltimos 30 d�as)</h3>
+                <h3 class="text-lg font-semibold mb-4 text-gray-800">Tendencia Semanal (Últimos 30 días)</h3>
                 <canvas id="tendenciaChart" height="150"></canvas>
             </div>
         </div>
@@ -333,7 +332,7 @@ window.dashboardApp = function() {
                     this.renderCharts(data);
                 }
             } catch (error) {
-                console.error('Error cargando gr�ficos:', error);
+                console.error('Error cargando gráficos:', error);
             }
         },
 

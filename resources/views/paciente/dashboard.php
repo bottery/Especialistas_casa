@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+Ôªø<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -36,12 +36,12 @@ window.pacienteDashboard = function() {
         historialMedico: [],
         activeTab: 'solicitudes',
         
-        // Filtros y b˙squeda
+        // Filtros y b√∫squeda
         searchQuery: '',
         filterEstado: '',
         filterServicio: '',
         
-        // PaginaciÛn
+        // Paginaci√≥n
         itemsPorPagina: 5,
         paginaActual: 1,
         
@@ -49,7 +49,7 @@ window.pacienteDashboard = function() {
         modalDetalleAbierto: false,
         solicitudDetalle: null,
         
-        // Modal de calificaciÛn
+        // Modal de calificaci√≥n
         modalCalificacionAbierto: false,
         solicitudACalificar: null,
         calificacion: 0,
@@ -57,24 +57,24 @@ window.pacienteDashboard = function() {
         enviandoCalificacion: false,
 
         async init() {
-            console.log('?? Inicializando paciente dashboard...');
+            console.log('üöÄ Inicializando paciente dashboard...');
             const token = localStorage.getItem('token');
             if (!token) {
-                console.log('? No hay token, redirigiendo a login');
+                console.log('‚ùå No hay token, redirigiendo a login');
                 window.location.href = BASE_URL + '/login';
                 return;
             }
 
             const userData = JSON.parse(localStorage.getItem('usuario') || '{}');
             this.usuario = userData;
-            console.log('?? Usuario:', userData);
+            console.log('üë§ Usuario:', userData);
 
             await this.cargarDatos();
             
             // Verificar si hay servicios pendientes de calificar
             this.verificarCalificacionesPendientes();
             
-            console.log('? Dashboard inicializado. Solicitudes:', this.solicitudes.length);
+            console.log('‚úÖ Dashboard inicializado. Solicitudes:', this.solicitudes.length);
         },
 
         async cargarDatos() {
@@ -82,7 +82,7 @@ window.pacienteDashboard = function() {
             try {
                 const token = localStorage.getItem('token');
                 
-                // Cargar estadÌsticas
+                // Cargar estad√≠sticas
                 const statsResponse = await fetch(BASE_URL + '/api/paciente/stats', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -90,7 +90,7 @@ window.pacienteDashboard = function() {
                 if (statsResponse.ok) {
                     const data = await statsResponse.json();
                     console.log('Stats recibidos:', data);
-                    // El backend envÌa los stats expandidos en el nivel raÌz con ...spread
+                    // El backend env√≠a los stats expandidos en el nivel ra√≠z con ...spread
                     const { success, ...stats } = data;
                     this.stats = stats;
                 }
@@ -136,7 +136,7 @@ window.pacienteDashboard = function() {
         },
 
         getTimelineStates(estado) {
-            // Estados del timeline: [Creada, Pago, AsignaciÛn, En Proceso, Completado]
+            // Estados del timeline: [Creada, Pago, Asignaci√≥n, En Proceso, Completado]
             const estados = {
                 'pendiente': ['completed', 'pending', 'pending', 'pending', 'pending'],
                 'pendiente_pago': ['completed', 'active', 'pending', 'pending', 'pending'],
@@ -177,9 +177,9 @@ window.pacienteDashboard = function() {
         getEstadoTexto(estado) {
             const textos = {
                 'pendiente': 'Pendiente',
-                'pendiente_asignacion': 'Esperando AsignaciÛn',
-                'pendiente_pago': 'Esperando ConfirmaciÛn de Pago',
-                'pagado': 'Pago Confirmado - Pendiente AsignaciÛn',
+                'pendiente_asignacion': 'Esperando Asignaci√≥n',
+                'pendiente_pago': 'Esperando Confirmaci√≥n de Pago',
+                'pagado': 'Pago Confirmado - Pendiente Asignaci√≥n',
                 'asignado': 'Profesional Asignado',
                 'en_proceso': 'En Progreso',
                 'completado': 'Completado',
@@ -196,7 +196,7 @@ window.pacienteDashboard = function() {
             if (pendientes.length > 0) {
                 setTimeout(() => {
                     ToastNotification.warning(
-                        `Tienes ${pendientes.length} servicio(s) pendiente(s) de calificar. Haz clic en el botÛn "? Calificar Servicio" para continuar.`,
+                        `Tienes ${pendientes.length} servicio(s) pendiente(s) de calificar. Haz clic en el bot√≥n "‚≠ê Calificar Servicio" para continuar.`,
                         8000
                     );
                 }, 1000);
@@ -223,7 +223,7 @@ window.pacienteDashboard = function() {
 
         async enviarCalificacion() {
             if (this.calificacion < 1 || this.calificacion > 5) {
-                ToastNotification.warning('Por favor selecciona una calificaciÛn del 1 al 5');
+                ToastNotification.warning('Por favor selecciona una calificaci√≥n del 1 al 5');
                 return;
             }
 
@@ -243,16 +243,16 @@ window.pacienteDashboard = function() {
                 });
 
                 if (response.ok) {
-                    ToastNotification.success('°Gracias por tu calificaciÛn! Tu opiniÛn nos ayuda a mejorar.');
+                    ToastNotification.success('¬°Gracias por tu calificaci√≥n! Tu opini√≥n nos ayuda a mejorar.');
                     this.cerrarModalCalificacion();
                     await this.cargarDatos();
                 } else {
                     const error = await response.json();
-                    ToastNotification.error(error.message || 'No se pudo enviar la calificaciÛn');
+                    ToastNotification.error(error.message || 'No se pudo enviar la calificaci√≥n');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                ToastNotification.error('Error al enviar la calificaciÛn. Verifica tu conexiÛn.');
+                ToastNotification.error('Error al enviar la calificaci√≥n. Verifica tu conexi√≥n.');
             } finally {
                 this.enviandoCalificacion = false;
             }
@@ -279,7 +279,7 @@ window.pacienteDashboard = function() {
         get solicitudesFiltradas() {
             let filtered = this.solicitudes;
             
-            // Filtrar por b˙squeda
+            // Filtrar por b√∫squeda
             if (this.searchQuery.trim()) {
                 const query = this.searchQuery.toLowerCase();
                 filtered = filtered.filter(s => 
@@ -369,13 +369,13 @@ window.pacienteDashboard = function() {
                 return;
             }
             
-            const razon = prompt('Por favor, indica el motivo de cancelaciÛn:');
+            const razon = prompt('Por favor, indica el motivo de cancelaci√≥n:');
             if (!razon || razon.trim() === '') {
                 ToastNotification.warning('Debes indicar un motivo para cancelar.');
                 return;
             }
             
-            if (!confirm(`øEst·s seguro de que deseas cancelar esta solicitud?\n\nServicio: ${solicitud.servicio_nombre}\nFecha: ${this.formatDate(solicitud.fecha_programada)}\n\nEsta acciÛn no se puede deshacer.`)) {
+            if (!confirm(`¬øEst√°s seguro de que deseas cancelar esta solicitud?\n\nServicio: ${solicitud.servicio_nombre}\nFecha: ${this.formatDate(solicitud.fecha_programada)}\n\nEsta acci√≥n no se puede deshacer.`)) {
                 return;
             }
             
@@ -407,7 +407,7 @@ window.pacienteDashboard = function() {
                 }
             } catch (error) {
                 console.error('Error al cancelar:', error);
-                ToastNotification.error('Error de conexiÛn al cancelar la solicitud');
+                ToastNotification.error('Error de conexi√≥n al cancelar la solicitud');
             } finally {
                 this.loading = false;
             }
@@ -429,9 +429,7 @@ window.pacienteDashboard = function() {
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center space-x-3">
-                    <svg class="w-8 h-8 text-teal-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
-                    </svg>
+                    <img src="<?= asset('/images/vitahome-icon.svg') ?>" alt="VitaHome" class="h-10 w-10">
                     <div>
                         <h1 class="text-lg font-semibold text-gray-900">Mi Panel</h1>
                         <p class="text-xs text-gray-500" x-text="usuario.nombre"></p>
@@ -453,7 +451,7 @@ window.pacienteDashboard = function() {
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                         </svg>
                     </button>
-                    <button @click="logout()" class="text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition" title="Cerrar sesiÛn">
+                    <button @click="logout()" class="text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition" title="Cerrar sesi√≥n">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                         </svg>
@@ -476,14 +474,14 @@ window.pacienteDashboard = function() {
             <div class="breadcrumb-item active">Mi Panel</div>
         </nav>
 
-        <!-- Skeletons para estadÌsticas -->
+        <!-- Skeletons para estad√≠sticas -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" x-show="loading">
             <div class="skeleton-stat-card"></div>
             <div class="skeleton-stat-card"></div>
             <div class="skeleton-stat-card"></div>
         </div>
 
-        <!-- Tarjetas de estadÌsticas -->
+        <!-- Tarjetas de estad√≠sticas -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" x-show="!loading">
             <div class="bg-white rounded-lg shadow-sm p-6">
                 <div class="flex items-center justify-between">
@@ -513,8 +511,8 @@ window.pacienteDashboard = function() {
                 </div>
             </div>
 
-            <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg shadow-lg p-6 text-white">
-                <p class="text-sm text-teal-100 mb-2">PrÛxima Cita</p>
+            <div class="gradient-bg rounded-lg shadow-lg p-6 text-white">
+                <p class="text-sm text-teal-100 mb-2">Pr√≥xima Cita</p>
                 <template x-if="stats.proximaCita">
                     <div>
                         <p class="text-lg font-semibold" x-text="formatDate(stats.proximaCita.fecha)"></p>
@@ -527,9 +525,9 @@ window.pacienteDashboard = function() {
             </div>
         </div>
 
-        <!-- BotÛn Nueva Solicitud -->
+        <!-- Bot√≥n Nueva Solicitud -->
         <div class="mb-6">
-            <button @click="nuevaSolicitud()" class="gradient-bg text-white px-6 py-3 rounded-lg hover:opacity-90 transition flex items-center space-x-2">
+            <button @click="nuevaSolicitud()" class="gradient-bg text-white px-6 py-3 rounded-lg hover:opacity-90 transition flex items-center space-x-2 shadow-lg">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
@@ -537,17 +535,17 @@ window.pacienteDashboard = function() {
             </button>
         </div>
 
-        <!-- Barra de b˙squeda y filtros -->
+        <!-- Barra de b√∫squeda y filtros -->
         <div class="bg-white rounded-lg shadow-sm p-4 mb-6" x-show="!loading">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <!-- B˙squeda -->
+                <!-- B√∫squeda -->
                 <div class="md:col-span-2">
                     <div class="relative">
                         <input 
                             type="text" 
                             x-model="searchQuery" 
-                            placeholder="Buscar por servicio, descripciÛn, profesional..."
-                            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                            placeholder="Buscar por servicio, descripci√≥n, profesional..."
+                            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
                         >
                         <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -557,7 +555,7 @@ window.pacienteDashboard = function() {
 
                 <!-- Filtro Estado -->
                 <div>
-                    <select x-model="filterEstado" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm">
+                    <select x-model="filterEstado" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-sm">
                         <option value="">Todos los estados</option>
                         <option value="pendiente">Pendiente</option>
                         <option value="asignado">Asignado</option>
@@ -570,9 +568,9 @@ window.pacienteDashboard = function() {
 
                 <!-- Filtro Servicio -->
                 <div>
-                    <select x-model="filterServicio" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm">
+                    <select x-model="filterServicio" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-sm">
                         <option value="">Todos los servicios</option>
-                        <option value="medico">MÈdico</option>
+                        <option value="medico">M√©dico</option>
                         <option value="enfermera">Enfermera</option>
                         <option value="veterinario">Veterinario</option>
                         <option value="laboratorio">Laboratorio</option>
@@ -581,14 +579,14 @@ window.pacienteDashboard = function() {
                 </div>
             </div>
 
-            <!-- BotÛn limpiar filtros -->
+            <!-- Bot√≥n limpiar filtros -->
             <div class="mt-3 flex justify-between items-center" x-show="searchQuery || filterEstado || filterServicio">
                 <p class="text-sm text-gray-600">
                     <span x-text="solicitudesFiltradas.length"></span> resultados encontrados
                 </p>
                 <button 
                     @click="limpiarFiltros()" 
-                    class="text-sm text-teal-600 hover:text-teal-800 font-medium flex items-center space-x-1"
+                    class="text-sm text-teal-600 hover:text-teal-700 font-medium flex items-center space-x-1"
                 >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -609,7 +607,7 @@ window.pacienteDashboard = function() {
                 <button @click="activeTab = 'historial'" 
                         :class="activeTab === 'historial' ? 'border-teal-500 text-teal-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
                         class="py-4 px-1 border-b-2 font-medium text-sm">
-                    Historial MÈdico
+                    Historial M√©dico
                 </button>
             </nav>
         </div>
@@ -630,7 +628,7 @@ window.pacienteDashboard = function() {
                     <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
-                    <p class="text-gray-500 text-lg">No tienes solicitudes a˙n</p>
+                    <p class="text-gray-500 text-lg">No tienes solicitudes a√∫n</p>
                     <button @click="nuevaSolicitud()" class="mt-4 text-teal-600 hover:text-teal-700 font-medium">
                         Crear tu primera solicitud
                     </button>
@@ -655,41 +653,41 @@ window.pacienteDashboard = function() {
                                     </p>
                                     <p class="text-sm text-gray-600">
                                         <span class="font-medium">Modalidad:</span>
-                                        <span x-text="solicitud.modalidad === 'traslado' ? '?? Traslado' : solicitud.modalidad === 'domicilio' ? '?? Domicilio' : solicitud.modalidad === 'virtual' ? '?? Virtual' : '?? Consultorio'"></span>
+                                        <span x-text="solicitud.modalidad === 'traslado' ? 'üöë Traslado' : solicitud.modalidad === 'domicilio' ? 'üè† Domicilio' : solicitud.modalidad === 'virtual' ? 'üíª Virtual' : 'üè¢ Consultorio'"></span>
                                     </p>
                                 </div>
                                 <div class="text-right">
                                     <p class="text-xl font-bold text-gray-900" x-text="formatMonto(solicitud.monto_total)"></p>
-                                    <p class="text-xs text-gray-500 mt-1" x-show="solicitud.pagado">? Pagado</p>
+                                    <p class="text-xs text-gray-500 mt-1" x-show="solicitud.pagado">‚úì Pagado</p>
                                 </div>
                             </div>
                             
                             <!-- Botones de acciones -->
                             <div class="flex items-center gap-3 mt-4 pt-4 border-t border-gray-100">
-                                <!-- BotÛn Calificar -->
+                                <!-- Bot√≥n Calificar -->
                                 <button x-show="solicitud.estado === 'pendiente_calificacion'" 
                                         @click.stop="abrirModalCalificacion(solicitud)" 
                                         class="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium text-sm">
-                                    ? Calificar Servicio
+                                    ‚≠ê Calificar Servicio
                                 </button>
                                 
-                                <!-- BotÛn Cancelar -->
+                                <!-- Bot√≥n Cancelar -->
                                 <button x-show="puedeCancelar(solicitud)" 
                                         @click.stop="cancelarSolicitud(solicitud, $event)" 
                                         class="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition font-medium text-sm border border-red-200">
-                                    ? Cancelar
+                                    ‚ùå Cancelar
                                 </button>
                                 
-                                <!-- BotÛn Ver Detalle -->
+                                <!-- Bot√≥n Ver Detalle -->
                                 <button @click.stop="verDetalle(solicitud.id)" 
                                         class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm">
-                                    ?? Ver Detalle
+                                    üëÅ Ver Detalle
                                 </button>
                             </div>
                         </div>
                     </template>
 
-                    <!-- PaginaciÛn -->
+                    <!-- Paginaci√≥n -->
                     <div x-show="totalPaginas > 1" class="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
                         <div class="text-sm text-gray-600">
                             Mostrando 
@@ -708,14 +706,14 @@ window.pacienteDashboard = function() {
                                 :class="paginaActual === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'"
                                 class="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 transition"
                             >
-                                ? Anterior
+                                ‚Üê Anterior
                             </button>
 
                             <template x-for="pagina in paginasVisibles" :key="pagina">
                                 <button 
                                     x-show="pagina !== '...'"
                                     @click="cambiarPagina(pagina)"
-                                    :class="paginaActual === pagina ? 'gradient-bg text-white' : 'bg-white text-gray-700 hover:bg-gray-100'"
+                                    :class="paginaActual === pagina ? 'bg-teal-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'"
                                     class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium transition"
                                     x-text="pagina"
                                 ></button>
@@ -728,26 +726,26 @@ window.pacienteDashboard = function() {
                                 :class="paginaActual === totalPaginas ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'"
                                 class="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 transition"
                             >
-                                Siguiente ?
+                                Siguiente ‚Üí
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Tab: Historial MÈdico -->
+            <!-- Tab: Historial M√©dico -->
             <div x-show="activeTab === 'historial'">
                 <div class="bg-white rounded-lg shadow-sm p-12 text-center">
                     <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
-                    <p class="text-gray-500 text-lg">Tu historial mÈdico estar· disponible prÛximamente</p>
+                    <p class="text-gray-500 text-lg">Tu historial m√©dico estar√° disponible pr√≥ximamente</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal de CalificaciÛn -->
+    <!-- Modal de Calificaci√≥n -->
     <div x-show="modalCalificacionAbierto" 
          x-cloak
          class="fixed inset-0 z-50 overflow-y-auto" 
@@ -759,7 +757,7 @@ window.pacienteDashboard = function() {
                 <!-- Header -->
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-2xl font-bold text-gray-900">
-                        ? Califica el Servicio
+                        ‚≠ê Califica el Servicio
                     </h3>
                     <button @click="cerrarModalCalificacion()" class="text-gray-400 hover:text-gray-600 transition">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -768,7 +766,7 @@ window.pacienteDashboard = function() {
                     </button>
                 </div>
 
-                <!-- InformaciÛn del Servicio -->
+                <!-- Informaci√≥n del Servicio -->
                 <div x-show="solicitudACalificar" class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                     <p class="text-sm text-gray-600 mb-1">Servicio</p>
                     <p class="font-semibold text-gray-900" x-text="solicitudACalificar?.servicio_nombre"></p>
@@ -778,7 +776,7 @@ window.pacienteDashboard = function() {
 
                 <!-- Sistema de Estrellas -->
                 <div class="mb-6">
-                    <p class="text-sm font-medium text-gray-700 mb-3">øCÛmo calificarÌas este servicio?</p>
+                    <p class="text-sm font-medium text-gray-700 mb-3">¬øC√≥mo calificar√≠as este servicio?</p>
                     <div class="flex justify-center space-x-2">
                         <template x-for="i in 5" :key="i">
                             <button @click="seleccionarCalificacion(i)" 
@@ -794,23 +792,23 @@ window.pacienteDashboard = function() {
                         </template>
                     </div>
                     <p class="text-center text-sm text-gray-600 mt-2" x-show="calificacion > 0">
-                        <span x-show="calificacion === 1">?? Muy malo</span>
-                        <span x-show="calificacion === 2">?? Malo</span>
-                        <span x-show="calificacion === 3">?? Regular</span>
-                        <span x-show="calificacion === 4">?? Bueno</span>
-                        <span x-show="calificacion === 5">?? Excelente</span>
+                        <span x-show="calificacion === 1">üòû Muy malo</span>
+                        <span x-show="calificacion === 2">üòï Malo</span>
+                        <span x-show="calificacion === 3">üòê Regular</span>
+                        <span x-show="calificacion === 4">üòä Bueno</span>
+                        <span x-show="calificacion === 5">üòç Excelente</span>
                     </p>
                 </div>
 
                 <!-- Comentario -->
                 <div class="mb-6">
                     <label class="block text-sm font-medium text-gray-700 mb-2">
-                        CuÈntanos m·s sobre tu experiencia (opcional)
+                        Cu√©ntanos m√°s sobre tu experiencia (opcional)
                     </label>
                     <textarea x-model="comentario" 
                               rows="4" 
                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                              placeholder="Describe quÈ te gustÛ o quÈ se podrÌa mejorar..."></textarea>
+                              placeholder="Describe qu√© te gust√≥ o qu√© se podr√≠a mejorar..."></textarea>
                 </div>
 
                 <!-- Botones -->
@@ -823,7 +821,7 @@ window.pacienteDashboard = function() {
                             :disabled="calificacion === 0 || enviandoCalificacion"
                             :class="calificacion === 0 || enviandoCalificacion ? 'opacity-50 cursor-not-allowed' : 'hover:bg-purple-700'"
                             class="px-6 py-2 bg-purple-600 text-white rounded-lg transition font-medium">
-                        <span x-show="!enviandoCalificacion">? Enviar CalificaciÛn</span>
+                        <span x-show="!enviandoCalificacion">‚úÖ Enviar Calificaci√≥n</span>
                         <span x-show="enviandoCalificacion">Enviando...</span>
                     </button>
                 </div>
@@ -847,7 +845,7 @@ window.pacienteDashboard = function() {
             </div>
 
             <div class="p-6" x-show="solicitudDetalle">
-                <!-- InformaciÛn b·sica -->
+                <!-- Informaci√≥n b√°sica -->
                 <div class="mb-6">
                     <div class="flex items-start justify-between mb-4">
                         <div>
@@ -883,24 +881,24 @@ window.pacienteDashboard = function() {
                         </div>
                         <div x-show="solicitudDetalle?.rango_horario">
                             <p class="text-gray-500">Horario Preferido</p>
-                            <p class="font-medium capitalize" x-text="solicitudDetalle?.rango_horario === 'manana' ? 'MaÒana' : solicitudDetalle?.rango_horario === 'tarde' ? 'Tarde' : 'Noche'"></p>
+                            <p class="font-medium capitalize" x-text="solicitudDetalle?.rango_horario === 'manana' ? 'Ma√±ana' : solicitudDetalle?.rango_horario === 'tarde' ? 'Tarde' : 'Noche'"></p>
                         </div>
                     </div>
 
-                    <!-- SÌntomas/Motivo de consulta -->
+                    <!-- S√≠ntomas/Motivo de consulta -->
                     <div class="mt-4" x-show="solicitudDetalle?.sintomas">
                         <p class="text-gray-500 text-sm mb-1">Motivo de la consulta</p>
                         <p class="text-gray-700 bg-gray-50 p-3 rounded-lg" x-text="solicitudDetalle?.sintomas"></p>
                     </div>
 
-                    <!-- DirecciÛn (para presencial) -->
+                    <!-- Direcci√≥n (para presencial) -->
                     <div class="mt-4" x-show="solicitudDetalle?.modalidad === 'presencial' && solicitudDetalle?.direccion_servicio">
-                        <p class="text-gray-500 text-sm mb-1">?? DirecciÛn del servicio</p>
+                        <p class="text-gray-500 text-sm mb-1">üìç Direcci√≥n del servicio</p>
                         <p class="text-gray-700 bg-blue-50 p-3 rounded-lg" x-text="solicitudDetalle?.direccion_servicio"></p>
                     </div>
 
                     <div class="mt-4" x-show="solicitudDetalle?.descripcion">
-                        <p class="text-gray-500 text-sm mb-1">DescripciÛn</p>
+                        <p class="text-gray-500 text-sm mb-1">Descripci√≥n</p>
                         <p class="text-gray-700" x-text="solicitudDetalle?.descripcion"></p>
                     </div>
                 </div>
@@ -948,12 +946,12 @@ window.pacienteDashboard = function() {
                                         Pago verificado correctamente
                                     </div>
                                     <div class="timeline-description" x-show="!solicitudDetalle?.pagado">
-                                        Esperando confirmaciÛn de pago
+                                        Esperando confirmaci√≥n de pago
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- AsignaciÛn de Profesional -->
+                            <!-- Asignaci√≥n de Profesional -->
                             <div class="timeline-step" :class="states[2]">
                                 <div class="timeline-icon">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -963,7 +961,7 @@ window.pacienteDashboard = function() {
                                 <div class="timeline-content">
                                     <div class="timeline-title">Profesional Asignado</div>
                                     <div class="timeline-description" x-show="solicitudDetalle?.profesional_nombre">
-                                        <span class="font-medium" x-text="solicitudDetalle?.profesional_nombre"></span> atender· tu consulta
+                                        <span class="font-medium" x-text="solicitudDetalle?.profesional_nombre"></span> atender√° tu consulta
                                     </div>
                                     <div class="timeline-description" x-show="!solicitudDetalle?.profesional_nombre">
                                         Buscando el mejor profesional para ti
@@ -984,7 +982,7 @@ window.pacienteDashboard = function() {
                                         Consulta virtual en progreso
                                     </div>
                                     <div class="timeline-description" x-show="solicitudDetalle?.modalidad !== 'virtual'">
-                                        AtenciÛn a domicilio en progreso
+                                        Atenci√≥n a domicilio en progreso
                                     </div>
                                 </div>
                             </div>
@@ -1010,11 +1008,11 @@ window.pacienteDashboard = function() {
                     </div>
                 </div>
 
-                <!-- BotÛn calificar si est· pendiente -->
+                <!-- Bot√≥n calificar si est√° pendiente -->
                 <div x-show="solicitudDetalle?.estado === 'pendiente_calificacion'" class="text-center">
                     <button @click="abrirModalCalificacion(solicitudDetalle); cerrarModalDetalle();" 
                             class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium">
-                        ? Calificar Servicio
+                        ‚≠ê Calificar Servicio
                     </button>
                 </div>
             </div>
