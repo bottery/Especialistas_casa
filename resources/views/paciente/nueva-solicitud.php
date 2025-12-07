@@ -21,6 +21,11 @@ window.nuevaSolicitudApp = function() {
         especialidadesDisponibles: [],
         mostrarSelectorEspecialidad: false,
         especialidadSeleccionada: null,
+        // Modal de éxito
+        mostrarModalExito: false,
+        mensajeExito: '',
+        esTransferencia: false,
+        datosTransferencia: null,
         formData: {
             servicio_id: '',
             servicio_tipo: '',
@@ -171,7 +176,7 @@ window.nuevaSolicitudApp = function() {
             
             // Si es médico, cargar especialidades disponibles
             if (servicio.tipo === 'medico') {
-                await this.cargarEspecialidades();
+                await this.cargarEspecialidades('medico');
                 this.mostrarSelectorEspecialidad = true;
             } else {
                 this.mostrarSelectorEspecialidad = false;
@@ -180,9 +185,10 @@ window.nuevaSolicitudApp = function() {
             }
         },
 
-        async cargarEspecialidades() {
+        async cargarEspecialidades(tipo) {
             try {
-                const response = await fetch(BASE_URL + '/api/especialidades');
+                const url = tipo ? `${BASE_URL}/api/especialidades?tipo=${tipo}` : `${BASE_URL}/api/especialidades`;
+                const response = await fetch(url);
                 if (response.ok) {
                     const data = await response.json();
                     this.especialidadesDisponibles = data.especialidades || [];
@@ -198,6 +204,7 @@ window.nuevaSolicitudApp = function() {
         seleccionarEspecialidad(especialidad) {
             this.formData.especialidad_solicitada = especialidad;
             this.especialidadSeleccionada = especialidad;
+            this.mostrarSelectorEspecialidad = false;
             this.paso = 2;
         },
 
@@ -251,36 +258,27 @@ window.nuevaSolicitudApp = function() {
                 const data = await response.json();
                 
                 if (response.ok) {
-                    // Mostrar mensaje personalizado según método de pago
-                    if (data.metodo_pago === 'transferencia') {
-                        // Mostrar modal de transferencia si existe la utilidad
-                        if (window.transferenciaPago && data.datos_transferencia) {
-                            window.transferenciaPago.mostrarModalTransferencia(data);
-                        } else {
-                            alert(`✅ ${data.message}\n\n📱 Sube tu comprobante de pago desde "Mis Solicitudes"`);
-                        }
-                    } else {
-                        ToastNotification.success(data.message);
-                    }
-                    
-                    // Redirigir después de 2 segundos
-                    setTimeout(() => {
-                        window.location.href = BASE_URL + '/paciente/dashboard';
-                    }, 2000);
+                    // Mostrar modal de éxito
+                    this.mensajeExito = data.message;
+                    this.esTransferencia = data.metodo_pago === 'transferencia';
+                    this.datosTransferencia = data.datos_transferencia || null;
+                    this.mostrarModalExito = true;
                 } else {
-                    // Mostrar error detallado
+                    // Mostrar error con Toast
                     const errorMsg = data.error || data.message || 'Error desconocido al crear la solicitud';
                     console.error('Error del servidor:', data);
                     ToastNotification.error(errorMsg);
-                    alert(`❌ Error: ${errorMsg}`);
                 }
             } catch (error) {
                 console.error('Error de conexión:', error);
                 ToastNotification.error('Error de conexión con el servidor');
-                alert(`❌ Error de conexión: ${error.message}`);
             } finally {
                 this.loading = false;
             }
+        },
+
+        irAMisSolicitudes() {
+            window.location.href = BASE_URL + '/paciente/dashboard';
         },
 
         validarFormulario() {
@@ -288,18 +286,18 @@ window.nuevaSolicitudApp = function() {
             
             // Validaciones comunes
             if (!this.formData.servicio_id) {
-                alert('Selecciona un servicio');
+                ToastNotification.warning('Selecciona un servicio');
                 return false;
             }
             
             // Validaciones por tipo de servicio
             if (tipo === 'medico') {
                 if (!this.formData.fecha_programada || !this.formData.rango_horario) {
-                    alert('Selecciona fecha y rango horario');
+                    ToastNotification.warning('Selecciona fecha y rango horario');
                     return false;
                 }
                 if (!this.formData.sintomas) {
-                    alert('Describe los síntomas o motivo de consulta');
+                    ToastNotification.warning('Describe los síntomas o motivo de consulta');
                     return false;
                 }
             }
@@ -321,56 +319,56 @@ window.nuevaSolicitudApp = function() {
             
             if (tipo === 'enfermera') {
                 if (!this.formData.fecha_programada) {
-                    alert('Selecciona la fecha de inicio');
+                    ToastNotification.warning('Selecciona la fecha de inicio');
                     return false;
                 }
                 if (!this.formData.tipo_cuidado || !this.formData.duracion_cantidad) {
-                    alert('Completa tipo de cuidado y duración');
+                    ToastNotification.warning('Completa tipo de cuidado y duración');
                     return false;
                 }
                 if (!this.formData.direccion_servicio) {
-                    alert('Ingresa la dirección donde se prestará el servicio');
+                    ToastNotification.warning('Ingresa la dirección donde se prestará el servicio');
                     return false;
                 }
             }
             
             if (tipo === 'veterinario') {
                 if (!this.formData.fecha_programada || !this.formData.rango_horario) {
-                    alert('Selecciona fecha y rango horario');
+                    ToastNotification.warning('Selecciona fecha y rango horario');
                     return false;
                 }
                 if (!this.formData.tipo_mascota || !this.formData.nombre_mascota) {
-                    alert('Ingresa información de la mascota');
+                    ToastNotification.warning('Ingresa información de la mascota');
                     return false;
                 }
                 if (this.formData.modalidad === 'presencial' && !this.formData.direccion_servicio) {
-                    alert('Ingresa la dirección para servicio a domicilio');
+                    ToastNotification.warning('Ingresa la dirección para servicio a domicilio');
                     return false;
                 }
             }
             
             if (tipo === 'laboratorio') {
                 if (!this.formData.fecha_programada) {
-                    alert('Selecciona fecha para toma de muestras');
+                    ToastNotification.warning('Selecciona fecha para toma de muestras');
                     return false;
                 }
                 if (this.formData.examenes_solicitados.length === 0) {
-                    alert('Selecciona al menos un examen');
+                    ToastNotification.warning('Selecciona al menos un examen');
                     return false;
                 }
                 if (!this.formData.direccion_servicio) {
-                    alert('Ingresa dirección para toma de muestras');
+                    ToastNotification.warning('Ingresa dirección para toma de muestras');
                     return false;
                 }
                 if (!this.formData.email_resultados) {
-                    alert('Ingresa email para recibir resultados');
+                    ToastNotification.warning('Ingresa email para recibir resultados');
                     return false;
                 }
             }
             
             // Validación de teléfono (común)
             if (!this.formData.telefono_contacto) {
-                alert('Ingresa un teléfono de contacto');
+                ToastNotification.warning('Ingresa un teléfono de contacto');
                 return false;
             }
             
@@ -500,7 +498,7 @@ window.nuevaSolicitudApp = function() {
         </div>
 
         <!-- Paso 1: Seleccionar Servicio -->
-        <div x-show="paso === 1 && !loading">
+        <div x-show="paso === 1 && !loading && !mostrarSelectorEspecialidad">
             <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">¿Qué tipo de servicio necesitas?</h2>
             
             <!-- Mensaje cuando no hay servicios -->
@@ -599,16 +597,15 @@ window.nuevaSolicitudApp = function() {
             <div class="max-w-4xl mx-auto">
                 <!-- Breadcrumb -->
                 <div class="mb-6 flex items-center gap-2 text-sm">
-                    <button @click="volverAServicios()" class="text-blue-600 hover:text-blue-700 font-medium">
-                        ← Servicios
+                    <button @click="volverAServicios()" class="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                        </svg>
+                        Volver a servicios
                     </button>
-                    <span class="text-gray-400">/</span>
-                    <span class="text-gray-600">Médico</span>
-                    <span class="text-gray-400">/</span>
-                    <span class="font-medium text-gray-900">Especialidad</span>
                 </div>
 
-                <h2 class="text-2xl font-bold text-gray-900 mb-3 text-center">¿Qué especialidad médica necesitas?</h2>
+                <h2 class="text-2xl font-bold text-gray-900 mb-3 text-center">¿Qué especialidad necesitas?</h2>
                 <p class="text-gray-600 text-center mb-8">Selecciona la especialidad que mejor se ajuste a tu necesidad</p>
                 
                 <!-- Grid de Especialidades -->
@@ -671,16 +668,14 @@ window.nuevaSolicitudApp = function() {
                 <!-- MÉDICO ESPECIALISTA -->
                 <template x-if="formData.servicio_tipo === 'medico'">
                     <div class="space-y-4">
-                        <div class="bg-blue-50 border-l-4 border-blue-500 p-3 rounded">
-                            <p class="text-sm text-blue-800">Tu solicitud será enviada al médico para aprobación</p>
-                        </div>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-3 rounded flex items-center justify-between">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Especialidad</label>
-                                <input type="text" x-model="formData.especialidad" placeholder="Medicina General, Cardiología..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
-                                <p class="text-xs text-gray-500 mt-1">El administrador asignará un profesional disponible</p>
+                                <p class="text-sm font-medium text-blue-900">Especialidad seleccionada:</p>
+                                <p class="text-lg font-bold text-blue-700" x-text="formData.especialidad_solicitada || especialidadSeleccionada"></p>
                             </div>
+                            <button @click="mostrarSelectorEspecialidad = true; paso = 1;" type="button" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                                Cambiar
+                            </button>
                         </div>
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1119,6 +1114,73 @@ window.nuevaSolicitudApp = function() {
                     <button @click="enviarSolicitud()" :disabled="loading" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">
                         <span x-show="!loading">Confirmar Solicitud</span>
                         <span x-show="loading">Procesando...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Éxito -->
+        <div x-show="mostrarModalExito" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background-color: rgba(0,0,0,0.5);">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all"
+                 x-show="mostrarModalExito"
+                 x-transition:enter="ease-out duration-300"
+                 x-transition:enter-start="opacity-0 scale-90"
+                 x-transition:enter-end="opacity-100 scale-100">
+                
+                <!-- Header con ícono -->
+                <div class="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-8 text-center">
+                    <div class="mx-auto w-20 h-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-lg">
+                        <svg class="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl font-bold text-white">¡Solicitud Creada!</h2>
+                </div>
+                
+                <!-- Contenido -->
+                <div class="px-6 py-6">
+                    <p class="text-gray-700 text-center mb-4" x-text="mensajeExito"></p>
+                    
+                    <!-- Info de transferencia -->
+                    <template x-if="esTransferencia">
+                        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                            <div class="flex items-start gap-3">
+                                <div class="flex-shrink-0">
+                                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-blue-900 mb-1">Siguiente paso:</h4>
+                                    <p class="text-sm text-blue-800">Realiza la transferencia según los datos bancarios mostrados y sube tu comprobante desde <strong>"Mis Solicitudes"</strong>.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                    
+                    <!-- Datos bancarios si existen -->
+                    <template x-if="esTransferencia && datosTransferencia">
+                        <div class="bg-gray-50 rounded-xl p-4 mb-4">
+                            <h4 class="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                </svg>
+                                Datos para transferencia
+                            </h4>
+                            <div class="space-y-2 text-sm">
+                                <p x-show="datosTransferencia.banco_nombre"><span class="text-gray-500">Banco:</span> <span class="font-medium" x-text="datosTransferencia.banco_nombre"></span></p>
+                                <p x-show="datosTransferencia.banco_cuenta"><span class="text-gray-500">Cuenta:</span> <span class="font-medium" x-text="datosTransferencia.banco_cuenta"></span></p>
+                                <p x-show="datosTransferencia.banco_tipo_cuenta"><span class="text-gray-500">Tipo:</span> <span class="font-medium" x-text="datosTransferencia.banco_tipo_cuenta"></span></p>
+                                <p x-show="datosTransferencia.banco_titular"><span class="text-gray-500">Titular:</span> <span class="font-medium" x-text="datosTransferencia.banco_titular"></span></p>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                
+                <!-- Footer -->
+                <div class="px-6 pb-6">
+                    <button @click="irAMisSolicitudes()" class="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg">
+                        Ir a Mis Solicitudes
                     </button>
                 </div>
             </div>

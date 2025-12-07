@@ -65,9 +65,8 @@
     <script src="<?= asset('/js/dark-mode.js') ?>"></script>
     <script src="<?= asset('/js/keyboard-shortcuts.js') ?>"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body class="bg-gray-50" x-data="adminDashboard()">
+<body class="bg-gray-50">
     <!-- Toast Notifications -->
     <div class="fixed top-4 right-4 z-50 space-y-2" x-data="{ toasts: [] }" @show-toast.window="toasts.push($event.detail); setTimeout(() => toasts.shift(), 5000)">
         <template x-for="(toast, index) in toasts" :key="index">
@@ -221,10 +220,34 @@
         </div>
 
         <!-- Sistema de Pestañas para Solicitudes -->
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-6" x-data="{ activeTab: 'en-proceso' }">
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
             <!-- Tabs Header -->
             <div class="border-b border-gray-200 bg-gray-50">
                 <nav class="flex -mb-px overflow-x-auto">
+                    <!-- 1. Pendientes de Pago - Nuevas solicitudes -->
+                    <button @click="activeTab = 'pendientes-pago'; cargarSolicitudesPendientesPago()" 
+                            :class="activeTab === 'pendientes-pago' ? 'border-orange-500 text-orange-600 bg-orange-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition-colors flex items-center gap-2">
+                        <span>🔔</span>
+                        <span>Nuevas Solicitudes</span>
+                        <span x-show="solicitudesPendientesPago.length > 0" 
+                              class="ml-2 py-0.5 px-2.5 rounded-full text-xs font-semibold bg-orange-500 text-white animate-pulse"
+                              x-text="solicitudesPendientesPago.length"></span>
+                    </button>
+                    
+                    <!-- 2. Pendientes de Asignación - Pago confirmado -->
+                    <button @click="activeTab = 'pendientes-asignacion'; cargarSolicitudes()" 
+                            :class="activeTab === 'pendientes-asignacion' ? 'border-purple-500 text-purple-600 bg-purple-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition-colors flex items-center gap-2">
+                        <span>👤</span>
+                        <span>Por Asignar</span>
+                        <span x-show="solicitudes.length > 0" 
+                              class="ml-2 py-0.5 px-2.5 rounded-full text-xs font-semibold"
+                              :class="activeTab === 'pendientes-asignacion' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-600'"
+                              x-text="solicitudes.length"></span>
+                    </button>
+                    
+                    <!-- 3. En Proceso - Servicios activos -->
                     <button @click="activeTab = 'en-proceso'; cargarSolicitudesEnProceso()" 
                             :class="activeTab === 'en-proceso' ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                             class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition-colors flex items-center gap-2">
@@ -236,57 +259,28 @@
                               x-text="solicitudesEnProceso.length"></span>
                     </button>
                     
-                    <button @click="activeTab = 'pendientes-pago'; cargarSolicitudesPendientesPago()" 
-                            :class="activeTab === 'pendientes-pago' ? 'border-yellow-500 text-yellow-600 bg-yellow-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
-                            class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition-colors flex items-center gap-2">
-                        <span>💳</span>
-                        <span>Pendientes de Pago</span>
-                        <span x-show="solicitudesPendientesPago.length > 0" 
-                              class="ml-2 py-0.5 px-2.5 rounded-full text-xs font-semibold"
-                              :class="activeTab === 'pendientes-pago' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-600'"
-                              x-text="solicitudesPendientesPago.length"></span>
-                    </button>
-                    
-                    <button @click="activeTab = 'pendientes-asignacion'; cargarSolicitudes()" 
-                            :class="activeTab === 'pendientes-asignacion' ? 'border-purple-500 text-purple-600 bg-purple-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
-                            class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition-colors flex items-center gap-2">
-                        <span>📋</span>
-                        <span>Pendientes Asignación</span>
-                        <span x-show="stats.pendientes_asignacion > 0" 
-                              class="ml-2 py-0.5 px-2.5 rounded-full text-xs font-semibold"
-                              :class="activeTab === 'pendientes-asignacion' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-600'"
-                              x-text="stats.pendientes_asignacion"></span>
-                    </button>
-                    
+                    <!-- 4. Completados -->
                     <button @click="activeTab = 'completados'; cargarReportes()" 
                             :class="activeTab === 'completados' ? 'border-green-500 text-green-600 bg-green-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                             class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition-colors flex items-center gap-2">
                         <span>✅</span>
-                        <span>Servicios Completados</span>
+                        <span>Completados</span>
                         <span x-show="reportes.length > 0" 
                               class="ml-2 py-0.5 px-2.5 rounded-full text-xs font-semibold"
                               :class="activeTab === 'completados' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'"
                               x-text="reportes.length"></span>
                     </button>
                     
+                    <!-- 5. Gestión de Profesionales -->
                     <button @click="activeTab = 'profesionales'; cargarListaProfesionales()" 
                             :class="activeTab === 'profesionales' ? 'border-indigo-500 text-indigo-600 bg-indigo-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                             class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition-colors flex items-center gap-2">
                         <span>👨‍⚕️</span>
-                        <span>Gestión de Profesionales</span>
+                        <span>Profesionales</span>
                         <span x-show="profesionales.length > 0" 
                               class="ml-2 py-0.5 px-2.5 rounded-full text-xs font-semibold"
                               :class="activeTab === 'profesionales' ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-100 text-gray-600'"
                               x-text="profesionales.length"></span>
-                    </button>
-                    
-                    <!-- Tab Kanban - Oculto temporalmente -->
-                    <button @click="activeTab = 'kanban'; iniciarKanban()" 
-                            :class="activeTab === 'kanban' ? 'border-pink-500 text-pink-600 bg-pink-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
-                            class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition-colors flex items-center gap-2"
-                            style="display: none;">
-                        <span>📊</span>
-                        <span>Vista Kanban</span>
                     </button>
                 </nav>
             </div>
@@ -294,7 +288,10 @@
             <!-- Tab Content: Solicitudes En Proceso -->
             <div x-show="activeTab === 'en-proceso'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                 <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-blue-50">
-                    <h3 class="text-lg font-semibold text-gray-800">Solicitudes En Proceso</h3>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800">⚡ Servicios En Proceso</h3>
+                        <p class="text-sm text-gray-500">Profesional asignado, servicio en curso</p>
+                    </div>
                     <button @click="cargarSolicitudesEnProceso()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm">
                         🔄 Actualizar
                     </button>
@@ -359,11 +356,14 @@
             </div>
         </div>
 
-        <!-- Tab Content: Solicitudes Pendientes de Confirmación de Pago -->
+        <!-- Tab Content: Nuevas Solicitudes (Pendientes de Confirmación de Pago) -->
         <div x-show="activeTab === 'pendientes-pago'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
-            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-yellow-50">
-                <h3 class="text-lg font-semibold text-gray-800">Solicitudes Pendientes de Confirmación de Pago</h3>
-                <button @click="cargarSolicitudesPendientesPago()" class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition text-sm">
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-orange-50">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800">🔔 Nuevas Solicitudes</h3>
+                    <p class="text-sm text-gray-500">Solicitudes que esperan confirmación de pago</p>
+                </div>
+                <button @click="cargarSolicitudesPendientesPago()" class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition text-sm">
                     🔄 Actualizar
                 </button>
             </div>
@@ -424,10 +424,13 @@
             </div>
         </div>
 
-        <!-- Tab Content: Solicitudes Pendientes de Asignación -->
+        <!-- Tab Content: Solicitudes Por Asignar (Pago Confirmado) -->
         <div x-show="activeTab === 'pendientes-asignacion'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
             <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-purple-50">
-                <h3 class="text-lg font-semibold text-gray-800">Solicitudes Pendientes de Asignación</h3>
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800">👤 Por Asignar Profesional</h3>
+                    <p class="text-sm text-gray-500">Pago confirmado, listas para asignar profesional</p>
+                </div>
                 <button @click="cargarSolicitudes()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm">
                     🔄 Actualizar
                 </button>
@@ -1556,6 +1559,9 @@
     <script>
         function adminDashboard() {
             return {
+                // Tab activa - Inicia en Nuevas Solicitudes
+                activeTab: 'pendientes-pago',
+                
                 stats: {
                     pendientes_asignacion: 0,
                     en_proceso: 0,
@@ -1570,7 +1576,22 @@
                 
                 // Modal de asignación
                 modalAsignacionAbierto: false,
-                solicitudSeleccionada: null,
+                solicitudSeleccionada: {
+                    id: null,
+                    paciente_nombre: '',
+                    paciente_apellido: '',
+                    paciente_telefono: '',
+                    paciente_email: '',
+                    servicio_nombre: '',
+                    servicio_tipo: '',
+                    especialidad: '',
+                    especialidad_solicitada: '',
+                    fecha_programada: '',
+                    hora_programada: '',
+                    modalidad: '',
+                    direccion_servicio: '',
+                    observaciones: ''
+                },
                 profesionalesDisponibles: [],
                 loadingProfesionales: false,
                 profesionalSeleccionado: null,
@@ -1579,7 +1600,33 @@
 
                 // Modal de detalles
                 modalDetallesAbierto: false,
-                solicitudDetalle: null,
+                solicitudDetalle: {
+                    id: null,
+                    estado: '',
+                    monto_total: 0,
+                    paciente_nombre: '',
+                    paciente_apellido: '',
+                    paciente_documento: '',
+                    paciente_telefono: '',
+                    paciente_email: '',
+                    profesional_nombre: '',
+                    profesional_apellido: '',
+                    profesional_especialidad: '',
+                    profesional_telefono: '',
+                    calificacion_promedio: 0,
+                    servicio_nombre: '',
+                    servicio_tipo: '',
+                    especialidad: '',
+                    modalidad: '',
+                    fecha_programada: '',
+                    hora_programada: '',
+                    direccion_servicio: '',
+                    sintomas: '',
+                    notas_adicionales: '',
+                    metodo_pago: '',
+                    estado_pago: '',
+                    comprobante_pago: ''
+                },
 
                 // Reportes
                 reportes: [],
@@ -1621,7 +1668,7 @@
                     especialidad: ''
                 },
                 modalProfesionalAbierto: false,
-                profesionalEditando: null,
+                profesionalEditando: false,
                 guardandoProfesional: false,
                 formProfesional: {
                     nombre: '',
@@ -2357,8 +2404,7 @@
                         console.error('KanbanBoard no está cargado');
                         this.showToast('Error al cargar vista Kanban', 'error');
                     }
-                }
-            },
+                },
 
             logout() {
                 localStorage.removeItem('token');
@@ -2368,7 +2414,14 @@
                 window.location.href = BASE_URL + '/';
             }
         }
+    }
+    
+    // Aplicar x-data al body ANTES de cargar Alpine
+    document.body.setAttribute('x-data', 'adminDashboard()');
     </script>
+
+    <!-- Alpine.js - se carga DESPUÉS de definir adminDashboard y aplicar x-data -->
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <!-- Toast Notifications -->
     <script src="<?= asset('/js/toast.js') ?>"></script>

@@ -96,15 +96,31 @@ if ($path === '/especialidades' && $method === 'GET') {
     require_once __DIR__ . '/../app/Services/Database.php';
     $db = App\Services\Database::getInstance();
     
-    $query = "SELECT DISTINCT especialidad 
-              FROM usuarios 
-              WHERE tipo_profesional = 'medico' 
-                AND especialidad IS NOT NULL 
-                AND especialidad != ''
-                AND estado = 'activo'
-              ORDER BY especialidad ASC";
+    $tipo = $_GET['tipo'] ?? null;
     
-    $result = $db->select($query);
+    // Si se especifica un tipo, filtrar por ese tipo
+    if ($tipo) {
+        $query = "SELECT DISTINCT pp.especialidad 
+                  FROM perfiles_profesionales pp
+                  INNER JOIN usuarios u ON pp.usuario_id = u.id
+                  WHERE u.rol = ?
+                    AND pp.especialidad IS NOT NULL 
+                    AND pp.especialidad != ''
+                    AND u.estado = 'activo'
+                  ORDER BY pp.especialidad ASC";
+        $result = $db->select($query, [$tipo]);
+    } else {
+        // Obtener todas las especialidades de profesionales activos
+        $query = "SELECT DISTINCT pp.especialidad 
+                  FROM perfiles_profesionales pp
+                  INNER JOIN usuarios u ON pp.usuario_id = u.id
+                  WHERE pp.especialidad IS NOT NULL 
+                    AND pp.especialidad != ''
+                    AND u.estado = 'activo'
+                  ORDER BY pp.especialidad ASC";
+        $result = $db->select($query);
+    }
+    
     $especialidades = array_column($result, 'especialidad');
     
     header('Content-Type: application/json');
