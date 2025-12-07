@@ -17,11 +17,11 @@ class AnalyticsController
     {
         try {
             $data = [
-                'ingresosMensuales' => $this->getIngresosMensuales(),
-                'serviciosPorTipo' => $this->getServiciosPorTipo(),
-                'usuariosPorRol' => $this->getUsuariosPorRol(),
-                'solicitudesPorEstado' => $this->getSolicitudesPorEstado(),
-                'tendenciaSemanal' => $this->getTendenciaSemanal()
+                'ingresos_mensuales' => $this->getIngresosMensuales(),
+                'servicios_por_tipo' => $this->getServiciosPorTipo(),
+                'usuarios_por_rol' => $this->getUsuariosPorRol(),
+                'solicitudes_por_estado' => $this->getSolicitudesPorEstado(),
+                'tendencia_semanal' => $this->getTendenciaSemanal()
             ];
 
             $this->sendSuccess($data);
