@@ -139,7 +139,10 @@
                             // Redirigir según el rol
                             setTimeout(() => {
                                 const rol = data.user.rol;
-                                window.location.href = BASE_URL + `/${rol}/dashboard`;
+                                // Los profesionales van al dashboard unificado
+                                const rolesProfesionales = ['medico', 'enfermera', 'veterinario', 'laboratorio', 'ambulancia'];
+                                const dashboardRol = rolesProfesionales.includes(rol) ? 'profesional' : rol;
+                                window.location.href = BASE_URL + `/${dashboardRol}/dashboard`;
                             }, 1000);
                         } else {
                             this.success = false;

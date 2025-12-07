@@ -72,7 +72,7 @@ class AuthController extends BaseController
             
             if ($esProfesional) {
                 $data['tipo_profesional'] = $data['rol']; // Guardar tipo específico
-                $data['rol'] = 'profesional'; // Rol unificado
+                // Mantener el rol original (medico, enfermera, etc.) ya que está en el enum de la BD
             }
 
             // Los pacientes se activan automáticamente, los demás requieren aprobación

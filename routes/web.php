@@ -79,7 +79,7 @@ if ($path === '/profesional/dashboard') {
 
 // Redirigir rutas antiguas de roles específicos al dashboard unificado
 if (in_array($path, ['/medico/dashboard', '/enfermera/dashboard', '/veterinario/dashboard', '/laboratorio/dashboard', '/ambulancia/dashboard'])) {
-    header('Location: /profesional/dashboard');
+    header('Location: ' . (defined('BASE_URL') ? BASE_URL : '') . '/profesional/dashboard');
     exit;
 }
 
