@@ -130,9 +130,11 @@ window.pacienteDashboard = function() {
         },
 
         getTimelineStates(estado) {
+            // Estados del timeline: [Creada, Pago, Asignación, En Proceso, Completado]
             const estados = {
-                'pendiente_pago': ['completed', 'pending', 'pending', 'pending', 'pending'],
-                'pagado': ['completed', 'completed', 'pending', 'pending', 'pending'],
+                'pendiente': ['completed', 'pending', 'pending', 'pending', 'pending'],
+                'pendiente_pago': ['completed', 'active', 'pending', 'pending', 'pending'],
+                'pagado': ['completed', 'completed', 'active', 'pending', 'pending'],
                 'asignado': ['completed', 'completed', 'completed', 'pending', 'pending'],
                 'en_proceso': ['completed', 'completed', 'completed', 'active', 'pending'],
                 'completado': ['completed', 'completed', 'completed', 'completed', 'completed'],
@@ -344,6 +346,65 @@ window.pacienteDashboard = function() {
                 }
             }
             return paginas;
+        },
+
+        // Verificar si una solicitud puede ser cancelada
+        puedeCancelar(solicitud) {
+            const estadosCancelables = ['pendiente_pago', 'pagado', 'asignado'];
+            return estadosCancelables.includes(solicitud.estado);
+        },
+
+        // Cancelar solicitud
+        async cancelarSolicitud(solicitud, event) {
+            if (event) event.stopPropagation(); // Evitar abrir detalle
+            
+            if (!this.puedeCancelar(solicitud)) {
+                ToastNotification.warning('Esta solicitud no puede ser cancelada en su estado actual.');
+                return;
+            }
+            
+            const razon = prompt('Por favor, indica el motivo de cancelación:');
+            if (!razon || razon.trim() === '') {
+                ToastNotification.warning('Debes indicar un motivo para cancelar.');
+                return;
+            }
+            
+            if (!confirm(`¿Estás seguro de que deseas cancelar esta solicitud?\n\nServicio: ${solicitud.servicio_nombre}\nFecha: ${this.formatDate(solicitud.fecha_programada)}\n\nEsta acción no se puede deshacer.`)) {
+                return;
+            }
+            
+            this.loading = true;
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(BASE_URL + '/api/paciente/cancelar', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        solicitud_id: solicitud.id,
+                        razon: razon.trim()
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    ToastNotification.success('Solicitud cancelada exitosamente');
+                    // Recargar datos
+                    await this.cargarDatos();
+                    // Cerrar modal si estaba abierto
+                    this.modalDetalleAbierto = false;
+                } else {
+                    ToastNotification.error(data.message || 'No se pudo cancelar la solicitud');
+                }
+            } catch (error) {
+                console.error('Error al cancelar:', error);
+                ToastNotification.error('Error de conexión al cancelar la solicitud');
+            } finally {
+                this.loading = false;
+            }
         },
 
         logout() {
@@ -595,14 +656,29 @@ window.pacienteDashboard = function() {
                                     <p class="text-xl font-bold text-gray-900" x-text="formatMonto(solicitud.monto_total)"></p>
                                     <p class="text-xs text-gray-500 mt-1" x-show="solicitud.pagado">✓ Pagado</p>
                                 </div>
-                                
+                            </div>
+                            
+                            <!-- Botones de acciones -->
+                            <div class="flex items-center gap-3 mt-4 pt-4 border-t border-gray-100">
                                 <!-- Botón Calificar -->
-                                <div x-show="solicitud.estado === 'pendiente_calificacion'" class="mt-3">
-                                    <button @click="abrirModalCalificacion(solicitud)" 
-                                            class="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium text-sm">
-                                        ⭐ Calificar Servicio
-                                    </button>
-                                </div>
+                                <button x-show="solicitud.estado === 'pendiente_calificacion'" 
+                                        @click.stop="abrirModalCalificacion(solicitud)" 
+                                        class="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium text-sm">
+                                    ⭐ Calificar Servicio
+                                </button>
+                                
+                                <!-- Botón Cancelar -->
+                                <button x-show="puedeCancelar(solicitud)" 
+                                        @click.stop="cancelarSolicitud(solicitud, $event)" 
+                                        class="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition font-medium text-sm border border-red-200">
+                                    ❌ Cancelar
+                                </button>
+                                
+                                <!-- Botón Ver Detalle -->
+                                <button @click.stop="verDetalle(solicitud.id)" 
+                                        class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm">
+                                    👁 Ver Detalle
+                                </button>
                             </div>
                         </div>
                     </template>
@@ -787,6 +863,10 @@ window.pacienteDashboard = function() {
                             <p class="text-gray-500">Modalidad</p>
                             <p class="font-medium capitalize" x-text="solicitudDetalle?.modalidad"></p>
                         </div>
+                        <div x-show="solicitudDetalle?.especialidad">
+                            <p class="text-gray-500">Especialidad</p>
+                            <p class="font-medium text-purple-600" x-text="solicitudDetalle?.especialidad"></p>
+                        </div>
                         <div x-show="solicitudDetalle?.profesional_nombre">
                             <p class="text-gray-500">Profesional</p>
                             <p class="font-medium" x-text="solicitudDetalle?.profesional_nombre"></p>
@@ -795,6 +875,22 @@ window.pacienteDashboard = function() {
                             <p class="text-gray-500">Monto</p>
                             <p class="font-medium text-indigo-600" x-text="formatMonto(solicitudDetalle?.monto_total)"></p>
                         </div>
+                        <div x-show="solicitudDetalle?.rango_horario">
+                            <p class="text-gray-500">Horario Preferido</p>
+                            <p class="font-medium capitalize" x-text="solicitudDetalle?.rango_horario === 'manana' ? 'Mañana' : solicitudDetalle?.rango_horario === 'tarde' ? 'Tarde' : 'Noche'"></p>
+                        </div>
+                    </div>
+
+                    <!-- Síntomas/Motivo de consulta -->
+                    <div class="mt-4" x-show="solicitudDetalle?.sintomas">
+                        <p class="text-gray-500 text-sm mb-1">Motivo de la consulta</p>
+                        <p class="text-gray-700 bg-gray-50 p-3 rounded-lg" x-text="solicitudDetalle?.sintomas"></p>
+                    </div>
+
+                    <!-- Dirección (para presencial) -->
+                    <div class="mt-4" x-show="solicitudDetalle?.modalidad === 'presencial' && solicitudDetalle?.direccion_servicio">
+                        <p class="text-gray-500 text-sm mb-1">📍 Dirección del servicio</p>
+                        <p class="text-gray-700 bg-blue-50 p-3 rounded-lg" x-text="solicitudDetalle?.direccion_servicio"></p>
                     </div>
 
                     <div class="mt-4" x-show="solicitudDetalle?.descripcion">
@@ -837,30 +933,35 @@ window.pacienteDashboard = function() {
                             <div class="timeline-step" :class="states[1]">
                                 <div class="timeline-icon">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                    </svg>
+                                </div>
+                                <div class="timeline-content">
+                                    <div class="timeline-title">Pago Confirmado</div>
+                                    <div class="timeline-description" x-show="solicitudDetalle?.pagado">
+                                        Pago verificado correctamente
+                                    </div>
+                                    <div class="timeline-description" x-show="!solicitudDetalle?.pagado">
+                                        Esperando confirmación de pago
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Asignación de Profesional -->
+                            <div class="timeline-step" :class="states[2]">
+                                <div class="timeline-icon">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                                     </svg>
                                 </div>
                                 <div class="timeline-content">
                                     <div class="timeline-title">Profesional Asignado</div>
                                     <div class="timeline-description" x-show="solicitudDetalle?.profesional_nombre">
-                                        Asignado a <span class="font-medium" x-text="solicitudDetalle?.profesional_nombre"></span>
+                                        <span class="font-medium" x-text="solicitudDetalle?.profesional_nombre"></span> atenderá tu consulta
                                     </div>
                                     <div class="timeline-description" x-show="!solicitudDetalle?.profesional_nombre">
-                                        En espera de asignación
+                                        Buscando el mejor profesional para ti
                                     </div>
-                                </div>
-                            </div>
-
-                            <!-- Servicio Confirmado -->
-                            <div class="timeline-step" :class="states[2]">
-                                <div class="timeline-icon">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                </div>
-                                <div class="timeline-content">
-                                    <div class="timeline-title">Servicio Confirmado</div>
-                                    <div class="timeline-description">El profesional confirmó la cita</div>
                                 </div>
                             </div>
 
@@ -872,8 +973,13 @@ window.pacienteDashboard = function() {
                                     </svg>
                                 </div>
                                 <div class="timeline-content">
-                                    <div class="timeline-title">Servicio en Progreso</div>
-                                    <div class="timeline-description">El servicio está siendo realizado</div>
+                                    <div class="timeline-title">Servicio en Curso</div>
+                                    <div class="timeline-description" x-show="solicitudDetalle?.modalidad === 'virtual'">
+                                        Consulta virtual en progreso
+                                    </div>
+                                    <div class="timeline-description" x-show="solicitudDetalle?.modalidad !== 'virtual'">
+                                        Atención a domicilio en progreso
+                                    </div>
                                 </div>
                             </div>
 
@@ -886,7 +992,12 @@ window.pacienteDashboard = function() {
                                 </div>
                                 <div class="timeline-content">
                                     <div class="timeline-title">Servicio Completado</div>
-                                    <div class="timeline-description">El servicio fue finalizado exitosamente</div>
+                                    <div class="timeline-description" x-show="solicitudDetalle?.fecha_completada">
+                                        Finalizado el <span x-text="formatDate(solicitudDetalle?.fecha_completada)"></span>
+                                    </div>
+                                    <div class="timeline-description" x-show="!solicitudDetalle?.fecha_completada">
+                                        Pendiente de finalizar
+                                    </div>
                                 </div>
                             </div>
                         </template>

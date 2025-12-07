@@ -302,29 +302,18 @@ class PagosTransferenciaController
                 return;
             }
             
-            // Iniciar transacción
-            $this->db->beginTransaction();
+            // Actualizar estado de la solicitud a 'pagado' (lista para asignar)
+            $stmt = $this->db->prepare("
+                UPDATE solicitudes 
+                SET estado = 'pagado', 
+                    pagado = 1,
+                    updated_at = NOW()
+                WHERE id = ?
+            ");
+            $stmt->execute([$solicitudId]);
             
+            // Intentar crear notificación (opcional, no falla si hay error)
             try {
-                // Actualizar estado de la solicitud a 'pagado' (lista para asignar)
-                $stmt = $this->db->prepare("
-                    UPDATE solicitudes 
-                    SET estado = 'pagado', 
-                        pagado = 1,
-                        updated_at = NOW()
-                    WHERE id = ?
-                ");
-                $stmt->execute([$solicitudId]);
-                
-                // Registrar en historial
-                $stmt = $this->db->prepare("
-                    INSERT INTO solicitud_estado_historial 
-                    (solicitud_id, estado_anterior, estado_nuevo, cambiado_por, motivo, created_at)
-                    VALUES (?, 'pendiente_confirmacion_pago', 'pendiente', ?, 'Pago aprobado por administrador', NOW())
-                ");
-                $stmt->execute([$solicitudId, $this->user->id]);
-                
-                // Crear notificación para el paciente
                 $stmt = $this->db->prepare("
                     INSERT INTO notificaciones 
                     (usuario_id, tipo, titulo, mensaje, created_at)
@@ -333,17 +322,14 @@ class PagosTransferenciaController
                             NOW())
                 ");
                 $stmt->execute([$solicitud['paciente_id']]);
-                
-                $this->db->commit();
-                
-                $this->sendSuccess([
-                    'message' => 'Pago aprobado exitosamente. La solicitud está lista para asignar profesional.'
-                ]);
-                
             } catch (\Exception $e) {
-                $this->db->rollBack();
-                throw $e;
+                // Ignorar error de notificación
+                error_log("No se pudo crear notificación: " . $e->getMessage());
             }
+            
+            $this->sendSuccess([
+                'message' => 'Pago aprobado exitosamente. La solicitud está lista para asignar profesional.'
+            ]);
             
         } catch (\Exception $e) {
             error_log("Error al aprobar pago: " . $e->getMessage());

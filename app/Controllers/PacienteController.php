@@ -204,8 +204,8 @@ class PacienteController
                 'urgencia' => $data['urgencia'] ?? 'normal',
                 'metodo_pago_preferido' => $data['metodo_pago_preferido'],
                 
-                // Campos específicos - Médico
-                'especialidad' => $data['especialidad'] ?? null,
+                // Campos específicos - Médico (acepta especialidad o especialidad_solicitada)
+                'especialidad' => $data['especialidad'] ?? $data['especialidad_solicitada'] ?? null,
                 'rango_horario' => $data['rango_horario'] ?? null,
                 'requiere_aprobacion' => $data['requiere_aprobacion'] ?? false,
                 

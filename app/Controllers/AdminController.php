@@ -28,6 +28,23 @@ class AdminController
     }
 
     /**
+     * Decodificar entidades HTML en nombres de una lista de registros
+     */
+    private function decodeHtmlEntitiesInNames(array $rows): array
+    {
+        $fieldsToClean = ['paciente_nombre', 'paciente_apellido', 'profesional_nombre', 'profesional_apellido', 'nombre', 'apellido'];
+        
+        return array_map(function($row) use ($fieldsToClean) {
+            foreach ($fieldsToClean as $field) {
+                if (isset($row[$field])) {
+                    $row[$field] = html_entity_decode($row[$field], ENT_QUOTES, 'UTF-8');
+                }
+            }
+            return $row;
+        }, $rows);
+    }
+
+    /**
      * Obtener todas las solicitudes pendientes de asignación
      */
     public function getSolicitudesPendientes(): void
@@ -56,6 +73,9 @@ class AdminController
             
             $stmt->execute();
             $solicitudes = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            
+            // Decodificar entidades HTML en nombres
+            $solicitudes = $this->decodeHtmlEntitiesInNames($solicitudes);
             
             $this->sendSuccess([
                 'solicitudes' => $solicitudes
@@ -100,6 +120,9 @@ class AdminController
             
             $stmt->execute();
             $solicitudes = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            
+            // Decodificar entidades HTML en nombres
+            $solicitudes = $this->decodeHtmlEntitiesInNames($solicitudes);
             
             $this->sendSuccess([
                 'solicitudes' => $solicitudes
@@ -168,7 +191,8 @@ class AdminController
                     u.puntuacion_promedio,
                     u.total_calificaciones,
                     u.estado,
-                    1 as disponible_ahora
+                    1 as disponible_ahora,
+                    (SELECT COUNT(*) FROM solicitudes s WHERE s.profesional_id = u.id AND s.estado = 'completado') as total_servicios
                 FROM usuarios u
                 LEFT JOIN perfiles_profesionales pp ON u.id = pp.usuario_id
                 WHERE u.rol IN ('medico', 'enfermera', 'veterinario', 'laboratorio', 'ambulancia')
@@ -416,10 +440,10 @@ class AdminController
 
             // Verificar que el profesional existe y está activo
             $stmt = $this->db->prepare("
-                SELECT id, nombre, apellido, rol, estado 
+                SELECT id, nombre, apellido, tipo_profesional, estado 
                 FROM usuarios 
                 WHERE id = :id 
-                AND rol = 'profesional'
+                AND tipo_profesional IS NOT NULL
                 AND estado = 'activo'
             ");
             $stmt->execute(['id' => $profesionalId]);
@@ -727,6 +751,9 @@ class AdminController
                 $stats['promedio_calificacion'] = round($suma_calificaciones / $stats['con_calificacion'], 2);
             }
             
+            // Decodificar entidades HTML en nombres
+            $reportes = $this->decodeHtmlEntitiesInNames($reportes);
+            
             $this->sendSuccess([
                 'reportes' => $reportes,
                 'estadisticas' => $stats
@@ -778,6 +805,12 @@ class AdminController
                 return;
             }
             
+            // Decodificar entidades HTML
+            $pacienteNombre = html_entity_decode($solicitud['paciente_nombre'] ?? '', ENT_QUOTES, 'UTF-8');
+            $pacienteApellido = html_entity_decode($solicitud['paciente_apellido'] ?? '', ENT_QUOTES, 'UTF-8');
+            $profesionalNombre = html_entity_decode($solicitud['profesional_nombre'] ?? '', ENT_QUOTES, 'UTF-8');
+            $profesionalApellido = html_entity_decode($solicitud['profesional_apellido'] ?? '', ENT_QUOTES, 'UTF-8');
+            
             $this->sendSuccess([
                 'reporte' => [
                     'solicitud_id' => $solicitud['id'],
@@ -786,14 +819,14 @@ class AdminController
                     'fecha_programada' => $solicitud['fecha_programada'],
                     'fecha_completada' => $solicitud['fecha_completada'],
                     'paciente' => [
-                        'nombre' => $solicitud['paciente_nombre'] . ' ' . $solicitud['paciente_apellido'],
+                        'nombre' => $pacienteNombre . ' ' . $pacienteApellido,
                         'email' => $solicitud['paciente_email'],
                         'telefono' => $solicitud['paciente_telefono'],
                         'puntuacion_promedio' => $solicitud['puntuacion_promedio_paciente'],
                         'total_calificaciones' => $solicitud['total_calificaciones_paciente']
                     ],
                     'profesional' => [
-                        'nombre' => $solicitud['profesional_nombre'] . ' ' . $solicitud['profesional_apellido'],
+                        'nombre' => $profesionalNombre . ' ' . $profesionalApellido,
                         'tipo' => $solicitud['tipo_profesional'],
                         'especialidad' => $solicitud['especialidad'],
                         'puntuacion_promedio' => $solicitud['puntuacion_promedio'],
@@ -916,6 +949,9 @@ class AdminController
             
             $stmt->execute();
             $solicitudes = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            
+            // Decodificar entidades HTML en nombres
+            $solicitudes = $this->decodeHtmlEntitiesInNames($solicitudes);
 
             // Agrupar por estado (usar estado_kanban)
             $agrupadas = [

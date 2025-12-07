@@ -19,16 +19,19 @@ use App\Controllers\HealthController;
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $method = $_SERVER['REQUEST_METHOD'];
 
-// Remover prefijo BASE_URL si existe
+// Remover prefijo BASE_URL si existe (ej: /VitaHome)
 if (defined('BASE_URL') && BASE_URL !== '' && strpos($path, BASE_URL) === 0) {
     $path = substr($path, strlen(BASE_URL));
 }
 
 // Remover prefijo /api
 $path = preg_replace('#^/api#', '', $path);
-if ($path === '') {
+if ($path === '' || $path === false) {
     $path = '/';
 }
+
+// Debug log
+error_log("API Route Debug - Original URI: {$_SERVER['REQUEST_URI']}, BASE_URL: " . (defined('BASE_URL') ? BASE_URL : 'undefined') . ", Final path: $path, Method: $method");
 
 // ============================================
 // HEALTH CHECK (Sin autenticación)
@@ -91,6 +94,13 @@ if ($path === '/servicios' && $method === 'GET') {
     exit;
 }
 
+// Obtener datos bancarios públicos para formularios de pago
+if ($path === '/configuracion/pagos' && $method === 'GET') {
+    $controller = new ConfiguracionPagosController();
+    $controller->getDatosBancariosPublico();
+    exit;
+}
+
 // Obtener especialidades médicas disponibles (público)
 if ($path === '/especialidades' && $method === 'GET') {
     require_once __DIR__ . '/../app/Services/Database.php';
@@ -103,7 +113,7 @@ if ($path === '/especialidades' && $method === 'GET') {
         $query = "SELECT DISTINCT pp.especialidad 
                   FROM perfiles_profesionales pp
                   INNER JOIN usuarios u ON pp.usuario_id = u.id
-                  WHERE u.rol = ?
+                  WHERE u.tipo_profesional = ?
                     AND pp.especialidad IS NOT NULL 
                     AND pp.especialidad != ''
                     AND u.estado = 'activo'
@@ -677,7 +687,8 @@ if (strpos($path, '/admin/') === 0) {
             
             $tipoServicio = $servicio['tipo'];
             
-            // Query para profesionales
+            // Query para profesionales con JOIN a perfiles
+            // Nota: Los profesionales tienen rol = tipo_profesional (medico, enfermera, etc.)
             $query = "
                 SELECT 
                     u.id,
@@ -687,22 +698,38 @@ if (strpos($path, '/admin/') === 0) {
                     u.telefono,
                     u.ciudad,
                     u.tipo_profesional,
-                    u.especialidad,
+                    COALESCE(pp.especialidad, u.tipo_profesional) as especialidad,
                     u.puntuacion_promedio,
                     u.total_calificaciones,
                     u.servicios_completados
                 FROM usuarios u
-                WHERE u.rol = 'profesional'
-                    AND u.tipo_profesional = ?
+                LEFT JOIN perfiles_profesionales pp ON u.id = pp.usuario_id
+                WHERE u.tipo_profesional = ?
                     AND u.estado = 'activo'
             ";
             
             $params = [$tipoServicio];
             
-            // Filtro por especialidad si existe
-            if ($especialidad && $tipoServicio !== 'ambulancia') {
-                $query .= " AND u.especialidad LIKE ?";
-                $params[] = "%{$especialidad}%";
+            // Filtro por especialidad
+            if ($tipoServicio !== 'ambulancia') {
+                if ($especialidad && !empty($especialidad) && strtolower($especialidad) !== 'general') {
+                    // Normalizar especialidad (quitar acentos para comparación más flexible)
+                    $especialidadNormalizada = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $especialidad);
+                    // Extraer solo las primeras letras significativas (ej: "Pediatr" de "Pediatría")
+                    $especialidadBase = preg_replace('/[^a-zA-Z]/', '', $especialidadNormalizada);
+                    if (strlen($especialidadBase) > 6) {
+                        $especialidadBase = substr($especialidadBase, 0, 7); // "Pediatr", "Cardiol", etc.
+                    }
+                    
+                    // Buscar coincidencia flexible
+                    $query .= " AND pp.especialidad LIKE ?";
+                    $params[] = "%{$especialidadBase}%";
+                    
+                    error_log("Filtro especialidad: original='$especialidad', base='$especialidadBase'");
+                } else {
+                    // Si no hay especialidad o es "General", mostrar solo médicos generales
+                    $query .= " AND (pp.especialidad LIKE '%General%' OR pp.especialidad LIKE '%Familiar%')";
+                }
             }
             
             $query .= " ORDER BY u.puntuacion_promedio DESC, u.servicios_completados DESC";

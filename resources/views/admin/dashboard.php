@@ -661,7 +661,7 @@
                     <p class="text-sm text-gray-600 mt-1">Administra médicos, enfermeras, veterinarios y demás profesionales</p>
                 </div>
                 <div class="flex gap-2">
-                    <button @click="cargarProfesionales()" class="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition text-sm font-medium">
+                    <button @click="cargarListaProfesionales()" class="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition text-sm font-medium">
                         🔄 Actualizar
                     </button>
                     <button @click="abrirModalNuevoProfesional()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-medium flex items-center gap-2">
@@ -675,13 +675,13 @@
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Buscar</label>
-                        <input type="text" x-model="filtrosProfesionales.busqueda" @input="cargarProfesionales()"
+                        <input type="text" x-model="filtrosProfesionales.busqueda" @input.debounce.300ms="cargarListaProfesionales()"
                                placeholder="Nombre, email, especialidad..."
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Tipo</label>
-                        <select x-model="filtrosProfesionales.tipo" @change="cargarProfesionales()"
+                        <select x-model="filtrosProfesionales.tipo" @change="cargarListaProfesionales()"
                                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                             <option value="">Todos</option>
                             <option value="medico">Médico</option>
@@ -693,7 +693,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
-                        <select x-model="filtrosProfesionales.estado" @change="cargarProfesionales()"
+                        <select x-model="filtrosProfesionales.estado" @change="cargarListaProfesionales()"
                                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                             <option value="">Todos</option>
                             <option value="activo">Activo</option>
@@ -703,7 +703,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Especialidad</label>
-                        <input type="text" x-model="filtrosProfesionales.especialidad" @input="cargarProfesionales()"
+                        <input type="text" x-model="filtrosProfesionales.especialidad" @input.debounce.300ms="cargarListaProfesionales()"
                                placeholder="Cardiología, Pediatría..."
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                     </div>
@@ -761,7 +761,7 @@
                                     <div class="text-xs text-gray-500" x-text="prof.telefono_whatsapp || prof.telefono || 'Sin teléfono'"></div>
                                 </td>
                                 <td class="px-6 py-4 text-sm text-gray-500">
-                                    <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800" x-text="prof.total_servicios + ' completados'"></span>
+                                    <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800" x-text="(prof.total_servicios || 0) + ' completados'"></span>
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex items-center">
@@ -1598,6 +1598,13 @@
                 motivoAsignacion: '',
                 asignando: false,
 
+                // Helper para mostrar toasts
+                showToast(message, type = 'info') {
+                    window.dispatchEvent(new CustomEvent('show-toast', {
+                        detail: { message, type }
+                    }));
+                },
+
                 // Modal de detalles
                 modalDetallesAbierto: false,
                 solicitudDetalle: {
@@ -1980,8 +1987,8 @@
                         
                         if (response.ok) {
                             const data = await response.json();
-                            // Mostrar modal con QR y datos bancarios
-                            alert(`QR de pago para solicitud #${solicitudId}\n\nCuenta: ${data.numero_cuenta}\nBanco: ${data.banco}\nTitular: ${data.titular_cuenta}`);
+                            // Mostrar toast con datos bancarios
+                            this.showToast(`Datos de pago - Banco: ${data.banco || 'N/A'} | Cuenta: ${data.numero_cuenta || 'N/A'}`, 'info');
                         }
                     } catch (error) {
                         console.error('Error al obtener QR:', error);
@@ -1998,7 +2005,10 @@
                     this.profesionalSeleccionado = null;
                     this.motivoAsignacion = '';
                     
-                    await this.cargarProfesionales(solicitud.servicio_id, solicitud.especialidad_solicitada);
+                    // Usar especialidad o especialidad_solicitada (compatibilidad)
+                    const especialidad = solicitud.especialidad || solicitud.especialidad_solicitada;
+                    console.log('Abriendo modal para solicitud:', solicitud.id, 'Especialidad:', especialidad);
+                    await this.cargarProfesionales(solicitud.servicio_id, especialidad);
                 },
 
                 async cargarProfesionales(servicioId, especialidad) {
@@ -2079,17 +2089,17 @@
                         });
                         
                         if (response.ok) {
-                            alert('✅ Profesional asignado exitosamente');
+                            this.showToast('Profesional asignado exitosamente', 'success');
                             this.cerrarModalAsignacion();
                             await this.cargarSolicitudes();
                             await this.cargarStats();
                         } else {
                             const error = await response.json();
-                            alert('Error: ' + (error.error || 'No se pudo asignar el profesional'));
+                            this.showToast(error.error || 'No se pudo asignar el profesional', 'error');
                         }
                     } catch (error) {
                         console.error('Error al asignar profesional:', error);
-                        alert('Error al procesar la asignación');
+                        this.showToast('Error al procesar la asignación', 'error');
                     } finally {
                         this.asignando = false;
                     }

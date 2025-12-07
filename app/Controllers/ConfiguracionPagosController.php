@@ -242,4 +242,46 @@ class ConfiguracionPagosController extends BaseController
             $this->sendError("Error al eliminar código QR", 500);
         }
     }
+    
+    /**
+     * Obtener datos bancarios públicos (para mostrar en formularios de pago)
+     * GET /api/configuracion/pagos
+     */
+    public function getDatosBancariosPublico(): void
+    {
+        try {
+            global $pdo;
+            
+            $stmt = $pdo->query("
+                SELECT 
+                    banco_nombre,
+                    banco_cuenta,
+                    banco_tipo_cuenta,
+                    banco_titular,
+                    instrucciones_transferencia,
+                    whatsapp_contacto
+                FROM configuracion_pagos 
+                WHERE id = 1 AND activo = 1 
+                LIMIT 1
+            ");
+            $config = $stmt->fetch(\PDO::FETCH_ASSOC);
+            
+            if (!$config) {
+                // Datos por defecto si no hay configuración
+                $config = [
+                    'banco_nombre' => 'Bancolombia',
+                    'banco_tipo_cuenta' => 'Ahorros',
+                    'banco_cuenta' => 'Consultar administrador',
+                    'banco_titular' => 'Especialistas en Casa',
+                    'instrucciones_transferencia' => 'Realiza tu transferencia y sube el comprobante desde Mis Solicitudes.',
+                    'whatsapp_contacto' => null
+                ];
+            }
+            
+            $this->sendSuccess(['configuracion' => $config]);
+        } catch (\Exception $e) {
+            error_log("Error obteniendo datos bancarios: " . $e->getMessage());
+            $this->sendError("Error al obtener datos bancarios", 500);
+        }
+    }
 }

@@ -21,6 +21,8 @@ window.nuevaSolicitudApp = function() {
         especialidadesDisponibles: [],
         mostrarSelectorEspecialidad: false,
         especialidadSeleccionada: null,
+        // Configuración de pagos
+        configPagos: null,
         // Modal de éxito
         mostrarModalExito: false,
         mensajeExito: '',
@@ -123,6 +125,26 @@ window.nuevaSolicitudApp = function() {
             }
 
             await this.cargarServicios();
+            await this.cargarConfigPagos();
+        },
+
+        async cargarConfigPagos() {
+            try {
+                const response = await fetch(BASE_URL + '/api/configuracion/pagos');
+                if (response.ok) {
+                    const data = await response.json();
+                    this.configPagos = data.configuracion || data || null;
+                }
+            } catch (error) {
+                console.error('Error cargando configuración de pagos:', error);
+                // Valores por defecto si falla
+                this.configPagos = {
+                    banco_nombre: 'Bancolombia',
+                    banco_tipo_cuenta: 'Ahorros',
+                    banco_cuenta: 'Consultar administrador',
+                    banco_titular: 'Especialistas en Casa'
+                };
+            }
         },
 
         async cargarServicios() {
@@ -145,6 +167,20 @@ window.nuevaSolicitudApp = function() {
             return this.servicios.find(s => s.tipo === tipo && s.activo == 1) || 
                    { id: 0, nombre: tipo, tipo: tipo, precio_base: 0 };
         },
+
+        // Validar formato de email
+        validarFormatoEmail(email) {
+            if (!email) return false;
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        },
+
+        // Validar email y mostrar mensaje
+        validarEmailResultados() {
+            if (this.formData.email_resultados && !this.validarFormatoEmail(this.formData.email_resultados)) {
+                ToastNotification.warning('El formato del email no parece correcto');
+            }
+        },
         
         // Actualizar servicio cuando cambia la modalidad
         actualizarServicioPorModalidad() {
@@ -164,15 +200,32 @@ window.nuevaSolicitudApp = function() {
         },
 
         async seleccionarServicio(servicio) {
-            // Validar que el servicio existe y tiene un ID válido
-            if (!servicio || !servicio.id || servicio.id === 0) {
+            // Validar que el servicio existe y tiene un tipo válido
+            if (!servicio || !servicio.tipo) {
                 ToastNotification.error('No hay servicios disponibles de este tipo. Por favor, contacta con el administrador.');
                 return;
             }
             
-            this.formData.servicio_id = servicio.id;
+            // Guardar el tipo de servicio
             this.formData.servicio_tipo = servicio.tipo;
-            this.servicioSeleccionado = servicio;
+            
+            // Buscar el servicio correcto según la modalidad actual (presencial por defecto)
+            const servicioConModalidad = this.servicios.find(s => 
+                s.tipo === servicio.tipo && 
+                s.modalidad === this.formData.modalidad && 
+                s.activo == 1
+            );
+            
+            // Si existe un servicio con esa modalidad, usarlo; si no, usar el primero disponible
+            const servicioFinal = servicioConModalidad || servicio;
+            
+            if (!servicioFinal.id || servicioFinal.id === 0) {
+                ToastNotification.error('No hay servicios disponibles. Por favor, contacta con el administrador.');
+                return;
+            }
+            
+            this.formData.servicio_id = servicioFinal.id;
+            this.servicioSeleccionado = servicioFinal;
             
             // Si es médico, cargar especialidades disponibles
             if (servicio.tipo === 'medico') {
@@ -362,6 +415,12 @@ window.nuevaSolicitudApp = function() {
                 }
                 if (!this.formData.email_resultados) {
                     ToastNotification.warning('Ingresa email para recibir resultados');
+                    return false;
+                }
+                // Validar formato de email
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(this.formData.email_resultados)) {
+                    ToastNotification.error('El formato del email no es válido. Ejemplo: usuario@correo.com');
                     return false;
                 }
             }
@@ -984,7 +1043,20 @@ window.nuevaSolicitudApp = function() {
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Email resultados *</label>
-                                <input type="email" x-model="formData.email_resultados" placeholder="correo@ejemplo.com" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm">
+                                <div class="relative">
+                                    <input type="email" 
+                                           x-model="formData.email_resultados" 
+                                           placeholder="correo@ejemplo.com" 
+                                           @blur="validarEmailResultados()"
+                                           :class="{'border-red-500 bg-red-50': formData.email_resultados && !validarFormatoEmail(formData.email_resultados), 'border-green-500 bg-green-50': formData.email_resultados && validarFormatoEmail(formData.email_resultados)}"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm pr-10">
+                                    <span x-show="formData.email_resultados && validarFormatoEmail(formData.email_resultados)" 
+                                          class="absolute right-3 top-1/2 -translate-y-1/2 text-green-600">✓</span>
+                                    <span x-show="formData.email_resultados && !validarFormatoEmail(formData.email_resultados)" 
+                                          class="absolute right-3 top-1/2 -translate-y-1/2 text-red-600">✗</span>
+                                </div>
+                                <p x-show="formData.email_resultados && !validarFormatoEmail(formData.email_resultados)" 
+                                   class="text-xs text-red-600 mt-1">Formato inválido. Ej: usuario@correo.com</p>
                             </div>
                         </div>
                         
@@ -1068,41 +1140,122 @@ window.nuevaSolicitudApp = function() {
         <div x-show="paso === 3 && !loading">
             <h2 class="text-2xl font-bold text-gray-900 mb-6">Confirma tu solicitud</h2>
             <div class="bg-white rounded-lg shadow-sm p-6 space-y-4">
+                <!-- Servicio y Precio -->
                 <div class="border-b pb-4">
-                    <h3 class="font-semibold text-gray-900 mb-2">Servicio</h3>
+                    <h3 class="font-semibold text-gray-900 mb-2">📋 Servicio</h3>
                     <p class="text-gray-700" x-text="servicioSeleccionado?.nombre"></p>
+                    <p x-show="formData.especialidad_solicitada" class="text-sm text-purple-600 mt-1">
+                        Especialidad: <span x-text="formData.especialidad_solicitada"></span>
+                    </p>
                     <p class="text-2xl font-bold text-indigo-600 mt-2">$<span x-text="parseInt(servicioSeleccionado?.precio_base || 0).toLocaleString('es-CO')"></span></p>
                 </div>
 
+                <!-- Detalles según tipo de servicio -->
                 <div class="border-b pb-4">
-                    <h3 class="font-semibold text-gray-900 mb-2">Detalles</h3>
-                    <p class="text-sm text-gray-600"><strong>Modalidad:</strong> <span x-text="formData.modalidad"></span></p>
-                    <p class="text-sm text-gray-600"><strong>Fecha:</strong> <span x-text="formData.fecha_programada"></span> a las <span x-text="formData.hora_programada"></span></p>
-                    <p x-show="formData.direccion_servicio" class="text-sm text-gray-600"><strong>Dirección:</strong> <span x-text="formData.direccion_servicio"></span></p>
+                    <h3 class="font-semibold text-gray-900 mb-2">📅 Detalles de la Cita</h3>
+                    
+                    <!-- Fecha y hora/horario -->
+                    <p class="text-sm text-gray-600">
+                        <strong>Fecha:</strong> <span x-text="formData.fecha_programada"></span>
+                        <template x-if="formData.hora_programada">
+                            <span> a las <span x-text="formData.hora_programada"></span></span>
+                        </template>
+                        <template x-if="formData.rango_horario && !formData.hora_programada">
+                            <span> - <span x-text="formData.rango_horario === 'manana' ? 'Mañana' : formData.rango_horario === 'tarde' ? 'Tarde' : 'Noche'"></span></span>
+                        </template>
+                    </p>
+                    
+                    <p class="text-sm text-gray-600"><strong>Modalidad:</strong> <span class="capitalize" x-text="formData.modalidad"></span></p>
+                    <p x-show="formData.direccion_servicio" class="text-sm text-gray-600"><strong>📍 Dirección:</strong> <span x-text="formData.direccion_servicio"></span></p>
+                    <p class="text-sm text-gray-600"><strong>📞 Teléfono:</strong> <span x-text="formData.telefono_contacto"></span></p>
                 </div>
 
+                <!-- Detalles específicos por tipo de servicio -->
                 <div class="border-b pb-4">
-                    <h3 class="font-semibold text-gray-900 mb-2">Síntomas</h3>
-                    <p class="text-sm text-gray-600" x-text="formData.sintomas || 'No especificado'"></p>
+                    <!-- MÉDICO -->
+                    <template x-if="formData.servicio_tipo === 'medico'">
+                        <div>
+                            <h3 class="font-semibold text-gray-900 mb-2">🩺 Motivo de Consulta</h3>
+                            <p class="text-sm text-gray-600" x-text="formData.sintomas || 'No especificado'"></p>
+                        </div>
+                    </template>
+                    
+                    <!-- AMBULANCIA -->
+                    <template x-if="formData.servicio_tipo === 'ambulancia'">
+                        <div>
+                            <h3 class="font-semibold text-gray-900 mb-2">🚑 Detalles del Traslado</h3>
+                            <p class="text-sm text-gray-600"><strong>Tipo:</strong> <span class="capitalize" x-text="formData.tipo_ambulancia"></span></p>
+                            <p class="text-sm text-gray-600"><strong>Origen:</strong> <span x-text="formData.origen"></span></p>
+                            <p class="text-sm text-gray-600"><strong>Destino:</strong> <span x-text="formData.destino"></span></p>
+                            <p class="text-sm text-gray-600"><strong>Condición paciente:</strong> <span x-text="formData.condicion_paciente"></span></p>
+                            <p x-show="formData.numero_acompanantes > 0" class="text-sm text-gray-600"><strong>Acompañantes:</strong> <span x-text="formData.numero_acompanantes"></span></p>
+                        </div>
+                    </template>
+                    
+                    <!-- ENFERMERÍA -->
+                    <template x-if="formData.servicio_tipo === 'enfermera'">
+                        <div>
+                            <h3 class="font-semibold text-gray-900 mb-2">💊 Detalles del Cuidado</h3>
+                            <p class="text-sm text-gray-600"><strong>Tipo:</strong> <span x-text="formData.tipo_cuidado?.replace('_', ' ')"></span></p>
+                            <p class="text-sm text-gray-600"><strong>Intensidad:</strong> <span x-text="formData.intensidad_horaria"></span> - Turno <span x-text="formData.turno"></span></p>
+                            <p class="text-sm text-gray-600"><strong>Duración:</strong> <span x-text="formData.duracion_cantidad"></span> <span x-text="formData.duracion_tipo"></span></p>
+                            <p x-show="formData.condicion_paciente_detalle" class="text-sm text-gray-600"><strong>Condición:</strong> <span x-text="formData.condicion_paciente_detalle"></span></p>
+                        </div>
+                    </template>
+                    
+                    <!-- VETERINARIA -->
+                    <template x-if="formData.servicio_tipo === 'veterinario'">
+                        <div>
+                            <h3 class="font-semibold text-gray-900 mb-2">🐾 Datos de la Mascota</h3>
+                            <p class="text-sm text-gray-600"><strong>Mascota:</strong> <span x-text="formData.nombre_mascota"></span> (<span x-text="formData.tipo_mascota"></span>)</p>
+                            <p x-show="formData.edad_mascota" class="text-sm text-gray-600"><strong>Edad/Raza:</strong> <span x-text="formData.edad_mascota"></span></p>
+                            <p class="text-sm text-gray-600"><strong>Motivo:</strong> <span x-text="formData.motivo_veterinario"></span></p>
+                            <p x-show="formData.sintomas" class="text-sm text-gray-600"><strong>Síntomas:</strong> <span x-text="formData.sintomas"></span></p>
+                        </div>
+                    </template>
+                    
+                    <!-- LABORATORIO -->
+                    <template x-if="formData.servicio_tipo === 'laboratorio'">
+                        <div>
+                            <h3 class="font-semibold text-gray-900 mb-2">🔬 Exámenes Solicitados</h3>
+                            <div class="flex flex-wrap gap-1 mb-2">
+                                <template x-for="examen in formData.examenes_solicitados" :key="examen">
+                                    <span class="inline-block bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded" x-text="examen"></span>
+                                </template>
+                            </div>
+                            <p x-show="formData.requiere_ayuno" class="text-sm text-orange-600">⚠️ Requiere ayuno</p>
+                            <p class="text-sm text-gray-600"><strong>Email resultados:</strong> <span x-text="formData.email_resultados"></span></p>
+                        </div>
+                    </template>
                 </div>
                 
+                <!-- Método de Pago -->
                 <div class="border-b pb-4">
-                    <h3 class="font-semibold text-gray-900 mb-2">Método de Pago</h3>
+                    <h3 class="font-semibold text-gray-900 mb-2">💳 Método de Pago</h3>
                     <div x-show="formData.metodo_pago_preferido === 'transferencia'" class="space-y-2">
                         <p class="text-sm text-gray-600">🏦 <strong>Transferencia Bancaria</strong></p>
                         <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
-                            <p class="text-xs font-semibold text-blue-900 mb-1">📋 Datos para transferencia:</p>
-                            <p class="text-xs text-blue-800">Banco: <strong>Bancolombia</strong></p>
-                            <p class="text-xs text-blue-800">Tipo: <strong>Ahorros</strong></p>
-                            <p class="text-xs text-blue-800">Cuenta: <strong>1234-5678-9012</strong></p>
-                            <p class="text-xs text-blue-800">Titular: <strong>Especialistas en Casa SAS</strong></p>
-                            <p class="text-xs text-blue-800">NIT: <strong>900.123.456-7</strong></p>
+                            <p class="text-xs font-semibold text-blue-900 mb-2">📋 Datos para transferencia:</p>
+                            <template x-if="configPagos">
+                                <div>
+                                    <p class="text-xs text-blue-800">Banco: <strong x-text="configPagos.banco_nombre || 'Bancolombia'"></strong></p>
+                                    <p class="text-xs text-blue-800">Tipo: <strong x-text="configPagos.banco_tipo_cuenta || 'Ahorros'"></strong></p>
+                                    <p class="text-xs text-blue-800">Cuenta: <strong x-text="configPagos.banco_cuenta || 'Consultar'"></strong></p>
+                                    <p class="text-xs text-blue-800">Titular: <strong x-text="configPagos.banco_titular || 'Especialistas en Casa'"></strong></p>
+                                </div>
+                            </template>
+                            <template x-if="!configPagos">
+                                <p class="text-xs text-blue-800">Cargando datos bancarios...</p>
+                            </template>
                         </div>
                         <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-2">
                             <p class="text-xs font-semibold text-yellow-900 mb-1">⚠️ Importante:</p>
-                            <p class="text-xs text-yellow-800">Envía el comprobante al WhatsApp <strong>+57 300 123 4567</strong> con tu nombre completo.</p>
+                            <p class="text-xs text-yellow-800">Después de confirmar, sube tu comprobante desde <strong>"Mis Solicitudes"</strong>.</p>
                             <p class="text-xs text-yellow-800 mt-1">Tu solicitud quedará en estado <strong>"Pendiente de Pago"</strong> hasta confirmar.</p>
                         </div>
+                    </div>
+                    <div x-show="formData.metodo_pago_preferido === 'efectivo'" class="text-sm text-gray-600">
+                        💵 <strong>Pago en Efectivo</strong> - Pagarás directamente al profesional
                     </div>
                 </div>
 
@@ -1112,7 +1265,7 @@ window.nuevaSolicitudApp = function() {
                         Atrás
                     </button>
                     <button @click="enviarSolicitud()" :disabled="loading" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">
-                        <span x-show="!loading">Confirmar Solicitud</span>
+                        <span x-show="!loading">✅ Confirmar Solicitud</span>
                         <span x-show="loading">Procesando...</span>
                     </button>
                 </div>

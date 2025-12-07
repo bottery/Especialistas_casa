@@ -55,7 +55,25 @@ class Solicitud extends Model
                   LEFT JOIN usuarios u ON s.profesional_id = u.id
                   WHERE s.paciente_id = ?
                   ORDER BY s.fecha_solicitud DESC";
-        return $this->query($query, [$pacienteId]);
+        $results = $this->query($query, [$pacienteId]);
+        
+        // Normalizar encoding de campos con posibles caracteres especiales
+        return array_map(function($row) {
+            // Decodificar entidades HTML en nombres
+            if (isset($row['profesional_nombre'])) {
+                $row['profesional_nombre'] = html_entity_decode($row['profesional_nombre'], ENT_QUOTES, 'UTF-8');
+            }
+            if (isset($row['profesional_apellido'])) {
+                $row['profesional_apellido'] = html_entity_decode($row['profesional_apellido'], ENT_QUOTES, 'UTF-8');
+            }
+            // Normalizar encoding de especialidad
+            if (isset($row['especialidad'])) {
+                $row['especialidad'] = mb_convert_encoding($row['especialidad'], 'UTF-8', 'UTF-8');
+                // Corregir caracteres mal codificados (ej: Pediatr?a -> Pediatría)
+                $row['especialidad'] = preg_replace('/\?/', 'í', $row['especialidad']); 
+            }
+            return $row;
+        }, $results);
     }
 
     /**
@@ -79,7 +97,18 @@ class Solicitud extends Model
         }
         
         $query .= " ORDER BY s.fecha_programada ASC";
-        return $this->query($query, $params);
+        $results = $this->query($query, $params);
+        
+        // Decodificar entidades HTML en nombres
+        return array_map(function($row) {
+            if (isset($row['paciente_nombre'])) {
+                $row['paciente_nombre'] = html_entity_decode($row['paciente_nombre'], ENT_QUOTES, 'UTF-8');
+            }
+            if (isset($row['paciente_apellido'])) {
+                $row['paciente_apellido'] = html_entity_decode($row['paciente_apellido'], ENT_QUOTES, 'UTF-8');
+            }
+            return $row;
+        }, $results);
     }
 
     /**
@@ -94,7 +123,18 @@ class Solicitud extends Model
                   INNER JOIN usuarios u ON s.paciente_id = u.id
                   WHERE s.estado = 'pendiente' AND s.profesional_id IS NULL
                   ORDER BY s.fecha_programada ASC";
-        return $this->query($query);
+        $results = $this->query($query);
+        
+        // Decodificar entidades HTML en nombres
+        return array_map(function($row) {
+            if (isset($row['paciente_nombre'])) {
+                $row['paciente_nombre'] = html_entity_decode($row['paciente_nombre'], ENT_QUOTES, 'UTF-8');
+            }
+            if (isset($row['paciente_apellido'])) {
+                $row['paciente_apellido'] = html_entity_decode($row['paciente_apellido'], ENT_QUOTES, 'UTF-8');
+            }
+            return $row;
+        }, $results);
     }
 
     /**

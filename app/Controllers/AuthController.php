@@ -151,6 +151,10 @@ class AuthController extends BaseController
             // Actualizar último acceso
             Usuario::updateLastAccess($user['id']);
 
+            // Decodificar entidades HTML de los nombres para mostrarlos correctamente
+            $user['nombre'] = html_entity_decode($user['nombre'] ?? '', ENT_QUOTES, 'UTF-8');
+            $user['apellido'] = html_entity_decode($user['apellido'] ?? '', ENT_QUOTES, 'UTF-8');
+
             // Establecer sesión PHP para vistas web
             if (session_status() === PHP_SESSION_NONE) {
                 session_start();
