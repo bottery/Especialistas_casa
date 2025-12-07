@@ -23,8 +23,15 @@ class ProfesionalController extends BaseController
         $this->solicitudModel = new Solicitud();
         $this->authMiddleware = new AuthMiddleware();
         
-        // Verificar autenticación para rol 'profesional' (incluye todos los especialistas)
-        $this->user = $this->authMiddleware->checkRole(['profesional']);
+        // Verificar autenticación para profesionales (todos los tipos de especialistas)
+        $this->user = $this->authMiddleware->checkRole([
+            'profesional', 
+            'medico', 
+            'enfermera', 
+            'veterinario', 
+            'laboratorio', 
+            'ambulancia'
+        ]);
         if (!$this->user) {
             exit;
         }

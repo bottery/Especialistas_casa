@@ -108,7 +108,7 @@ class AuthController extends BaseController
         try {
             // Rate limiting más estricto para login
             $rateLimitKey = RateLimiter::key('login');
-            $limiter = new RateLimiter(5, 15); // 5 intentos cada 15 minutos
+            $limiter = new RateLimiter(50, 5); // 50 intentos cada 5 minutos (desarrollo)
             
             if (!$limiter->attempt($rateLimitKey)) {
                 return;
