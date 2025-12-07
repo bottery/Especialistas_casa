@@ -1245,24 +1245,47 @@ window.nuevaSolicitudApp = function() {
                     <h3 class="font-semibold text-gray-900 mb-2">💳 Método de Pago</h3>
                     <div x-show="formData.metodo_pago_preferido === 'transferencia'" class="space-y-2">
                         <p class="text-sm text-gray-600">🏦 <strong>Transferencia Bancaria</strong></p>
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
-                            <p class="text-xs font-semibold text-blue-900 mb-2">📋 Datos para transferencia:</p>
-                            <template x-if="configPagos">
-                                <div>
-                                    <p class="text-xs text-blue-800">Banco: <strong x-text="configPagos.banco_nombre || 'Bancolombia'"></strong></p>
-                                    <p class="text-xs text-blue-800">Tipo: <strong x-text="configPagos.banco_tipo_cuenta || 'Ahorros'"></strong></p>
-                                    <p class="text-xs text-blue-800">Cuenta: <strong x-text="configPagos.banco_cuenta || 'Consultar'"></strong></p>
-                                    <p class="text-xs text-blue-800">Titular: <strong x-text="configPagos.banco_titular || 'Especialistas en Casa'"></strong></p>
+                        
+                        <!-- Contenedor flex para QR y datos -->
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <!-- QR Code -->
+                            <template x-if="configPagos && configPagos.qr_imagen_path">
+                                <div class="flex-shrink-0 bg-white border-2 border-teal-200 rounded-lg p-2 text-center">
+                                    <img :src="BASE_URL + configPagos.qr_imagen_path" alt="QR para pago" class="w-32 h-32 mx-auto object-contain">
+                                    <p class="text-xs text-gray-500 mt-1">Escanea para pagar</p>
                                 </div>
                             </template>
-                            <template x-if="!configPagos">
-                                <p class="text-xs text-blue-800">Cargando datos bancarios...</p>
-                            </template>
+                            
+                            <!-- Datos bancarios -->
+                            <div class="flex-grow bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                <p class="text-xs font-semibold text-blue-900 mb-2">📋 Datos para transferencia:</p>
+                                <template x-if="configPagos">
+                                    <div class="space-y-1">
+                                        <p class="text-xs text-blue-800">🏦 Banco: <strong x-text="configPagos.banco_nombre || 'Bancolombia'"></strong></p>
+                                        <p class="text-xs text-blue-800">📁 Tipo: <strong x-text="configPagos.banco_tipo_cuenta || 'Ahorros'"></strong></p>
+                                        <p class="text-xs text-blue-800">🔢 Cuenta: <strong x-text="configPagos.banco_cuenta || 'Consultar'"></strong></p>
+                                        <p class="text-xs text-blue-800">👤 Titular: <strong x-text="configPagos.banco_titular || 'VitaHome S.A.S'"></strong></p>
+                                        <template x-if="configPagos.whatsapp_contacto">
+                                            <p class="text-xs text-blue-800 mt-2">📱 WhatsApp: <strong x-text="configPagos.whatsapp_contacto"></strong></p>
+                                        </template>
+                                    </div>
+                                </template>
+                                <template x-if="!configPagos">
+                                    <p class="text-xs text-blue-800">Cargando datos bancarios...</p>
+                                </template>
+                            </div>
                         </div>
+                        
                         <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-2">
-                            <p class="text-xs font-semibold text-yellow-900 mb-1">⚠️ Importante:</p>
-                            <p class="text-xs text-yellow-800">Después de confirmar, sube tu comprobante desde <strong>"Mis Solicitudes"</strong>.</p>
-                            <p class="text-xs text-yellow-800 mt-1">Tu solicitud quedará en estado <strong>"Pendiente de Pago"</strong> hasta confirmar.</p>
+                            <p class="text-xs font-semibold text-yellow-900 mb-1">⚠️ Pago por transferencia</p>
+                            <p class="text-xs text-yellow-800">Al confirmar, deberás:</p>
+                            <ol class="text-xs text-yellow-800 list-decimal list-inside mt-1 space-y-0.5">
+                                <li>Realizar la transferencia a la cuenta indicada</li>
+                                <li>Enviar captura de pantalla al WhatsApp: <strong x-text="configPagos?.whatsapp_contacto || '+57 300 123 4567'"></strong></li>
+                                <li>Esperar confirmación del administrador</li>
+                                <li>El profesional aceptará tu solicitud una vez confirmado el pago</li>
+                            </ol>
+                            <p class="text-xs text-yellow-700 mt-2">⏱️ Tiempo estimado de confirmación: 1-2 horas en horario hábil</p>
                         </div>
                     </div>
                     <div x-show="formData.metodo_pago_preferido === 'efectivo'" class="text-sm text-gray-600">

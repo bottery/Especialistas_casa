@@ -6,8 +6,17 @@
 
 namespace App\Controllers;
 
+use App\Services\Database;
+
 class ConfiguracionPagosController extends BaseController
 {
+    private $db;
+
+    public function __construct()
+    {
+        $this->db = Database::getInstance();
+    }
+
     /**
      * Obtener configuración actual de pagos
      * GET /api/admin/configuracion-pagos
@@ -18,14 +27,12 @@ class ConfiguracionPagosController extends BaseController
             // Solo superadmin puede acceder
             $this->requireAuth(['superadmin']);
             
-            global $pdo;
-            
-            $stmt = $pdo->query("SELECT * FROM configuracion_pagos WHERE id = 1 LIMIT 1");
-            $config = $stmt->fetch(\PDO::FETCH_ASSOC);
+            $result = $this->db->select("SELECT * FROM configuracion_pagos WHERE id = 1 LIMIT 1");
+            $config = $result[0] ?? null;
             
             if (!$config) {
                 // Crear configuración por defecto si no existe
-                $pdo->exec("INSERT INTO configuracion_pagos (id, activo) VALUES (1, 1)");
+                $this->db->insert("INSERT INTO configuracion_pagos (id, activo) VALUES (1, 1)", []);
                 $config = [
                     'id' => 1,
                     'qr_imagen_path' => null,
@@ -56,46 +63,44 @@ class ConfiguracionPagosController extends BaseController
             $this->requireAuth(['superadmin']);
             
             $data = $this->getRequestData();
-            
-            global $pdo;
-            $userId = $_SESSION['user_id'];
+            $userId = $_SESSION['user_id'] ?? null;
             
             $updates = [];
-            $params = ['id' => 1, 'user_id' => $userId];
+            $params = [];
             
             if (isset($data['banco_nombre'])) {
-                $updates[] = "banco_nombre = :banco_nombre";
-                $params['banco_nombre'] = $data['banco_nombre'];
+                $updates[] = "banco_nombre = ?";
+                $params[] = $data['banco_nombre'];
             }
             
             if (isset($data['banco_cuenta'])) {
-                $updates[] = "banco_cuenta = :banco_cuenta";
-                $params['banco_cuenta'] = $data['banco_cuenta'];
+                $updates[] = "banco_cuenta = ?";
+                $params[] = $data['banco_cuenta'];
             }
             
             if (isset($data['banco_tipo_cuenta'])) {
-                $updates[] = "banco_tipo_cuenta = :banco_tipo_cuenta";
-                $params['banco_tipo_cuenta'] = $data['banco_tipo_cuenta'];
+                $updates[] = "banco_tipo_cuenta = ?";
+                $params[] = $data['banco_tipo_cuenta'];
             }
             
             if (isset($data['banco_titular'])) {
-                $updates[] = "banco_titular = :banco_titular";
-                $params['banco_titular'] = $data['banco_titular'];
+                $updates[] = "banco_titular = ?";
+                $params[] = $data['banco_titular'];
             }
             
             if (isset($data['instrucciones_transferencia'])) {
-                $updates[] = "instrucciones_transferencia = :instrucciones";
-                $params['instrucciones'] = $data['instrucciones_transferencia'];
+                $updates[] = "instrucciones_transferencia = ?";
+                $params[] = $data['instrucciones_transferencia'];
             }
             
             if (isset($data['whatsapp_contacto'])) {
-                $updates[] = "whatsapp_contacto = :whatsapp";
-                $params['whatsapp'] = $data['whatsapp_contacto'];
+                $updates[] = "whatsapp_contacto = ?";
+                $params[] = $data['whatsapp_contacto'];
             }
             
             if (isset($data['activo'])) {
-                $updates[] = "activo = :activo";
-                $params['activo'] = $data['activo'] ? 1 : 0;
+                $updates[] = "activo = ?";
+                $params[] = $data['activo'] ? 1 : 0;
             }
             
             if (empty($updates)) {
@@ -103,11 +108,13 @@ class ConfiguracionPagosController extends BaseController
                 return;
             }
             
-            $updates[] = "updated_by = :user_id";
+            if ($userId) {
+                $updates[] = "updated_by = ?";
+                $params[] = $userId;
+            }
             
-            $sql = "UPDATE configuracion_pagos SET " . implode(', ', $updates) . " WHERE id = :id";
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute($params);
+            $sql = "UPDATE configuracion_pagos SET " . implode(', ', $updates) . " WHERE id = 1";
+            $this->db->query($sql, $params);
             
             $this->sendSuccess(['message' => 'Configuración actualizada exitosamente']);
             
@@ -168,30 +175,22 @@ class ConfiguracionPagosController extends BaseController
                 return;
             }
             
-            // Actualizar en base de datos
-            global $pdo;
-            $userId = $_SESSION['user_id'];
+            $userId = $_SESSION['user_id'] ?? null;
             $relativePath = '/uploads/pagos/' . $filename;
             
             // Eliminar QR anterior si existe
-            $stmt = $pdo->query("SELECT qr_imagen_path FROM configuracion_pagos WHERE id = 1");
-            $oldConfig = $stmt->fetch(\PDO::FETCH_ASSOC);
-            if ($oldConfig && $oldConfig['qr_imagen_path']) {
-                $oldFile = __DIR__ . '/../../public' . $oldConfig['qr_imagen_path'];
-                if (file_exists($oldFile)) {
+            $oldConfig = $this->db->select("SELECT qr_imagen_path FROM configuracion_pagos WHERE id = 1");
+            if (!empty($oldConfig) && $oldConfig[0]['qr_imagen_path']) {
+                $oldFile = __DIR__ . '/../../public' . $oldConfig[0]['qr_imagen_path'];
+                if (file_exists($oldFile) && strpos($oldFile, '/uploads/') !== false) {
                     unlink($oldFile);
                 }
             }
             
-            $stmt = $pdo->prepare("
-                UPDATE configuracion_pagos 
-                SET qr_imagen_path = :path, updated_by = :user_id 
-                WHERE id = 1
-            ");
-            $stmt->execute([
-                'path' => $relativePath,
-                'user_id' => $userId
-            ]);
+            $this->db->query(
+                "UPDATE configuracion_pagos SET qr_imagen_path = ?, updated_by = ? WHERE id = 1",
+                [$relativePath, $userId]
+            );
             
             $this->sendSuccess([
                 'message' => 'Código QR actualizado exitosamente',
@@ -213,26 +212,21 @@ class ConfiguracionPagosController extends BaseController
         try {
             $this->requireAuth(['superadmin']);
             
-            global $pdo;
-            
             // Obtener ruta actual
-            $stmt = $pdo->query("SELECT qr_imagen_path FROM configuracion_pagos WHERE id = 1");
-            $config = $stmt->fetch(\PDO::FETCH_ASSOC);
+            $config = $this->db->select("SELECT qr_imagen_path FROM configuracion_pagos WHERE id = 1");
             
-            if ($config && $config['qr_imagen_path']) {
-                $filepath = __DIR__ . '/../../public' . $config['qr_imagen_path'];
-                if (file_exists($filepath)) {
+            if (!empty($config) && $config[0]['qr_imagen_path']) {
+                $filepath = __DIR__ . '/../../public' . $config[0]['qr_imagen_path'];
+                if (file_exists($filepath) && strpos($filepath, '/uploads/') !== false) {
                     unlink($filepath);
                 }
                 
                 // Actualizar BD
-                $userId = $_SESSION['user_id'];
-                $stmt = $pdo->prepare("
-                    UPDATE configuracion_pagos 
-                    SET qr_imagen_path = NULL, updated_by = :user_id 
-                    WHERE id = 1
-                ");
-                $stmt->execute(['user_id' => $userId]);
+                $userId = $_SESSION['user_id'] ?? null;
+                $this->db->query(
+                    "UPDATE configuracion_pagos SET qr_imagen_path = NULL, updated_by = ? WHERE id = 1",
+                    [$userId]
+                );
             }
             
             $this->sendSuccess(['message' => 'Código QR eliminado exitosamente']);
@@ -250,21 +244,20 @@ class ConfiguracionPagosController extends BaseController
     public function getDatosBancariosPublico(): void
     {
         try {
-            global $pdo;
-            
-            $stmt = $pdo->query("
+            $result = $this->db->select("
                 SELECT 
                     banco_nombre,
                     banco_cuenta,
                     banco_tipo_cuenta,
                     banco_titular,
                     instrucciones_transferencia,
-                    whatsapp_contacto
+                    whatsapp_contacto,
+                    qr_imagen_path
                 FROM configuracion_pagos 
                 WHERE id = 1 AND activo = 1 
                 LIMIT 1
             ");
-            $config = $stmt->fetch(\PDO::FETCH_ASSOC);
+            $config = $result[0] ?? null;
             
             if (!$config) {
                 // Datos por defecto si no hay configuración
@@ -272,9 +265,10 @@ class ConfiguracionPagosController extends BaseController
                     'banco_nombre' => 'Bancolombia',
                     'banco_tipo_cuenta' => 'Ahorros',
                     'banco_cuenta' => 'Consultar administrador',
-                    'banco_titular' => 'Especialistas en Casa',
+                    'banco_titular' => 'VitaHome S.A.S',
                     'instrucciones_transferencia' => 'Realiza tu transferencia y sube el comprobante desde Mis Solicitudes.',
-                    'whatsapp_contacto' => null
+                    'whatsapp_contacto' => '+57 300 123 4567',
+                    'qr_imagen_path' => null
                 ];
             }
             
