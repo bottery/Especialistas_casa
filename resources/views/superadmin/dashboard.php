@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://cdn.jsdelivr.net;">
     <title>Dashboard Super Admin - VitaHome</title>
     <link rel="icon" type="image/svg+xml" href="<?= BASE_URL ?>/images/vitahome-icon.svg">
     <script>const BASE_URL = '<?= rtrim(BASE_URL, "/") ?>';</script>
@@ -464,6 +465,12 @@ window.dashboardApp = function() {
         },
 
         renderCharts(data) {
+            // Verificar que Chart.js esté disponible
+            if (typeof Chart === 'undefined') {
+                console.error('Chart.js no está disponible');
+                return;
+            }
+
             // Ingresos Mensuales - Line Chart
             if (data.ingresos_mensuales && data.ingresos_mensuales.length > 0) {
                 const ctx = document.getElementById('ingresosChart');
