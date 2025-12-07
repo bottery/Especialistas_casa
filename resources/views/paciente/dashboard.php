@@ -649,7 +649,7 @@ window.pacienteDashboard = function() {
                                     </p>
                                     <p class="text-sm text-gray-600">
                                         <span class="font-medium">Modalidad:</span>
-                                        <span x-text="solicitud.modalidad"></span>
+                                        <span x-text="solicitud.modalidad === 'traslado' ? '🚑 Traslado' : solicitud.modalidad === 'domicilio' ? '🏠 Domicilio' : solicitud.modalidad === 'virtual' ? '💻 Virtual' : '🏢 Consultorio'"></span>
                                     </p>
                                 </div>
                                 <div class="text-right">

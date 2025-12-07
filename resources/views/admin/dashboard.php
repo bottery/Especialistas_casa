@@ -1334,7 +1334,7 @@
                             </div>
                             <div>
                                 <p class="text-xs text-gray-500 uppercase font-semibold">Modalidad</p>
-                                <p class="text-gray-900 font-medium mt-1" x-text="solicitudDetalle?.modalidad === 'domicilio' ? '🏠 A Domicilio' : solicitudDetalle?.modalidad === 'virtual' ? '💻 Virtual' : '🏢 Consultorio'"></p>
+                                <p class="text-gray-900 font-medium mt-1" x-text="solicitudDetalle?.modalidad === 'traslado' ? '🚑 Traslado' : solicitudDetalle?.modalidad === 'domicilio' ? '🏠 A Domicilio' : solicitudDetalle?.modalidad === 'virtual' ? '💻 Virtual' : '🏢 Consultorio'"></p>
                             </div>
                             <div class="col-span-2">
                                 <p class="text-xs text-gray-500 uppercase font-semibold">Fecha y Hora Programada</p>

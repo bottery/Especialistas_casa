@@ -209,7 +209,17 @@ window.nuevaSolicitudApp = function() {
             // Guardar el tipo de servicio
             this.formData.servicio_tipo = servicio.tipo;
             
-            // Buscar el servicio correcto según la modalidad actual (presencial por defecto)
+            // Establecer modalidad por defecto según el tipo de servicio
+            if (servicio.tipo === 'ambulancia') {
+                this.formData.modalidad = 'traslado'; // Ambulancia siempre es traslado
+            } else if (servicio.tipo === 'laboratorio') {
+                this.formData.modalidad = 'domicilio'; // Laboratorio a domicilio
+            } else if (servicio.tipo === 'enfermera') {
+                this.formData.modalidad = 'domicilio'; // Enfermería a domicilio
+            }
+            // Para médico y veterinario, mantiene la modalidad que elija el usuario
+            
+            // Buscar el servicio correcto según la modalidad actual
             const servicioConModalidad = this.servicios.find(s => 
                 s.tipo === servicio.tipo && 
                 s.modalidad === this.formData.modalidad && 
@@ -894,12 +904,11 @@ window.nuevaSolicitudApp = function() {
                                     </label>
                                 </div>
                             </div>
-                            <div>
+                            <div x-show="formData.intensidad_horaria === '12h'" x-transition>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Turno</label>
                                 <select x-model="formData.turno" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 text-sm">
                                     <option value="diurno">☀️ Diurno</option>
                                     <option value="nocturno">🌙 Nocturno</option>
-                                    <option value="mixto">🔄 Mixto</option>
                                 </select>
                             </div>
                         </div>
@@ -1165,7 +1174,7 @@ window.nuevaSolicitudApp = function() {
                         </template>
                     </p>
                     
-                    <p class="text-sm text-gray-600"><strong>Modalidad:</strong> <span class="capitalize" x-text="formData.modalidad"></span></p>
+                    <p class="text-sm text-gray-600"><strong>Modalidad:</strong> <span x-text="formData.modalidad === 'traslado' ? '🚑 Traslado' : formData.modalidad === 'domicilio' ? '🏠 Domicilio' : formData.modalidad === 'virtual' ? '💻 Virtual' : '🏢 Consultorio'"></span></p>
                     <p x-show="formData.direccion_servicio" class="text-sm text-gray-600"><strong>📍 Dirección:</strong> <span x-text="formData.direccion_servicio"></span></p>
                     <p class="text-sm text-gray-600"><strong>📞 Teléfono:</strong> <span x-text="formData.telefono_contacto"></span></p>
                 </div>
@@ -1197,7 +1206,7 @@ window.nuevaSolicitudApp = function() {
                         <div>
                             <h3 class="font-semibold text-gray-900 mb-2">💊 Detalles del Cuidado</h3>
                             <p class="text-sm text-gray-600"><strong>Tipo:</strong> <span x-text="formData.tipo_cuidado?.replace('_', ' ')"></span></p>
-                            <p class="text-sm text-gray-600"><strong>Intensidad:</strong> <span x-text="formData.intensidad_horaria"></span> - Turno <span x-text="formData.turno"></span></p>
+                            <p class="text-sm text-gray-600"><strong>Intensidad:</strong> <span x-text="formData.intensidad_horaria"></span><template x-if="formData.intensidad_horaria === '12h'"> - Turno <span x-text="formData.turno"></span></template></p>
                             <p class="text-sm text-gray-600"><strong>Duración:</strong> <span x-text="formData.duracion_cantidad"></span> <span x-text="formData.duracion_tipo"></span></p>
                             <p x-show="formData.condicion_paciente_detalle" class="text-sm text-gray-600"><strong>Condición:</strong> <span x-text="formData.condicion_paciente_detalle"></span></p>
                         </div>
