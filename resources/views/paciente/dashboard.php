@@ -191,8 +191,15 @@ window.pacienteDashboard = function() {
             return textos[estado] || estado;
         },
 
+        // Función para verificar si una solicitud puede ser calificada
+        puedeCalificar(solicitud) {
+            // Puede calificar si está en pendiente_calificacion O completado sin calificación
+            return solicitud.estado === 'pendiente_calificacion' || 
+                   (solicitud.estado === 'completado' && !solicitud.calificacion_paciente);
+        },
+
         verificarCalificacionesPendientes() {
-            const pendientes = this.solicitudes.filter(s => s.estado === 'pendiente_calificacion');
+            const pendientes = this.solicitudes.filter(s => this.puedeCalificar(s));
             if (pendientes.length > 0) {
                 setTimeout(() => {
                     ToastNotification.warning(
@@ -665,7 +672,7 @@ window.pacienteDashboard = function() {
                             <!-- Botones de acciones -->
                             <div class="flex items-center gap-3 mt-4 pt-4 border-t border-gray-100">
                                 <!-- Botón Calificar -->
-                                <button x-show="solicitud.estado === 'pendiente_calificacion'" 
+                                <button x-show="puedeCalificar(solicitud)" 
                                         @click.stop="abrirModalCalificacion(solicitud)" 
                                         class="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium text-sm">
                                     ⭐ Calificar Servicio
@@ -1009,7 +1016,7 @@ window.pacienteDashboard = function() {
                 </div>
 
                 <!-- Botón calificar si está pendiente -->
-                <div x-show="solicitudDetalle?.estado === 'pendiente_calificacion'" class="text-center">
+                <div x-show="puedeCalificar(solicitudDetalle)" class="text-center">
                     <button @click="abrirModalCalificacion(solicitudDetalle); cerrarModalDetalle();" 
                             class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-medium">
                         ⭐ Calificar Servicio
