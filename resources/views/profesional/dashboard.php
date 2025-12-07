@@ -15,6 +15,7 @@
     <script src="<?= asset('/js/dark-mode.js') ?>"></script>
     <script src="<?= asset('/js/keyboard-shortcuts.js') ?>"></script>
     <script src="<?= asset('/js/confirmation-modal.js') ?>"></script>
+    <script src="<?= asset('/js/toast.js') ?>"></script>
 <script>
 window.profesionalDashboard = function() {
     return {
@@ -208,14 +209,14 @@ window.profesionalDashboard = function() {
                 const data = await response.json();
                 
                 if (response.ok) {
-                    alert('✅ Solicitud aceptada exitosamente');
+                    ToastNotification.success('Solicitud aceptada exitosamente');
                     await this.cargarDatos();
                 } else {
-                    alert(data.message || 'Error al aceptar la solicitud');
+                    ToastNotification.error(data.message || 'Error al aceptar la solicitud');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error al procesar la solicitud');
+                ToastNotification.error('Error al procesar la solicitud');
             } finally {
                 this.loading = false;
             }
@@ -242,14 +243,14 @@ window.profesionalDashboard = function() {
                 const data = await response.json();
                 
                 if (response.ok) {
-                    alert('Solicitud rechazada');
+                    ToastNotification.success('Solicitud rechazada correctamente');
                     await this.cargarDatos();
                 } else {
-                    alert(data.message || 'Error al rechazar la solicitud');
+                    ToastNotification.error(data.message || 'Error al rechazar la solicitud');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error al procesar la solicitud');
+                ToastNotification.error('Error al procesar la solicitud');
             } finally {
                 this.loading = false;
             }
@@ -280,14 +281,14 @@ window.profesionalDashboard = function() {
                 const data = await response.json();
                 
                 if (response.ok) {
-                    alert('✅ Servicio iniciado');
+                    ToastNotification.success('Servicio iniciado correctamente');
                     await this.cargarDatos();
                 } else {
-                    alert(data.message || 'Error al iniciar el servicio');
+                    ToastNotification.error(data.message || 'Error al iniciar el servicio');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error al procesar la solicitud');
+                ToastNotification.error('Error al procesar la solicitud');
             } finally {
                 this.loading = false;
             }
@@ -302,11 +303,11 @@ window.profesionalDashboard = function() {
         async enviarCompletarServicio() {
             // Validar campos requeridos
             if (!this.formCompletar.reporte.trim()) {
-                alert('⚠️ El reporte del servicio es obligatorio');
+                ToastNotification.warning('El reporte del servicio es obligatorio');
                 return;
             }
             if (!this.formCompletar.diagnostico.trim()) {
-                alert('⚠️ El diagnóstico o conclusión es obligatorio');
+                ToastNotification.warning('El diagnóstico o conclusión es obligatorio');
                 return;
             }
 
@@ -325,15 +326,15 @@ window.profesionalDashboard = function() {
                 const data = await response.json();
                 
                 if (response.ok) {
-                    alert('✅ Servicio completado exitosamente');
+                    ToastNotification.success('Servicio completado exitosamente');
                     this.cerrarModalCompletar();
                     await this.cargarDatos();
                 } else {
-                    alert(data.message || 'Error al completar el servicio');
+                    ToastNotification.error(data.message || 'Error al completar el servicio');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error al procesar la solicitud');
+                ToastNotification.error('Error al procesar la solicitud');
             } finally {
                 this.loading = false;
             }
