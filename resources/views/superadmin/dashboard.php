@@ -221,27 +221,37 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8" x-show="!loading">
             <div class="bg-white rounded-xl shadow-lg p-6">
                 <h3 class="text-lg font-semibold mb-4 text-gray-800">Ingresos Mensuales (12 meses)</h3>
-                <canvas id="ingresosChart" height="250"></canvas>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="ingresosChart"></canvas>
+                </div>
             </div>
 
             <div class="bg-white rounded-xl shadow-lg p-6">
                 <h3 class="text-lg font-semibold mb-4 text-gray-800">Servicios Por Tipo</h3>
-                <canvas id="serviciosChart" height="250"></canvas>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="serviciosChart"></canvas>
+                </div>
             </div>
 
             <div class="bg-white rounded-xl shadow-lg p-6">
                 <h3 class="text-lg font-semibold mb-4 text-gray-800">Usuarios Por Rol</h3>
-                <canvas id="usuariosChart" height="250"></canvas>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="usuariosChart"></canvas>
+                </div>
             </div>
 
             <div class="bg-white rounded-xl shadow-lg p-6">
                 <h3 class="text-lg font-semibold mb-4 text-gray-800">Solicitudes Por Estado</h3>
-                <canvas id="solicitudesChart" height="250"></canvas>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="solicitudesChart"></canvas>
+                </div>
             </div>
 
             <div class="bg-white rounded-xl shadow-lg p-6 lg:col-span-2">
                 <h3 class="text-lg font-semibold mb-4 text-gray-800">Tendencia Semanal (Últimos 30 días)</h3>
-                <canvas id="tendenciaChart" height="150"></canvas>
+                <div style="height: 150px; position: relative;">
+                    <canvas id="tendenciaChart"></canvas>
+                </div>
             </div>
         </div>
 
