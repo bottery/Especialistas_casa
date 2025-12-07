@@ -1,13 +1,19 @@
 {
-  "name": "Especialistas en Casa",
-  "short_name": "Especialistas",
-  "description": "Plataforma de servicios profesionales a domicilio",
+  "name": "VitaHome - Especialistas en Casa",
+  "short_name": "VitaHome",
+  "description": "Servicios médicos especializados en la comodidad de tu hogar",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#6366f1",
+  "background_color": "#f0fdfa",
+  "theme_color": "#14b8a6",
   "orientation": "portrait",
   "icons": [
+    {
+      "src": "/images/vitahome-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
     {
       "src": "/images/icon-192.png",
       "sizes": "192x192",
@@ -21,7 +27,7 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["health", "lifestyle"],
+  "categories": ["health", "medical", "lifestyle"],
   "lang": "es-ES",
   "dir": "ltr",
   "scope": "/",

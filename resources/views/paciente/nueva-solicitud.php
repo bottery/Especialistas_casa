@@ -1,16 +1,22 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nueva Solicitud - Especialistas en Casa</title>
+    <title>Nueva Solicitud - VitaHome</title>
+    <link rel="icon" type="image/svg+xml" href="<?= asset('/images/vitahome-icon.svg') ?>">
     <script>const BASE_URL = '<?= rtrim(BASE_URL, "/") ?>';</script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="<?= asset('/js/auth-interceptor.js') ?>"></script>
     <script src="<?= asset('/js/validator.js') ?>"></script>
     <script src="<?= asset('/js/toast.js') ?>"></script>
+    <link rel="stylesheet" href="<?= url('/css/vitahome-brand.css') ?>">
     <link rel="stylesheet" href="<?= url('/css/breadcrumbs.css') ?>">
     <link rel="stylesheet" href="<?= url('/css/progress.css') ?>">
+    <style>
+        .gradient-bg { background: linear-gradient(135deg, #14b8a6 0%, #1e3a5f 100%); }
+        .gradient-text { background: linear-gradient(135deg, #14b8a6 0%, #1e3a5f 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    </style>
 <script>
 window.nuevaSolicitudApp = function() {
     return {
@@ -21,9 +27,9 @@ window.nuevaSolicitudApp = function() {
         especialidadesDisponibles: [],
         mostrarSelectorEspecialidad: false,
         especialidadSeleccionada: null,
-        // Configuración de pagos
+        // Configuraci�n de pagos
         configPagos: null,
-        // Modal de éxito
+        // Modal de �xito
         mostrarModalExito: false,
         mensajeExito: '',
         esTransferencia: false,
@@ -42,7 +48,7 @@ window.nuevaSolicitudApp = function() {
             urgencia: 'normal',
             metodo_pago_preferido: '',
             
-            // Médico Especialista
+            // M�dico Especialista
             especialidad: '',
             rango_horario: '',
             
@@ -55,7 +61,7 @@ window.nuevaSolicitudApp = function() {
             numero_acompanantes: 0,
             contacto_emergencia: '',
             
-            // Enfermería
+            // Enfermer�a
             tipo_cuidado: '',
             intensidad_horaria: '12h',
             duracion_tipo: 'dias',
@@ -86,13 +92,13 @@ window.nuevaSolicitudApp = function() {
             zona_tratamiento: '',
             lesion_condicion: '',
             
-            // Psicología
+            // Psicolog�a
             tipo_sesion_psico: 'individual',
             motivo_consulta_psico: '',
             primera_vez: true,
             observaciones_privadas: '',
             
-            // Nutrición
+            // Nutrici�n
             tipo_consulta_nutri: '',
             objetivos_nutri: '',
             peso_actual: '',
@@ -104,14 +110,14 @@ window.nuevaSolicitudApp = function() {
         examenesDisponibles: [
             'Hemograma completo',
             'Glucosa',
-            'Perfil lipídico',
+            'Perfil lip�dico',
             'Creatinina',
-            'Ácido úrico',
+            '�cido �rico',
             'Transaminasas',
             'TSH (Tiroides)',
             'Examen de orina',
-            'Coprológico',
-            'Antígeno prostático (PSA)',
+            'Coprol�gico',
+            'Ant�geno prost�tico (PSA)',
             'Hemoglobina glicosilada',
             'Vitamina D',
             'Vitamina B12'
@@ -136,7 +142,7 @@ window.nuevaSolicitudApp = function() {
                     this.configPagos = data.configuracion || data || null;
                 }
             } catch (error) {
-                console.error('Error cargando configuración de pagos:', error);
+                console.error('Error cargando configuraci�n de pagos:', error);
                 // Valores por defecto si falla
                 this.configPagos = {
                     banco_nombre: 'Bancolombia',
@@ -200,7 +206,7 @@ window.nuevaSolicitudApp = function() {
         },
 
         async seleccionarServicio(servicio) {
-            // Validar que el servicio existe y tiene un tipo válido
+            // Validar que el servicio existe y tiene un tipo v�lido
             if (!servicio || !servicio.tipo) {
                 ToastNotification.error('No hay servicios disponibles de este tipo. Por favor, contacta con el administrador.');
                 return;
@@ -209,17 +215,17 @@ window.nuevaSolicitudApp = function() {
             // Guardar el tipo de servicio
             this.formData.servicio_tipo = servicio.tipo;
             
-            // Establecer modalidad por defecto según el tipo de servicio
+            // Establecer modalidad por defecto seg�n el tipo de servicio
             if (servicio.tipo === 'ambulancia') {
                 this.formData.modalidad = 'traslado'; // Ambulancia siempre es traslado
             } else if (servicio.tipo === 'laboratorio') {
                 this.formData.modalidad = 'domicilio'; // Laboratorio a domicilio
             } else if (servicio.tipo === 'enfermera') {
-                this.formData.modalidad = 'domicilio'; // Enfermería a domicilio
+                this.formData.modalidad = 'domicilio'; // Enfermer�a a domicilio
             }
-            // Para médico y veterinario, mantiene la modalidad que elija el usuario
+            // Para m�dico y veterinario, mantiene la modalidad que elija el usuario
             
-            // Buscar el servicio correcto según la modalidad actual
+            // Buscar el servicio correcto seg�n la modalidad actual
             const servicioConModalidad = this.servicios.find(s => 
                 s.tipo === servicio.tipo && 
                 s.modalidad === this.formData.modalidad && 
@@ -237,7 +243,7 @@ window.nuevaSolicitudApp = function() {
             this.formData.servicio_id = servicioFinal.id;
             this.servicioSeleccionado = servicioFinal;
             
-            // Si es médico, cargar especialidades disponibles
+            // Si es m�dico, cargar especialidades disponibles
             if (servicio.tipo === 'medico') {
                 await this.cargarEspecialidades('medico');
                 this.mostrarSelectorEspecialidad = true;
@@ -260,7 +266,7 @@ window.nuevaSolicitudApp = function() {
                 }
             } catch (error) {
                 console.error('Error:', error);
-                ToastNotification.error('Error de conexión al cargar especialidades');
+                ToastNotification.error('Error de conexi�n al cargar especialidades');
             }
         },
 
@@ -283,9 +289,9 @@ window.nuevaSolicitudApp = function() {
         async enviarSolicitud() {
             if (!this.validarFormulario()) return;
             
-            // Validar método de pago
+            // Validar m�todo de pago
             if (!this.formData.metodo_pago_preferido) {
-                ToastNotification.warning('Debes seleccionar un método de pago');
+                ToastNotification.warning('Debes seleccionar un m�todo de pago');
                 return;
             }
 
@@ -293,7 +299,7 @@ window.nuevaSolicitudApp = function() {
             try {
                 const token = localStorage.getItem('token');
                 
-                // Preparar fecha y hora según tipo de servicio
+                // Preparar fecha y hora seg�n tipo de servicio
                 let fechaHora = this.formData.fecha_programada;
                 if (this.formData.hora_programada) {
                     fechaHora += ` ${this.formData.hora_programada}:00`;
@@ -301,7 +307,7 @@ window.nuevaSolicitudApp = function() {
                     fechaHora += ' 00:00:00';
                 }
                 
-                // Preparar datos específicos del servicio
+                // Preparar datos espec�ficos del servicio
                 const payload = {
                     ...this.formData,
                     fecha_programada: fechaHora,
@@ -321,7 +327,7 @@ window.nuevaSolicitudApp = function() {
                 const data = await response.json();
                 
                 if (response.ok) {
-                    // Mostrar modal de éxito
+                    // Mostrar modal de �xito
                     this.mensajeExito = data.message;
                     this.esTransferencia = data.metodo_pago === 'transferencia';
                     this.datosTransferencia = data.datos_transferencia || null;
@@ -333,8 +339,8 @@ window.nuevaSolicitudApp = function() {
                     ToastNotification.error(errorMsg);
                 }
             } catch (error) {
-                console.error('Error de conexión:', error);
-                ToastNotification.error('Error de conexión con el servidor');
+                console.error('Error de conexi�n:', error);
+                ToastNotification.error('Error de conexi�n con el servidor');
             } finally {
                 this.loading = false;
             }
@@ -360,7 +366,7 @@ window.nuevaSolicitudApp = function() {
                     return false;
                 }
                 if (!this.formData.sintomas) {
-                    ToastNotification.warning('Describe los síntomas o motivo de consulta');
+                    ToastNotification.warning('Describe los s�ntomas o motivo de consulta');
                     return false;
                 }
             }
@@ -371,11 +377,11 @@ window.nuevaSolicitudApp = function() {
                     return false;
                 }
                 if (!this.formData.origen || !this.formData.destino) {
-                    ToastNotification.warning('Ingresa dirección de origen y destino');
+                    ToastNotification.warning('Ingresa direcci�n de origen y destino');
                     return false;
                 }
                 if (!this.formData.condicion_paciente) {
-                    ToastNotification.warning('Describe la condición del paciente');
+                    ToastNotification.warning('Describe la condici�n del paciente');
                     return false;
                 }
             }
@@ -386,11 +392,11 @@ window.nuevaSolicitudApp = function() {
                     return false;
                 }
                 if (!this.formData.tipo_cuidado || !this.formData.duracion_cantidad) {
-                    ToastNotification.warning('Completa tipo de cuidado y duración');
+                    ToastNotification.warning('Completa tipo de cuidado y duraci�n');
                     return false;
                 }
                 if (!this.formData.direccion_servicio) {
-                    ToastNotification.warning('Ingresa la dirección donde se prestará el servicio');
+                    ToastNotification.warning('Ingresa la direcci�n donde se prestar� el servicio');
                     return false;
                 }
             }
@@ -401,11 +407,11 @@ window.nuevaSolicitudApp = function() {
                     return false;
                 }
                 if (!this.formData.tipo_mascota || !this.formData.nombre_mascota) {
-                    ToastNotification.warning('Ingresa información de la mascota');
+                    ToastNotification.warning('Ingresa informaci�n de la mascota');
                     return false;
                 }
                 if (this.formData.modalidad === 'presencial' && !this.formData.direccion_servicio) {
-                    ToastNotification.warning('Ingresa la dirección para servicio a domicilio');
+                    ToastNotification.warning('Ingresa la direcci�n para servicio a domicilio');
                     return false;
                 }
             }
@@ -420,7 +426,7 @@ window.nuevaSolicitudApp = function() {
                     return false;
                 }
                 if (!this.formData.direccion_servicio) {
-                    ToastNotification.warning('Ingresa dirección para toma de muestras');
+                    ToastNotification.warning('Ingresa direcci�n para toma de muestras');
                     return false;
                 }
                 if (!this.formData.email_resultados) {
@@ -430,14 +436,14 @@ window.nuevaSolicitudApp = function() {
                 // Validar formato de email
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(this.formData.email_resultados)) {
-                    ToastNotification.error('El formato del email no es válido. Ejemplo: usuario@correo.com');
+                    ToastNotification.error('El formato del email no es v�lido. Ejemplo: usuario@correo.com');
                     return false;
                 }
             }
             
-            // Validación de teléfono (común)
+            // Validaci�n de tel�fono (com�n)
             if (!this.formData.telefono_contacto) {
-                ToastNotification.warning('Ingresa un teléfono de contacto');
+                ToastNotification.warning('Ingresa un tel�fono de contacto');
                 return false;
             }
             
@@ -454,7 +460,7 @@ window.nuevaSolicitudApp = function() {
 
         getFechaMinima() {
             const hoy = new Date();
-            hoy.setDate(hoy.getDate() + 1); // Mínimo mañana
+            hoy.setDate(hoy.getDate() + 1); // M�nimo ma�ana
             return hoy.toISOString().split('T')[0];
         }
     }
@@ -544,18 +550,18 @@ window.nuevaSolicitudApp = function() {
             <div class="flex items-center justify-center">
                 <div class="flex items-center">
                     <div class="flex items-center relative">
-                        <div :class="paso >= 1 ? 'bg-indigo-600' : 'bg-gray-300'" class="rounded-full h-10 w-10 flex items-center justify-center text-white font-semibold">1</div>
-                        <span class="ml-2 text-sm font-medium" :class="paso >= 1 ? 'text-indigo-600' : 'text-gray-500'">Servicio</span>
+                        <div :class="paso >= 1 ? 'gradient-bg' : 'bg-gray-300'" class="rounded-full h-10 w-10 flex items-center justify-center text-white font-semibold">1</div>
+                        <span class="ml-2 text-sm font-medium" :class="paso >= 1 ? 'text-teal-600' : 'text-gray-500'">Servicio</span>
                     </div>
-                    <div class="w-24 h-1 mx-4" :class="paso >= 2 ? 'bg-indigo-600' : 'bg-gray-300'"></div>
+                    <div class="w-24 h-1 mx-4" :class="paso >= 2 ? 'gradient-bg' : 'bg-gray-300'"></div>
                     <div class="flex items-center">
-                        <div :class="paso >= 2 ? 'bg-indigo-600' : 'bg-gray-300'" class="rounded-full h-10 w-10 flex items-center justify-center text-white font-semibold">2</div>
-                        <span class="ml-2 text-sm font-medium" :class="paso >= 2 ? 'text-indigo-600' : 'text-gray-500'">Detalles</span>
+                        <div :class="paso >= 2 ? 'gradient-bg' : 'bg-gray-300'" class="rounded-full h-10 w-10 flex items-center justify-center text-white font-semibold">2</div>
+                        <span class="ml-2 text-sm font-medium" :class="paso >= 2 ? 'text-teal-600' : 'text-gray-500'">Detalles</span>
                     </div>
-                    <div class="w-24 h-1 mx-4" :class="paso >= 3 ? 'bg-indigo-600' : 'bg-gray-300'"></div>
+                    <div class="w-24 h-1 mx-4" :class="paso >= 3 ? 'gradient-bg' : 'bg-gray-300'"></div>
                     <div class="flex items-center">
-                        <div :class="paso >= 3 ? 'bg-indigo-600' : 'bg-gray-300'" class="rounded-full h-10 w-10 flex items-center justify-center text-white font-semibold">3</div>
-                        <span class="ml-2 text-sm font-medium" :class="paso >= 3 ? 'text-indigo-600' : 'text-gray-500'">Confirmar</span>
+                        <div :class="paso >= 3 ? 'gradient-bg' : 'bg-gray-300'" class="rounded-full h-10 w-10 flex items-center justify-center text-white font-semibold">3</div>
+                        <span class="ml-2 text-sm font-medium" :class="paso >= 3 ? 'text-teal-600' : 'text-gray-500'">Confirmar</span>
                     </div>
                 </div>
             </div>
@@ -563,12 +569,12 @@ window.nuevaSolicitudApp = function() {
 
         <!-- Loading -->
         <div x-show="loading" class="flex justify-center py-12">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
         </div>
 
         <!-- Paso 1: Seleccionar Servicio -->
         <div x-show="paso === 1 && !loading && !mostrarSelectorEspecialidad">
-            <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">¿Qué tipo de servicio necesitas?</h2>
+            <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">�Qu� tipo de servicio necesitas?</h2>
             
             <!-- Mensaje cuando no hay servicios -->
             <div x-show="servicios.length === 0" class="mb-6 p-6 bg-yellow-50 border-2 border-yellow-200 rounded-xl max-w-2xl mx-auto">
@@ -579,17 +585,17 @@ window.nuevaSolicitudApp = function() {
                         </svg>
                     </div>
                     <div>
-                        <h3 class="text-lg font-bold text-yellow-900 mb-2">⚠️ No hay servicios disponibles</h3>
+                        <h3 class="text-lg font-bold text-yellow-900 mb-2">?? No hay servicios disponibles</h3>
                         <p class="text-yellow-800 mb-2">Actualmente no hay servicios registrados en el sistema.</p>
                         <p class="text-yellow-700 text-sm">Por favor, contacta con el administrador para que agregue los servicios disponibles.</p>
                     </div>
                 </div>
             </div>
             
-            <!-- Categorías principales - Grid compacto -->
+            <!-- Categor�as principales - Grid compacto -->
             <div class="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-3xl mx-auto"
                  :class="servicios.length === 0 ? 'opacity-50 pointer-events-none' : ''">
-                <!-- MÉDICOS -->
+                <!-- M�DICOS -->
                 <div @click="seleccionarServicio(obtenerServicioPorTipo('medico'))" 
                      class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200 border-2 border-transparent hover:border-blue-500">
                     <div class="flex flex-col items-center text-center">
@@ -598,12 +604,12 @@ window.nuevaSolicitudApp = function() {
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                             </svg>
                         </div>
-                        <h3 class="font-bold text-gray-900 text-lg mb-1">Médico</h3>
+                        <h3 class="font-bold text-gray-900 text-lg mb-1">M�dico</h3>
                         <p class="text-xs text-gray-600">Consulta especialista</p>
                     </div>
                 </div>
                 
-                <!-- ENFERMERÍA -->
+                <!-- ENFERMER�A -->
                 <div @click="seleccionarServicio(obtenerServicioPorTipo('enfermera'))" 
                      class="bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl p-6 cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200 border-2 border-transparent hover:border-pink-500">
                     <div class="flex flex-col items-center text-center">
@@ -612,7 +618,7 @@ window.nuevaSolicitudApp = function() {
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
                             </svg>
                         </div>
-                        <h3 class="font-bold text-gray-900 text-lg mb-1">Enfermería</h3>
+                        <h3 class="font-bold text-gray-900 text-lg mb-1">Enfermer�a</h3>
                         <p class="text-xs text-gray-600">Cuidados a domicilio</p>
                     </div>
                 </div>
@@ -627,7 +633,7 @@ window.nuevaSolicitudApp = function() {
                             </svg>
                         </div>
                         <h3 class="font-bold text-gray-900 text-lg mb-1">Ambulancia</h3>
-                        <p class="text-xs text-gray-600">Traslado médico</p>
+                        <p class="text-xs text-gray-600">Traslado m�dico</p>
                     </div>
                 </div>
                 
@@ -655,13 +661,13 @@ window.nuevaSolicitudApp = function() {
                             </svg>
                         </div>
                         <h3 class="font-bold text-gray-900 text-lg mb-1">Laboratorio</h3>
-                        <p class="text-xs text-gray-600">Exámenes a domicilio</p>
+                        <p class="text-xs text-gray-600">Ex�menes a domicilio</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Paso 1.5: Selector de Especialidad Médica -->
+        <!-- Paso 1.5: Selector de Especialidad M�dica -->
         <div x-show="mostrarSelectorEspecialidad && !loading">
             <div class="max-w-4xl mx-auto">
                 <!-- Breadcrumb -->
@@ -674,7 +680,7 @@ window.nuevaSolicitudApp = function() {
                     </button>
                 </div>
 
-                <h2 class="text-2xl font-bold text-gray-900 mb-3 text-center">¿Qué especialidad necesitas?</h2>
+                <h2 class="text-2xl font-bold text-gray-900 mb-3 text-center">�Qu� especialidad necesitas?</h2>
                 <p class="text-gray-600 text-center mb-8">Selecciona la especialidad que mejor se ajuste a tu necesidad</p>
                 
                 <!-- Grid de Especialidades -->
@@ -700,7 +706,7 @@ window.nuevaSolicitudApp = function() {
                     </template>
                 </div>
 
-                <!-- Opción de Medicina General -->
+                <!-- Opci�n de Medicina General -->
                 <div class="mt-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border-2 border-green-200">
                     <div class="flex items-start gap-3">
                         <div class="flex-shrink-0">
@@ -709,8 +715,8 @@ window.nuevaSolicitudApp = function() {
                             </svg>
                         </div>
                         <div class="flex-1">
-                            <h4 class="font-bold text-green-900 mb-1">¿No estás seguro de qué especialidad necesitas?</h4>
-                            <p class="text-sm text-green-800 mb-3">Un médico general puede evaluar tu caso y referirte a la especialidad correcta si es necesario.</p>
+                            <h4 class="font-bold text-green-900 mb-1">�No est�s seguro de qu� especialidad necesitas?</h4>
+                            <p class="text-sm text-green-800 mb-3">Un m�dico general puede evaluar tu caso y referirte a la especialidad correcta si es necesario.</p>
                             <button @click="seleccionarEspecialidad('Medicina General')" 
                                     class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium text-sm transition-colors">
                                 Continuar con Medicina General
@@ -719,22 +725,22 @@ window.nuevaSolicitudApp = function() {
                     </div>
                 </div>
 
-                <!-- Botón volver -->
+                <!-- Bot�n volver -->
                 <div class="mt-6 text-center">
                     <button @click="volverAServicios()" 
                             class="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors">
-                        ← Volver a Servicios
+                        ? Volver a Servicios
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Paso 2: Detalles y Programación -->
+        <!-- Paso 2: Detalles y Programaci�n -->
         <div x-show="paso === 2 && !loading">
             <h2 class="text-2xl font-bold text-gray-900 mb-6">Detalles del servicio</h2>
             <div class="bg-white rounded-lg shadow-sm p-6 space-y-6">
                 
-                <!-- MÉDICO ESPECIALISTA -->
+                <!-- M�DICO ESPECIALISTA -->
                 <template x-if="formData.servicio_tipo === 'medico'">
                     <div class="space-y-4">
                         <div class="bg-blue-50 border-l-4 border-blue-500 p-3 rounded flex items-center justify-between">
@@ -757,11 +763,11 @@ window.nuevaSolicitudApp = function() {
                                 <div class="grid grid-cols-2 gap-2">
                                     <label class="flex items-center justify-center p-2 border-2 rounded-lg cursor-pointer text-sm" :class="formData.rango_horario === 'manana' ? 'border-blue-500 bg-blue-50 font-semibold' : 'border-gray-300'">
                                         <input type="radio" x-model="formData.rango_horario" value="manana" class="sr-only">
-                                        <span>🌅 Mañana</span>
+                                        <span>?? Ma�ana</span>
                                     </label>
                                     <label class="flex items-center justify-center p-2 border-2 rounded-lg cursor-pointer text-sm" :class="formData.rango_horario === 'tarde' ? 'border-blue-500 bg-blue-50 font-semibold' : 'border-gray-300'">
                                         <input type="radio" x-model="formData.rango_horario" value="tarde" class="sr-only">
-                                        <span>🌆 Tarde</span>
+                                        <span>?? Tarde</span>
                                     </label>
                                 </div>
                             </div>
@@ -772,26 +778,26 @@ window.nuevaSolicitudApp = function() {
                             <div class="grid grid-cols-3 gap-3">
                                 <label class="flex items-center p-3 border-2 rounded-lg cursor-pointer" :class="formData.modalidad === 'virtual' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'">
                                     <input type="radio" x-model="formData.modalidad" value="virtual" @change="actualizarServicioPorModalidad()" class="mr-2">
-                                    <span class="text-sm">💻 Virtual</span>
+                                    <span class="text-sm">?? Virtual</span>
                                 </label>
                                 <label class="flex items-center p-3 border-2 rounded-lg cursor-pointer" :class="formData.modalidad === 'presencial' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'">
                                     <input type="radio" x-model="formData.modalidad" value="presencial" @change="actualizarServicioPorModalidad()" class="mr-2">
-                                    <span class="text-sm">🏠 Domicilio</span>
+                                    <span class="text-sm">?? Domicilio</span>
                                 </label>
                                 <label class="flex items-center p-3 border-2 rounded-lg cursor-pointer" :class="formData.modalidad === 'consultorio' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'">
                                     <input type="radio" x-model="formData.modalidad" value="consultorio" @change="actualizarServicioPorModalidad()" class="mr-2">
-                                    <span class="text-sm">🏥 Consultorio</span>
+                                    <span class="text-sm">?? Consultorio</span>
                                 </label>
                             </div>
                         </div>
                         
                         <div x-show="formData.modalidad === 'presencial'" x-transition>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Dirección *</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Direcci�n *</label>
                             <input type="text" x-model="formData.direccion_servicio" placeholder="Calle 123 #45-67, Apto 101" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Síntomas / Motivo *</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">S�ntomas / Motivo *</label>
                             <textarea x-model="formData.sintomas" rows="2" placeholder="Describe brevemente..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"></textarea>
                         </div>
                     </div>
@@ -806,15 +812,15 @@ window.nuevaSolicitudApp = function() {
                                 <label class="flex items-center p-3 border-2 rounded-lg cursor-pointer" :class="formData.tipo_ambulancia === 'basica' ? 'border-red-500 bg-red-50' : 'border-gray-300'">
                                     <input type="radio" x-model="formData.tipo_ambulancia" value="basica" class="sr-only">
                                     <div class="text-center w-full">
-                                        <div class="font-semibold text-sm">🚐 Básica</div>
-                                        <div class="text-xs text-gray-600">Traslado estándar</div>
+                                        <div class="font-semibold text-sm">?? B�sica</div>
+                                        <div class="text-xs text-gray-600">Traslado est�ndar</div>
                                     </div>
                                 </label>
                                 <label class="flex items-center p-3 border-2 rounded-lg cursor-pointer" :class="formData.tipo_ambulancia === 'medicalizada' ? 'border-red-500 bg-red-50' : 'border-gray-300'">
                                     <input type="radio" x-model="formData.tipo_ambulancia" value="medicalizada" class="sr-only">
                                     <div class="text-center w-full">
-                                        <div class="font-semibold text-sm">🚑 Medicalizada</div>
-                                        <div class="text-xs text-gray-600">Con equipo médico</div>
+                                        <div class="font-semibold text-sm">?? Medicalizada</div>
+                                        <div class="text-xs text-gray-600">Con equipo m�dico</div>
                                     </div>
                                 </label>
                             </div>
@@ -836,33 +842,33 @@ window.nuevaSolicitudApp = function() {
                             <div class="grid grid-cols-2 gap-3">
                                 <label class="flex items-center justify-center p-3 border-2 rounded-lg cursor-pointer text-sm" :class="formData.tipo_emergencia === 'programado' ? 'border-red-500 bg-red-50 font-semibold' : 'border-gray-300'">
                                     <input type="radio" x-model="formData.tipo_emergencia" value="programado" class="sr-only">
-                                    <span>📅 Programado</span>
+                                    <span>?? Programado</span>
                                 </label>
                                 <label class="flex items-center justify-center p-3 border-2 rounded-lg cursor-pointer text-sm" :class="formData.tipo_emergencia === 'urgente' ? 'border-red-600 bg-red-100 font-bold text-red-700' : 'border-gray-300'">
                                     <input type="radio" x-model="formData.tipo_emergencia" value="urgente" class="sr-only">
-                                    <span>🚨 Urgente</span>
+                                    <span>?? Urgente</span>
                                 </label>
                             </div>
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">📍 Origen (recogida) *</label>
-                            <input type="text" x-model="formData.origen" placeholder="Dirección de recogida" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 text-sm">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">?? Origen (recogida) *</label>
+                            <input type="text" x-model="formData.origen" placeholder="Direcci�n de recogida" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 text-sm">
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">🏥 Destino (entrega) *</label>
-                            <input type="text" x-model="formData.destino" placeholder="Hospital o clínica" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 text-sm">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">?? Destino (entrega) *</label>
+                            <input type="text" x-model="formData.destino" placeholder="Hospital o cl�nica" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 text-sm">
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Condición del paciente *</label>
-                            <textarea x-model="formData.condicion_paciente" rows="2" placeholder="Estable, requiere oxígeno, crítico..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 text-sm"></textarea>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Condici�n del paciente *</label>
+                            <textarea x-model="formData.condicion_paciente" rows="2" placeholder="Estable, requiere ox�geno, cr�tico..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 text-sm"></textarea>
                         </div>
                         
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Acompañantes</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Acompa�antes</label>
                                 <input type="number" x-model="formData.numero_acompanantes" min="0" max="2" placeholder="0-2" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 text-sm">
                             </div>
                             <div>
@@ -873,20 +879,20 @@ window.nuevaSolicitudApp = function() {
                     </div>
                 </template>
 
-                <!-- ENFERMERÍA -->
+                <!-- ENFERMER�A -->
                 <template x-if="formData.servicio_tipo === 'enfermera'">
                     <div class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de cuidado *</label>
                             <select x-model="formData.tipo_cuidado" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 text-sm">
                                 <option value="">Selecciona</option>
-                                <option value="cuidado_general">💊 Cuidado general</option>
-                                <option value="inyecciones">💉 Inyecciones</option>
-                                <option value="curaciones">🩹 Curaciones</option>
-                                <option value="postoperatorio">🏥 Post-operatorio</option>
-                                <option value="sondas">🔬 Manejo de sondas</option>
-                                <option value="geriatrico">👴 Geriátrico</option>
-                                <option value="pediatrico">👶 Pediátrico</option>
+                                <option value="cuidado_general">?? Cuidado general</option>
+                                <option value="inyecciones">?? Inyecciones</option>
+                                <option value="curaciones">?? Curaciones</option>
+                                <option value="postoperatorio">?? Post-operatorio</option>
+                                <option value="sondas">?? Manejo de sondas</option>
+                                <option value="geriatrico">?? Geri�trico</option>
+                                <option value="pediatrico">?? Pedi�trico</option>
                             </select>
                         </div>
                         
@@ -907,17 +913,17 @@ window.nuevaSolicitudApp = function() {
                             <div x-show="formData.intensidad_horaria === '12h'" x-transition>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Turno</label>
                                 <select x-model="formData.turno" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 text-sm">
-                                    <option value="diurno">☀️ Diurno</option>
-                                    <option value="nocturno">🌙 Nocturno</option>
+                                    <option value="diurno">?? Diurno</option>
+                                    <option value="nocturno">?? Nocturno</option>
                                 </select>
                             </div>
                         </div>
                         
                         <div class="grid grid-cols-3 gap-3">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Duración *</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Duraci�n *</label>
                                 <select x-model="formData.duracion_tipo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 text-sm">
-                                    <option value="dias">Días</option>
+                                    <option value="dias">D�as</option>
                                     <option value="semanas">Semanas</option>
                                     <option value="meses">Meses</option>
                                 </select>
@@ -927,11 +933,11 @@ window.nuevaSolicitudApp = function() {
                                 <input type="number" x-model="formData.duracion_cantidad" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 text-sm">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Género</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">G�nero</label>
                                 <select x-model="formData.genero_preferido" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 text-sm">
                                     <option value="indistinto">Indistinto</option>
-                                    <option value="femenino">♀ Femenino</option>
-                                    <option value="masculino">♂ Masculino</option>
+                                    <option value="femenino">? Femenino</option>
+                                    <option value="masculino">? Masculino</option>
                                 </select>
                             </div>
                         </div>
@@ -942,14 +948,14 @@ window.nuevaSolicitudApp = function() {
                                 <input type="date" x-model="formData.fecha_programada" :min="getFechaMinima()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 text-sm">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Dirección *</label>
-                                <input type="text" x-model="formData.direccion_servicio" placeholder="Dirección" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 text-sm">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Direcci�n *</label>
+                                <input type="text" x-model="formData.direccion_servicio" placeholder="Direcci�n" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 text-sm">
                             </div>
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Condición del paciente</label>
-                            <textarea x-model="formData.condicion_paciente_detalle" rows="2" placeholder="Movilidad, condiciones médicas..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 text-sm"></textarea>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Condici�n del paciente</label>
+                            <textarea x-model="formData.condicion_paciente_detalle" rows="2" placeholder="Movilidad, condiciones m�dicas..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 text-sm"></textarea>
                         </div>
                     </div>
                 </template>
@@ -962,11 +968,11 @@ window.nuevaSolicitudApp = function() {
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Tipo mascota *</label>
                                 <select x-model="formData.tipo_mascota" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm">
                                     <option value="">Selecciona</option>
-                                    <option value="perro">🐕 Perro</option>
-                                    <option value="gato">🐈 Gato</option>
-                                    <option value="ave">🦜 Ave</option>
-                                    <option value="conejo">🐰 Conejo</option>
-                                    <option value="otro">🐾 Otro</option>
+                                    <option value="perro">?? Perro</option>
+                                    <option value="gato">?? Gato</option>
+                                    <option value="ave">?? Ave</option>
+                                    <option value="conejo">?? Conejo</option>
+                                    <option value="otro">?? Otro</option>
                                 </select>
                             </div>
                             <div>
@@ -975,7 +981,7 @@ window.nuevaSolicitudApp = function() {
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Edad / Raza</label>
-                                <input type="text" x-model="formData.edad_mascota" placeholder="3 años / Labrador" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm">
+                                <input type="text" x-model="formData.edad_mascota" placeholder="3 a�os / Labrador" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm">
                             </div>
                         </div>
                         
@@ -983,12 +989,12 @@ window.nuevaSolicitudApp = function() {
                             <label class="block text-sm font-medium text-gray-700 mb-1">Motivo de consulta *</label>
                             <select x-model="formData.motivo_veterinario" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm">
                                 <option value="">Selecciona</option>
-                                <option value="vacunacion">💉 Vacunación</option>
-                                <option value="revision">🔍 Revisión general</option>
-                                <option value="enfermedad">🤒 Enfermedad</option>
-                                <option value="emergencia">🚨 Emergencia</option>
-                                <option value="cirugia">⚕️ Cirugía</option>
-                                <option value="desparasitacion">💊 Desparasitación</option>
+                                <option value="vacunacion">?? Vacunaci�n</option>
+                                <option value="revision">?? Revisi�n general</option>
+                                <option value="enfermedad">?? Enfermedad</option>
+                                <option value="emergencia">?? Emergencia</option>
+                                <option value="cirugia">?? Cirug�a</option>
+                                <option value="desparasitacion">?? Desparasitaci�n</option>
                             </select>
                         </div>
                         
@@ -1002,24 +1008,24 @@ window.nuevaSolicitudApp = function() {
                                 <div class="grid grid-cols-2 gap-2">
                                     <label class="flex items-center justify-center p-2 border-2 rounded-lg cursor-pointer text-sm" :class="formData.rango_horario === 'manana' ? 'border-green-500 bg-green-50 font-semibold' : 'border-gray-300'">
                                         <input type="radio" x-model="formData.rango_horario" value="manana" class="sr-only">
-                                        <span>🌅 AM</span>
+                                        <span>?? AM</span>
                                     </label>
                                     <label class="flex items-center justify-center p-2 border-2 rounded-lg cursor-pointer text-sm" :class="formData.rango_horario === 'tarde' ? 'border-green-500 bg-green-50 font-semibold' : 'border-gray-300'">
                                         <input type="radio" x-model="formData.rango_horario" value="tarde" class="sr-only">
-                                        <span>🌆 PM</span>
+                                        <span>?? PM</span>
                                     </label>
                                 </div>
                             </div>
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Dirección *</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Direcci�n *</label>
                             <input type="text" x-model="formData.direccion_servicio" placeholder="Calle 123 #45-67" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm">
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Síntomas (si aplica)</label>
-                            <textarea x-model="formData.sintomas" rows="2" placeholder="Describe los síntomas de la mascota..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm"></textarea>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">S�ntomas (si aplica)</label>
+                            <textarea x-model="formData.sintomas" rows="2" placeholder="Describe los s�ntomas de la mascota..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm"></textarea>
                         </div>
                     </div>
                 </template>
@@ -1028,7 +1034,7 @@ window.nuevaSolicitudApp = function() {
                 <template x-if="formData.servicio_tipo === 'laboratorio'">
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Exámenes solicitados * <span class="text-xs text-purple-600" x-text="'(' + formData.examenes_solicitados.length + ' seleccionados)'"></span></label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Ex�menes solicitados * <span class="text-xs text-purple-600" x-text="'(' + formData.examenes_solicitados.length + ' seleccionados)'"></span></label>
                             <div class="grid grid-cols-2 md:grid-cols-3 gap-2 border border-gray-300 rounded-lg p-3 max-h-48 overflow-y-auto">
                                 <template x-for="examen in examenesDisponibles" :key="examen">
                                     <label class="flex items-center p-2 hover:bg-purple-50 rounded cursor-pointer text-sm">
@@ -1060,24 +1066,24 @@ window.nuevaSolicitudApp = function() {
                                            :class="{'border-red-500 bg-red-50': formData.email_resultados && !validarFormatoEmail(formData.email_resultados), 'border-green-500 bg-green-50': formData.email_resultados && validarFormatoEmail(formData.email_resultados)}"
                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm pr-10">
                                     <span x-show="formData.email_resultados && validarFormatoEmail(formData.email_resultados)" 
-                                          class="absolute right-3 top-1/2 -translate-y-1/2 text-green-600">✓</span>
+                                          class="absolute right-3 top-1/2 -translate-y-1/2 text-green-600">?</span>
                                     <span x-show="formData.email_resultados && !validarFormatoEmail(formData.email_resultados)" 
-                                          class="absolute right-3 top-1/2 -translate-y-1/2 text-red-600">✗</span>
+                                          class="absolute right-3 top-1/2 -translate-y-1/2 text-red-600">?</span>
                                 </div>
                                 <p x-show="formData.email_resultados && !validarFormatoEmail(formData.email_resultados)" 
-                                   class="text-xs text-red-600 mt-1">Formato inválido. Ej: usuario@correo.com</p>
+                                   class="text-xs text-red-600 mt-1">Formato inv�lido. Ej: usuario@correo.com</p>
                             </div>
                         </div>
                         
                         <div>
                             <label class="flex items-center space-x-2 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
                                 <input type="checkbox" x-model="formData.requiere_ayuno" class="w-4 h-4">
-                                <span class="text-sm">⚠️ <strong>Requiere ayuno</strong> (8-12 horas)</span>
+                                <span class="text-sm">?? <strong>Requiere ayuno</strong> (8-12 horas)</span>
                             </label>
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Dirección para toma de muestras *</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Direcci�n para toma de muestras *</label>
                             <input type="text" x-model="formData.direccion_servicio" placeholder="Calle 123 #45-67, Apto 101" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 text-sm">
                         </div>
                     </div>
@@ -1085,25 +1091,25 @@ window.nuevaSolicitudApp = function() {
 
                 <!-- Campos comunes a todos -->
                 <div class="border-t pt-4 space-y-3">
-                    <h3 class="font-semibold text-gray-900 text-sm">Información de contacto</h3>
+                    <h3 class="font-semibold text-gray-900 text-sm">Informaci�n de contacto</h3>
                     
                     <div class="grid grid-cols-3 gap-3">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono *</label>
-                            <input type="tel" x-model="formData.telefono_contacto" placeholder="3001234567" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tel�fono *</label>
+                            <input type="tel" x-model="formData.telefono_contacto" placeholder="3001234567" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-sm">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Urgencia</label>
-                            <select x-model="formData.urgencia" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm">
-                                <option value="normal">⏱️ Normal</option>
-                                <option value="urgente">🚨 Urgente</option>
+                            <select x-model="formData.urgencia" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-sm">
+                                <option value="normal">?? Normal</option>
+                                <option value="urgente">?? Urgente</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Método pago *</label>
-                            <select x-model="formData.metodo_pago_preferido" @change="formData.metodo_pago_preferido === 'transferencia' && (paso3_mostrar_instrucciones = true)" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">M�todo pago *</label>
+                            <select x-model="formData.metodo_pago_preferido" @change="formData.metodo_pago_preferido === 'transferencia' && (paso3_mostrar_instrucciones = true)" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-sm">
                                 <option value="">Selecciona</option>
-                                <option value="transferencia">🏦 Transferencia (Requiere confirmación)</option>
+                                <option value="transferencia">?? Transferencia (Requiere confirmaci�n)</option>
                             </select>
                         </div>
                     </div>
@@ -1119,14 +1125,14 @@ window.nuevaSolicitudApp = function() {
                             <div class="ml-3">
                                 <h3 class="text-sm font-medium text-yellow-800">Pago por transferencia</h3>
                                 <div class="mt-2 text-sm text-yellow-700">
-                                    <p class="mb-2">Al confirmar, deberás:</p>
+                                    <p class="mb-2">Al confirmar, deber�s:</p>
                                     <ol class="list-decimal list-inside space-y-1 ml-2">
                                         <li>Realizar la transferencia a la cuenta indicada</li>
                                         <li>Enviar captura de pantalla al WhatsApp: <strong>+57 300 123 4567</strong></li>
-                                        <li>Esperar confirmación del administrador</li>
-                                        <li>El profesional aceptará tu solicitud una vez confirmado el pago</li>
+                                        <li>Esperar confirmaci�n del administrador</li>
+                                        <li>El profesional aceptar� tu solicitud una vez confirmado el pago</li>
                                     </ol>
-                                    <p class="mt-2 text-xs">⏱️ Tiempo estimado de confirmación: 1-2 horas en horario hábil</p>
+                                    <p class="mt-2 text-xs">?? Tiempo estimado de confirmaci�n: 1-2 horas en horario h�bil</p>
                                 </div>
                             </div>
                         </div>
@@ -1136,32 +1142,32 @@ window.nuevaSolicitudApp = function() {
                 <!-- Botones -->
                 <div class="flex justify-between pt-4 border-t">
                     <button @click="paso = 1" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-                        Atrás
+                        Atr�s
                     </button>
-                    <button @click="paso = 3" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                        Continuar a confirmación
+                    <button @click="paso = 3" class="px-6 py-2 gradient-bg text-white rounded-lg hover:opacity-90">
+                        Continuar a confirmaci�n
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Paso 3: Confirmación -->
+        <!-- Paso 3: Confirmaci�n -->
         <div x-show="paso === 3 && !loading">
             <h2 class="text-2xl font-bold text-gray-900 mb-6">Confirma tu solicitud</h2>
             <div class="bg-white rounded-lg shadow-sm p-6 space-y-4">
                 <!-- Servicio y Precio -->
                 <div class="border-b pb-4">
-                    <h3 class="font-semibold text-gray-900 mb-2">📋 Servicio</h3>
+                    <h3 class="font-semibold text-gray-900 mb-2">?? Servicio</h3>
                     <p class="text-gray-700" x-text="servicioSeleccionado?.nombre"></p>
                     <p x-show="formData.especialidad_solicitada" class="text-sm text-purple-600 mt-1">
                         Especialidad: <span x-text="formData.especialidad_solicitada"></span>
                     </p>
-                    <p class="text-2xl font-bold text-indigo-600 mt-2">$<span x-text="parseInt(servicioSeleccionado?.precio_base || 0).toLocaleString('es-CO')"></span></p>
+                    <p class="text-2xl font-bold text-teal-600 mt-2">$<span x-text="parseInt(servicioSeleccionado?.precio_base || 0).toLocaleString('es-CO')"></span></p>
                 </div>
 
-                <!-- Detalles según tipo de servicio -->
+                <!-- Detalles seg�n tipo de servicio -->
                 <div class="border-b pb-4">
-                    <h3 class="font-semibold text-gray-900 mb-2">📅 Detalles de la Cita</h3>
+                    <h3 class="font-semibold text-gray-900 mb-2">?? Detalles de la Cita</h3>
                     
                     <!-- Fecha y hora/horario -->
                     <p class="text-sm text-gray-600">
@@ -1170,21 +1176,21 @@ window.nuevaSolicitudApp = function() {
                             <span> a las <span x-text="formData.hora_programada"></span></span>
                         </template>
                         <template x-if="formData.rango_horario && !formData.hora_programada">
-                            <span> - <span x-text="formData.rango_horario === 'manana' ? 'Mañana' : formData.rango_horario === 'tarde' ? 'Tarde' : 'Noche'"></span></span>
+                            <span> - <span x-text="formData.rango_horario === 'manana' ? 'Ma�ana' : formData.rango_horario === 'tarde' ? 'Tarde' : 'Noche'"></span></span>
                         </template>
                     </p>
                     
-                    <p class="text-sm text-gray-600"><strong>Modalidad:</strong> <span x-text="formData.modalidad === 'traslado' ? '🚑 Traslado' : formData.modalidad === 'domicilio' ? '🏠 Domicilio' : formData.modalidad === 'virtual' ? '💻 Virtual' : '🏢 Consultorio'"></span></p>
-                    <p x-show="formData.direccion_servicio" class="text-sm text-gray-600"><strong>📍 Dirección:</strong> <span x-text="formData.direccion_servicio"></span></p>
-                    <p class="text-sm text-gray-600"><strong>📞 Teléfono:</strong> <span x-text="formData.telefono_contacto"></span></p>
+                    <p class="text-sm text-gray-600"><strong>Modalidad:</strong> <span x-text="formData.modalidad === 'traslado' ? '?? Traslado' : formData.modalidad === 'domicilio' ? '?? Domicilio' : formData.modalidad === 'virtual' ? '?? Virtual' : '?? Consultorio'"></span></p>
+                    <p x-show="formData.direccion_servicio" class="text-sm text-gray-600"><strong>?? Direcci�n:</strong> <span x-text="formData.direccion_servicio"></span></p>
+                    <p class="text-sm text-gray-600"><strong>?? Tel�fono:</strong> <span x-text="formData.telefono_contacto"></span></p>
                 </div>
 
-                <!-- Detalles específicos por tipo de servicio -->
+                <!-- Detalles espec�ficos por tipo de servicio -->
                 <div class="border-b pb-4">
-                    <!-- MÉDICO -->
+                    <!-- M�DICO -->
                     <template x-if="formData.servicio_tipo === 'medico'">
                         <div>
-                            <h3 class="font-semibold text-gray-900 mb-2">🩺 Motivo de Consulta</h3>
+                            <h3 class="font-semibold text-gray-900 mb-2">?? Motivo de Consulta</h3>
                             <p class="text-sm text-gray-600" x-text="formData.sintomas || 'No especificado'"></p>
                         </div>
                     </template>
@@ -1192,59 +1198,59 @@ window.nuevaSolicitudApp = function() {
                     <!-- AMBULANCIA -->
                     <template x-if="formData.servicio_tipo === 'ambulancia'">
                         <div>
-                            <h3 class="font-semibold text-gray-900 mb-2">🚑 Detalles del Traslado</h3>
+                            <h3 class="font-semibold text-gray-900 mb-2">?? Detalles del Traslado</h3>
                             <p class="text-sm text-gray-600"><strong>Tipo:</strong> <span class="capitalize" x-text="formData.tipo_ambulancia"></span></p>
                             <p class="text-sm text-gray-600"><strong>Origen:</strong> <span x-text="formData.origen"></span></p>
                             <p class="text-sm text-gray-600"><strong>Destino:</strong> <span x-text="formData.destino"></span></p>
-                            <p class="text-sm text-gray-600"><strong>Condición paciente:</strong> <span x-text="formData.condicion_paciente"></span></p>
-                            <p x-show="formData.numero_acompanantes > 0" class="text-sm text-gray-600"><strong>Acompañantes:</strong> <span x-text="formData.numero_acompanantes"></span></p>
+                            <p class="text-sm text-gray-600"><strong>Condici�n paciente:</strong> <span x-text="formData.condicion_paciente"></span></p>
+                            <p x-show="formData.numero_acompanantes > 0" class="text-sm text-gray-600"><strong>Acompa�antes:</strong> <span x-text="formData.numero_acompanantes"></span></p>
                         </div>
                     </template>
                     
-                    <!-- ENFERMERÍA -->
+                    <!-- ENFERMER�A -->
                     <template x-if="formData.servicio_tipo === 'enfermera'">
                         <div>
-                            <h3 class="font-semibold text-gray-900 mb-2">💊 Detalles del Cuidado</h3>
+                            <h3 class="font-semibold text-gray-900 mb-2">?? Detalles del Cuidado</h3>
                             <p class="text-sm text-gray-600"><strong>Tipo:</strong> <span x-text="formData.tipo_cuidado?.replace('_', ' ')"></span></p>
                             <p class="text-sm text-gray-600"><strong>Intensidad:</strong> <span x-text="formData.intensidad_horaria"></span><template x-if="formData.intensidad_horaria === '12h'"> - Turno <span x-text="formData.turno"></span></template></p>
-                            <p class="text-sm text-gray-600"><strong>Duración:</strong> <span x-text="formData.duracion_cantidad"></span> <span x-text="formData.duracion_tipo"></span></p>
-                            <p x-show="formData.condicion_paciente_detalle" class="text-sm text-gray-600"><strong>Condición:</strong> <span x-text="formData.condicion_paciente_detalle"></span></p>
+                            <p class="text-sm text-gray-600"><strong>Duraci�n:</strong> <span x-text="formData.duracion_cantidad"></span> <span x-text="formData.duracion_tipo"></span></p>
+                            <p x-show="formData.condicion_paciente_detalle" class="text-sm text-gray-600"><strong>Condici�n:</strong> <span x-text="formData.condicion_paciente_detalle"></span></p>
                         </div>
                     </template>
                     
                     <!-- VETERINARIA -->
                     <template x-if="formData.servicio_tipo === 'veterinario'">
                         <div>
-                            <h3 class="font-semibold text-gray-900 mb-2">🐾 Datos de la Mascota</h3>
+                            <h3 class="font-semibold text-gray-900 mb-2">?? Datos de la Mascota</h3>
                             <p class="text-sm text-gray-600"><strong>Mascota:</strong> <span x-text="formData.nombre_mascota"></span> (<span x-text="formData.tipo_mascota"></span>)</p>
                             <p x-show="formData.edad_mascota" class="text-sm text-gray-600"><strong>Edad/Raza:</strong> <span x-text="formData.edad_mascota"></span></p>
                             <p class="text-sm text-gray-600"><strong>Motivo:</strong> <span x-text="formData.motivo_veterinario"></span></p>
-                            <p x-show="formData.sintomas" class="text-sm text-gray-600"><strong>Síntomas:</strong> <span x-text="formData.sintomas"></span></p>
+                            <p x-show="formData.sintomas" class="text-sm text-gray-600"><strong>S�ntomas:</strong> <span x-text="formData.sintomas"></span></p>
                         </div>
                     </template>
                     
                     <!-- LABORATORIO -->
                     <template x-if="formData.servicio_tipo === 'laboratorio'">
                         <div>
-                            <h3 class="font-semibold text-gray-900 mb-2">🔬 Exámenes Solicitados</h3>
+                            <h3 class="font-semibold text-gray-900 mb-2">?? Ex�menes Solicitados</h3>
                             <div class="flex flex-wrap gap-1 mb-2">
                                 <template x-for="examen in formData.examenes_solicitados" :key="examen">
                                     <span class="inline-block bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded" x-text="examen"></span>
                                 </template>
                             </div>
-                            <p x-show="formData.requiere_ayuno" class="text-sm text-orange-600">⚠️ Requiere ayuno</p>
+                            <p x-show="formData.requiere_ayuno" class="text-sm text-orange-600">?? Requiere ayuno</p>
                             <p class="text-sm text-gray-600"><strong>Email resultados:</strong> <span x-text="formData.email_resultados"></span></p>
                         </div>
                     </template>
                 </div>
                 
-                <!-- Método de Pago -->
+                <!-- M�todo de Pago -->
                 <div class="border-b pb-4">
-                    <h3 class="font-semibold text-gray-900 mb-2">💳 Método de Pago</h3>
+                    <h3 class="font-semibold text-gray-900 mb-2">?? M�todo de Pago</h3>
                     <div x-show="formData.metodo_pago_preferido === 'transferencia'" class="space-y-2">
-                        <p class="text-sm text-gray-600">🏦 <strong>Transferencia Bancaria</strong></p>
+                        <p class="text-sm text-gray-600">?? <strong>Transferencia Bancaria</strong></p>
                         <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
-                            <p class="text-xs font-semibold text-blue-900 mb-2">📋 Datos para transferencia:</p>
+                            <p class="text-xs font-semibold text-blue-900 mb-2">?? Datos para transferencia:</p>
                             <template x-if="configPagos">
                                 <div>
                                     <p class="text-xs text-blue-800">Banco: <strong x-text="configPagos.banco_nombre || 'Bancolombia'"></strong></p>
@@ -1258,30 +1264,30 @@ window.nuevaSolicitudApp = function() {
                             </template>
                         </div>
                         <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-2">
-                            <p class="text-xs font-semibold text-yellow-900 mb-1">⚠️ Importante:</p>
-                            <p class="text-xs text-yellow-800">Después de confirmar, sube tu comprobante desde <strong>"Mis Solicitudes"</strong>.</p>
-                            <p class="text-xs text-yellow-800 mt-1">Tu solicitud quedará en estado <strong>"Pendiente de Pago"</strong> hasta confirmar.</p>
+                            <p class="text-xs font-semibold text-yellow-900 mb-1">?? Importante:</p>
+                            <p class="text-xs text-yellow-800">Despu�s de confirmar, sube tu comprobante desde <strong>"Mis Solicitudes"</strong>.</p>
+                            <p class="text-xs text-yellow-800 mt-1">Tu solicitud quedar� en estado <strong>"Pendiente de Pago"</strong> hasta confirmar.</p>
                         </div>
                     </div>
                     <div x-show="formData.metodo_pago_preferido === 'efectivo'" class="text-sm text-gray-600">
-                        💵 <strong>Pago en Efectivo</strong> - Pagarás directamente al profesional
+                        ?? <strong>Pago en Efectivo</strong> - Pagar�s directamente al profesional
                     </div>
                 </div>
 
                 <!-- Botones -->
                 <div class="flex justify-between pt-4">
                     <button @click="paso = 2" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-                        Atrás
+                        Atr�s
                     </button>
                     <button @click="enviarSolicitud()" :disabled="loading" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">
-                        <span x-show="!loading">✅ Confirmar Solicitud</span>
+                        <span x-show="!loading">? Confirmar Solicitud</span>
                         <span x-show="loading">Procesando...</span>
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Modal de Éxito -->
+        <!-- Modal de �xito -->
         <div x-show="mostrarModalExito" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background-color: rgba(0,0,0,0.5);">
             <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all"
                  x-show="mostrarModalExito"
@@ -1289,14 +1295,14 @@ window.nuevaSolicitudApp = function() {
                  x-transition:enter-start="opacity-0 scale-90"
                  x-transition:enter-end="opacity-100 scale-100">
                 
-                <!-- Header con ícono -->
+                <!-- Header con �cono -->
                 <div class="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-8 text-center">
                     <div class="mx-auto w-20 h-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-lg">
                         <svg class="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
                     </div>
-                    <h2 class="text-2xl font-bold text-white">¡Solicitud Creada!</h2>
+                    <h2 class="text-2xl font-bold text-white">�Solicitud Creada!</h2>
                 </div>
                 
                 <!-- Contenido -->
@@ -1314,7 +1320,7 @@ window.nuevaSolicitudApp = function() {
                                 </div>
                                 <div>
                                     <h4 class="font-semibold text-blue-900 mb-1">Siguiente paso:</h4>
-                                    <p class="text-sm text-blue-800">Realiza la transferencia según los datos bancarios mostrados y sube tu comprobante desde <strong>"Mis Solicitudes"</strong>.</p>
+                                    <p class="text-sm text-blue-800">Realiza la transferencia seg�n los datos bancarios mostrados y sube tu comprobante desde <strong>"Mis Solicitudes"</strong>.</p>
                                 </div>
                             </div>
                         </div>

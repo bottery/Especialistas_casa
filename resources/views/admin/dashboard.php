@@ -1,12 +1,16 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Administrador - Especialistas en Casa</title>
+    <title>Panel Administrador - VitaHome</title>
+    <link rel="icon" type="image/svg+xml" href="<?= asset('/images/vitahome-icon.svg') ?>">
     <script>const BASE_URL = '<?= rtrim(BASE_URL, "/") ?>';</script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="<?= url('/css/vitahome-brand.css') ?>">
     <style>
+        .gradient-bg { background: linear-gradient(135deg, #14b8a6 0%, #1e3a5f 100%); }
+        .gradient-text { background: linear-gradient(135deg, #14b8a6 0%, #1e3a5f 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
         @keyframes slide-in {
             from {
                 transform: translateX(100%);
@@ -21,12 +25,12 @@
             animation: slide-in 0.3s ease-out;
         }
         
-        /* Estilos para las pestañas */
+        /* Estilos para las pesta�as */
         [x-cloak] { 
             display: none !important; 
         }
         
-        /* Animación de entrada de tabs */
+        /* Animaci�n de entrada de tabs */
         .tab-content-enter {
             animation: fadeIn 0.3s ease-in;
         }
@@ -42,7 +46,7 @@
             }
         }
         
-        /* Mejora visual de las pestañas activas */
+        /* Mejora visual de las pesta�as activas */
         .tab-active {
             position: relative;
         }
@@ -92,8 +96,9 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
-                    <a href="<?= url('/admin/dashboard') ?>" class="text-2xl font-bold text-blue-600">
-                        🏥 Admin Panel
+                    <a href="<?= url('/admin/dashboard') ?>" class="flex items-center space-x-3">
+                        <img src="<?= asset('/images/vitahome-icon.svg') ?>" alt="VitaHome" class="h-10 w-10">
+                        <span class="text-xl font-bold gradient-text">VitaHome Admin</span>
                     </a>
                 </div>
                 <div class="flex items-center space-x-4">
@@ -110,7 +115,7 @@
                     </div>
                     
                     <!-- Toggle Dark Mode -->
-                    <button @click="window.darkMode.toggle()" class="p-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition" title="Cambiar tema">
+                    <button @click="window.darkMode.toggle()" class="p-2 text-gray-600 dark:text-gray-300 hover:text-teal-600 dark:hover:text-blue-400 transition" title="Cambiar tema">
                         <svg x-show="!window.darkMode.isDark()" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
                         </svg>
@@ -121,16 +126,16 @@
                     
                     <span class="text-gray-700 dark:text-gray-300 font-medium"><?= htmlspecialchars($_SESSION['user']->nombre ?? '') ?></span>
                     <button @click="logout()" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition">
-                        Cerrar Sesión
+                        Cerrar Sesi�n
                     </button>
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- Estadísticas -->
+    <!-- Estad�sticas -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Skeletons para estadísticas -->
+        <!-- Skeletons para estad�sticas -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" x-show="loading">
             <div class="skeleton-stat-card"></div>
             <div class="skeleton-stat-card"></div>
@@ -139,11 +144,11 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" x-show="!loading">
-            <!-- Pendientes Asignación -->
+            <!-- Pendientes Asignaci�n -->
             <div class="bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl shadow-lg p-6 text-white">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-yellow-100 text-sm font-medium">Pendientes Asignación</p>
+                        <p class="text-yellow-100 text-sm font-medium">Pendientes Asignaci�n</p>
                         <p class="text-3xl font-bold mt-2" x-text="stats.pendientes_asignacion">0</p>
                     </div>
                     <div class="bg-white/20 p-3 rounded-lg">
@@ -200,26 +205,26 @@
             </div>
         </div>
 
-        <!-- Gráficas de Estadísticas -->
+        <!-- Gr�ficas de Estad�sticas -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <!-- Gráfica de Solicitudes por Día -->
+            <!-- Gr�fica de Solicitudes por D�a -->
             <div class="bg-white rounded-xl shadow-lg p-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">📊 Solicitudes por Día</h3>
+                <h3 class="text-lg font-bold text-gray-800 mb-4">?? Solicitudes por D�a</h3>
                 <div style="height: 250px;">
                     <canvas id="solicitudesChart"></canvas>
                 </div>
             </div>
 
-            <!-- Gráfica de Servicios Más Solicitados -->
+            <!-- Gr�fica de Servicios M�s Solicitados -->
             <div class="bg-white rounded-xl shadow-lg p-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">🎯 Servicios Más Solicitados</h3>
+                <h3 class="text-lg font-bold text-gray-800 mb-4">?? Servicios M�s Solicitados</h3>
                 <div style="height: 250px;">
                     <canvas id="serviciosChart"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- Sistema de Pestañas para Solicitudes -->
+        <!-- Sistema de Pesta�as para Solicitudes -->
         <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
             <!-- Tabs Header -->
             <div class="border-b border-gray-200 bg-gray-50">
@@ -228,18 +233,18 @@
                     <button @click="activeTab = 'pendientes-pago'; cargarSolicitudesPendientesPago()" 
                             :class="activeTab === 'pendientes-pago' ? 'border-orange-500 text-orange-600 bg-orange-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                             class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition-colors flex items-center gap-2">
-                        <span>🔔</span>
+                        <span>??</span>
                         <span>Nuevas Solicitudes</span>
                         <span x-show="solicitudesPendientesPago.length > 0" 
                               class="ml-2 py-0.5 px-2.5 rounded-full text-xs font-semibold bg-orange-500 text-white animate-pulse"
                               x-text="solicitudesPendientesPago.length"></span>
                     </button>
                     
-                    <!-- 2. Pendientes de Asignación - Pago confirmado -->
+                    <!-- 2. Pendientes de Asignaci�n - Pago confirmado -->
                     <button @click="activeTab = 'pendientes-asignacion'; cargarSolicitudes()" 
                             :class="activeTab === 'pendientes-asignacion' ? 'border-purple-500 text-purple-600 bg-purple-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                             class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition-colors flex items-center gap-2">
-                        <span>👤</span>
+                        <span>??</span>
                         <span>Por Asignar</span>
                         <span x-show="solicitudes.length > 0" 
                               class="ml-2 py-0.5 px-2.5 rounded-full text-xs font-semibold"
@@ -249,9 +254,9 @@
                     
                     <!-- 3. En Proceso - Servicios activos -->
                     <button @click="activeTab = 'en-proceso'; cargarSolicitudesEnProceso()" 
-                            :class="activeTab === 'en-proceso' ? 'border-blue-500 text-blue-600 bg-blue-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            :class="activeTab === 'en-proceso' ? 'border-teal-500 text-teal-600 bg-blue-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                             class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition-colors flex items-center gap-2">
-                        <span>⚡</span>
+                        <span>?</span>
                         <span>En Proceso</span>
                         <span x-show="solicitudesEnProceso.length > 0" 
                               class="ml-2 py-0.5 px-2.5 rounded-full text-xs font-semibold"
@@ -263,7 +268,7 @@
                     <button @click="activeTab = 'completados'; cargarReportes()" 
                             :class="activeTab === 'completados' ? 'border-green-500 text-green-600 bg-green-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                             class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition-colors flex items-center gap-2">
-                        <span>✅</span>
+                        <span>?</span>
                         <span>Completados</span>
                         <span x-show="reportes.length > 0" 
                               class="ml-2 py-0.5 px-2.5 rounded-full text-xs font-semibold"
@@ -271,11 +276,11 @@
                               x-text="reportes.length"></span>
                     </button>
                     
-                    <!-- 5. Gestión de Profesionales -->
+                    <!-- 5. Gesti�n de Profesionales -->
                     <button @click="activeTab = 'profesionales'; cargarListaProfesionales()" 
-                            :class="activeTab === 'profesionales' ? 'border-indigo-500 text-indigo-600 bg-indigo-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            :class="activeTab === 'profesionales' ? 'border-indigo-500 text-teal-600 bg-indigo-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                             class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition-colors flex items-center gap-2">
-                        <span>👨‍⚕️</span>
+                        <span>?????</span>
                         <span>Profesionales</span>
                         <span x-show="profesionales.length > 0" 
                               class="ml-2 py-0.5 px-2.5 rounded-full text-xs font-semibold"
@@ -289,11 +294,11 @@
             <div x-show="activeTab === 'en-proceso'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                 <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-blue-50">
                     <div>
-                        <h3 class="text-lg font-semibold text-gray-800">⚡ Servicios En Proceso</h3>
+                        <h3 class="text-lg font-semibold text-gray-800">? Servicios En Proceso</h3>
                         <p class="text-sm text-gray-500">Profesional asignado, servicio en curso</p>
                     </div>
-                    <button @click="cargarSolicitudesEnProceso()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm">
-                        🔄 Actualizar
+                    <button @click="cargarSolicitudesEnProceso()" class="px-4 py-2 gradient-bg text-white rounded-lg hover:opacity-90 transition text-sm">
+                        ?? Actualizar
                     </button>
                 </div>
 
@@ -316,7 +321,7 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Servicio</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acción</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acci�n</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
@@ -330,8 +335,8 @@
                                 <td class="px-6 py-4">
                                     <div class="text-sm font-medium text-gray-900" x-text="solicitud.profesional_nombre + ' ' + solicitud.profesional_apellido"></div>
                                     <div class="text-sm text-gray-500" x-text="solicitud.profesional_telefono"></div>
-                                    <div class="text-xs text-blue-600 flex items-center mt-1">
-                                        ⭐ <span x-text="solicitud.calificacion_promedio"></span>
+                                    <div class="text-xs text-teal-600 flex items-center mt-1">
+                                        ? <span x-text="solicitud.calificacion_promedio"></span>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4">
@@ -345,8 +350,8 @@
                                 <td class="px-6 py-4 text-sm font-semibold text-gray-900" x-text="'$' + new Intl.NumberFormat('es-CO').format(solicitud.monto_total)"></td>
                                 <td class="px-6 py-4 text-sm">
                                     <button @click="verDetallesSolicitud(solicitud)" 
-                                            class="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium">
-                                        👁️ Ver Detalles
+                                            class="px-3 py-1.5 gradient-bg text-white rounded-lg hover:opacity-90 transition text-sm font-medium">
+                                        ??? Ver Detalles
                                     </button>
                                 </td>
                             </tr>
@@ -356,15 +361,15 @@
             </div>
         </div>
 
-        <!-- Tab Content: Nuevas Solicitudes (Pendientes de Confirmación de Pago) -->
+        <!-- Tab Content: Nuevas Solicitudes (Pendientes de Confirmaci�n de Pago) -->
         <div x-show="activeTab === 'pendientes-pago'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
             <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-orange-50">
                 <div>
-                    <h3 class="text-lg font-semibold text-gray-800">🔔 Nuevas Solicitudes</h3>
-                    <p class="text-sm text-gray-500">Solicitudes que esperan confirmación de pago</p>
+                    <h3 class="text-lg font-semibold text-gray-800">?? Nuevas Solicitudes</h3>
+                    <p class="text-sm text-gray-500">Solicitudes que esperan confirmaci�n de pago</p>
                 </div>
                 <button @click="cargarSolicitudesPendientesPago()" class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition text-sm">
-                    🔄 Actualizar
+                    ?? Actualizar
                 </button>
             </div>
 
@@ -373,7 +378,7 @@
                     <svg class="mx-auto h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
-                    <p class="mt-2 text-sm text-gray-500">No hay solicitudes pendientes de confirmación de pago</p>
+                    <p class="mt-2 text-sm text-gray-500">No hay solicitudes pendientes de confirmaci�n de pago</p>
                 </div>
             </div>
 
@@ -386,7 +391,7 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Servicio</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Comprobante</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acción</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acci�n</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
@@ -410,11 +415,11 @@
                                 <td class="px-6 py-4 text-sm space-x-2">
                                     <button @click="aprobarPago(solicitud.id)" 
                                             class="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium">
-                                        ✓ Aprobar
+                                        ? Aprobar
                                     </button>
                                     <button @click="rechazarPago(solicitud.id)" 
                                             class="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm font-medium">
-                                        ✗ Rechazar
+                                        ? Rechazar
                                     </button>
                                 </td>
                             </tr>
@@ -428,11 +433,11 @@
         <div x-show="activeTab === 'pendientes-asignacion'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
             <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-purple-50">
                 <div>
-                    <h3 class="text-lg font-semibold text-gray-800">👤 Por Asignar Profesional</h3>
+                    <h3 class="text-lg font-semibold text-gray-800">?? Por Asignar Profesional</h3>
                     <p class="text-sm text-gray-500">Pago confirmado, listas para asignar profesional</p>
                 </div>
                 <button @click="cargarSolicitudes()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm">
-                    🔄 Actualizar
+                    ?? Actualizar
                 </button>
             </div>
 
@@ -467,7 +472,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha/Hora</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pago</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acción</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acci�n</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
@@ -494,8 +499,8 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" x-text="'$' + parseFloat(solicitud.monto_total).toLocaleString('es-CO')"></td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                                         <button @click="abrirModalAsignacion(solicitud)" 
-                                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium">
-                                            👤 Asignar
+                                                class="px-4 py-2 gradient-bg text-white rounded-lg hover:opacity-90 transition font-medium">
+                                            ?? Asignar
                                         </button>
                                     </td>
                                 </tr>
@@ -514,11 +519,11 @@
                     <p class="text-sm text-gray-600 mt-1">Control de calidad: Revisa reportes de profesionales y calificaciones de pacientes</p>
                 </div>
                 <button @click="cargarReportes()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm">
-                    🔄 Actualizar
+                    ?? Actualizar
                 </button>
             </div>
 
-            <!-- Filtros de Búsqueda -->
+            <!-- Filtros de B�squeda -->
             <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
@@ -532,44 +537,44 @@
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Estado Calificación</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Estado Calificaci�n</label>
                         <select x-model="filtrosReportes.calificado" 
                                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
                             <option value="">Todos</option>
-                            <option value="1">Con calificación</option>
-                            <option value="0">Sin calificación</option>
+                            <option value="1">Con calificaci�n</option>
+                            <option value="0">Sin calificaci�n</option>
                         </select>
                     </div>
                     <div class="flex items-end">
                         <button @click="cargarReportes()" 
                                 class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium">
-                            🔍 Filtrar
+                            ?? Filtrar
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Estadísticas de Reportes -->
+            <!-- Estad�sticas de Reportes -->
             <div x-show="estadisticasReportes" class="px-6 py-4 bg-blue-50 border-b border-gray-200">
                 <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
                     <div class="text-center">
-                        <p class="text-2xl font-bold text-blue-600" x-text="estadisticasReportes.total"></p>
+                        <p class="text-2xl font-bold text-teal-600" x-text="estadisticasReportes.total"></p>
                         <p class="text-xs text-gray-600">Total Reportes</p>
                     </div>
                     <div class="text-center">
                         <p class="text-2xl font-bold text-green-600" x-text="estadisticasReportes.con_calificacion"></p>
-                        <p class="text-xs text-gray-600">Con Calificación</p>
+                        <p class="text-xs text-gray-600">Con Calificaci�n</p>
                     </div>
                     <div class="text-center">
                         <p class="text-2xl font-bold text-yellow-600" x-text="estadisticasReportes.sin_calificacion"></p>
-                        <p class="text-xs text-gray-600">Sin Calificación</p>
+                        <p class="text-xs text-gray-600">Sin Calificaci�n</p>
                     </div>
                     <div class="text-center">
-                        <p class="text-2xl font-bold text-purple-600" x-text="estadisticasReportes.promedio_calificacion + ' ⭐'"></p>
+                        <p class="text-2xl font-bold text-purple-600" x-text="estadisticasReportes.promedio_calificacion + ' ?'"></p>
                         <p class="text-xs text-gray-600">Promedio</p>
                     </div>
                     <div class="text-center">
-                        <p class="text-2xl font-bold text-indigo-600" x-text="'$' + estadisticasReportes.total_ingresos.toLocaleString('es-CO')"></p>
+                        <p class="text-2xl font-bold text-teal-600" x-text="'$' + estadisticasReportes.total_ingresos.toLocaleString('es-CO')"></p>
                         <p class="text-xs text-gray-600">Total Ingresos</p>
                     </div>
                 </div>
@@ -594,7 +599,7 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Profesional</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Servicio</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Calificación</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Calificaci�n</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
                         </tr>
@@ -610,8 +615,8 @@
                                 <td class="px-6 py-4">
                                     <div class="text-sm font-medium text-gray-900" x-text="reporte.profesional_nombre + ' ' + reporte.profesional_apellido"></div>
                                     <div class="text-sm text-gray-500" x-text="reporte.especialidad"></div>
-                                    <div class="text-xs text-blue-600 flex items-center mt-1">
-                                        ⭐ <span x-text="reporte.puntuacion_promedio"></span> 
+                                    <div class="text-xs text-teal-600 flex items-center mt-1">
+                                        ? <span x-text="reporte.puntuacion_promedio"></span> 
                                         <span class="text-gray-400 ml-1" x-text="'(' + reporte.total_calificaciones + ')'"></span>
                                     </div>
                                 </td>
@@ -627,7 +632,7 @@
                                     <template x-if="reporte.calificado">
                                         <div class="flex flex-col items-start">
                                             <div class="flex items-center">
-                                                <span class="text-yellow-500 text-lg mr-1">⭐</span>
+                                                <span class="text-yellow-500 text-lg mr-1">?</span>
                                                 <span class="text-sm font-bold text-gray-900" x-text="reporte.calificacion_paciente + '/5'"></span>
                                             </div>
                                             <span class="text-xs text-gray-500" x-show="reporte.comentario_paciente">Con comentario</span>
@@ -643,7 +648,7 @@
                                 <td class="px-6 py-4 text-sm">
                                     <button @click="verDetalleReporte(reporte.id)" 
                                             class="px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium">
-                                        📄 Ver Reporte
+                                        ?? Ver Reporte
                                     </button>
                                 </td>
                             </tr>
@@ -653,19 +658,19 @@
             </div>
         </div>
 
-        <!-- Tab Content: Gestión de Profesionales -->
+        <!-- Tab Content: Gesti�n de Profesionales -->
         <div x-show="activeTab === 'profesionales'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
             <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-indigo-50">
                 <div>
-                    <h3 class="text-lg font-semibold text-gray-800">👨‍⚕️ Gestión de Profesionales</h3>
-                    <p class="text-sm text-gray-600 mt-1">Administra médicos, enfermeras, veterinarios y demás profesionales</p>
+                    <h3 class="text-lg font-semibold text-gray-800">????? Gesti�n de Profesionales</h3>
+                    <p class="text-sm text-gray-600 mt-1">Administra m�dicos, enfermeras, veterinarios y dem�s profesionales</p>
                 </div>
                 <div class="flex gap-2">
                     <button @click="cargarListaProfesionales()" class="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition text-sm font-medium">
-                        🔄 Actualizar
+                        ?? Actualizar
                     </button>
-                    <button @click="abrirModalNuevoProfesional()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-medium flex items-center gap-2">
-                        <span>➕</span> Nuevo Profesional
+                    <button @click="abrirModalNuevoProfesional()" class="px-4 py-2 gradient-bg text-white rounded-lg hover:opacity-90 transition text-sm font-medium flex items-center gap-2">
+                        <span>?</span> Nuevo Profesional
                     </button>
                 </div>
             </div>
@@ -684,7 +689,7 @@
                         <select x-model="filtrosProfesionales.tipo" @change="cargarListaProfesionales()"
                                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                             <option value="">Todos</option>
-                            <option value="medico">Médico</option>
+                            <option value="medico">M�dico</option>
                             <option value="enfermera">Enfermera</option>
                             <option value="veterinario">Veterinario</option>
                             <option value="laboratorio">Laboratorio</option>
@@ -704,7 +709,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Especialidad</label>
                         <input type="text" x-model="filtrosProfesionales.especialidad" @input.debounce.300ms="cargarListaProfesionales()"
-                               placeholder="Cardiología, Pediatría..."
+                               placeholder="Cardiolog�a, Pediatr�a..."
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                     </div>
                 </div>
@@ -717,7 +722,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
                     </svg>
                     <p class="mt-2 text-sm text-gray-500">No se encontraron profesionales</p>
-                    <button @click="abrirModalNuevoProfesional()" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                    <button @click="abrirModalNuevoProfesional()" class="mt-4 px-4 py-2 gradient-bg text-white rounded-lg hover:opacity-90 transition">
                         Agregar Primer Profesional
                     </button>
                 </div>
@@ -732,7 +737,7 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo / Especialidad</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contacto</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Servicios</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Calificación</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Calificaci�n</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
                         </tr>
@@ -744,7 +749,7 @@
                                 <td class="px-6 py-4">
                                     <div class="flex items-center">
                                         <div class="flex-shrink-0 h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                                            <span class="text-lg" x-text="prof.tipo_profesional === 'medico' ? '👨‍⚕️' : prof.tipo_profesional === 'enfermera' ? '👩‍⚕️' : prof.tipo_profesional === 'veterinario' ? '🐾' : prof.tipo_profesional === 'laboratorio' ? '🔬' : '🚑'"></span>
+                                            <span class="text-lg" x-text="prof.tipo_profesional === 'medico' ? '?????' : prof.tipo_profesional === 'enfermera' ? '?????' : prof.tipo_profesional === 'veterinario' ? '??' : prof.tipo_profesional === 'laboratorio' ? '??' : '??'"></span>
                                         </div>
                                         <div class="ml-3">
                                             <div class="text-sm font-medium text-gray-900" x-text="prof.nombre + ' ' + prof.apellido"></div>
@@ -758,14 +763,14 @@
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="text-sm text-gray-900" x-text="prof.email"></div>
-                                    <div class="text-xs text-gray-500" x-text="prof.telefono_whatsapp || prof.telefono || 'Sin teléfono'"></div>
+                                    <div class="text-xs text-gray-500" x-text="prof.telefono_whatsapp || prof.telefono || 'Sin tel�fono'"></div>
                                 </td>
                                 <td class="px-6 py-4 text-sm text-gray-500">
                                     <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800" x-text="(prof.total_servicios || 0) + ' completados'"></span>
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex items-center">
-                                        <span class="text-yellow-500 text-sm">⭐</span>
+                                        <span class="text-yellow-500 text-sm">?</span>
                                         <span class="ml-1 text-sm font-medium" x-text="prof.puntuacion_promedio || '5.00'"></span>
                                         <span class="ml-1 text-xs text-gray-400" x-text="'(' + (prof.total_calificaciones || 0) + ')'"></span>
                                     </div>
@@ -782,13 +787,13 @@
                                 <td class="px-6 py-4 text-sm">
                                     <div class="flex gap-2">
                                         <button @click="editarProfesional(prof)" 
-                                                class="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-xs">
-                                            ✏️ Editar
+                                                class="px-3 py-1.5 gradient-bg text-white rounded-lg hover:opacity-90 transition text-xs">
+                                            ?? Editar
                                         </button>
                                         <button @click="cambiarEstadoProfesional(prof)" 
                                                 class="px-3 py-1.5 rounded-lg transition text-xs"
                                                 :class="prof.estado === 'activo' ? 'bg-yellow-600 text-white hover:bg-yellow-700' : 'bg-green-600 text-white hover:bg-green-700'"
-                                                x-text="prof.estado === 'activo' ? '⏸️ Desactivar' : '▶️ Activar'"></button>
+                                                x-text="prof.estado === 'activo' ? '?? Desactivar' : '?? Activar'"></button>
                                     </div>
                                 </td>
                             </tr>
@@ -802,12 +807,12 @@
         <div x-show="activeTab === 'kanban'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
             <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-pink-50">
                 <div>
-                    <h3 class="text-lg font-semibold text-gray-800">📊 Vista Kanban - Gestión Visual</h3>
+                    <h3 class="text-lg font-semibold text-gray-800">?? Vista Kanban - Gesti�n Visual</h3>
                     <p class="text-sm text-gray-600 mt-1">Arrastra y suelta las tarjetas para cambiar el estado de las solicitudes</p>
                 </div>
                 <div class="flex gap-2">
                     <button @click="kanbanBoard?.cargarSolicitudes()" class="px-4 py-2 bg-pink-100 text-pink-700 rounded-lg hover:bg-pink-200 transition text-sm font-medium">
-                        🔄 Actualizar
+                        ?? Actualizar
                     </button>
                 </div>
             </div>
@@ -816,14 +821,14 @@
             <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">🔍 Buscar</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">?? Buscar</label>
                         <input type="text" 
                                @input="kanbanBoard?.aplicarFiltro('busqueda', $event.target.value)"
                                placeholder="ID, paciente, profesional, servicio..."
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">🏥 Especialidad</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">?? Especialidad</label>
                         <select @change="kanbanBoard?.aplicarFiltro('especialidad', $event.target.value)"
                                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500">
                             <option value="">Todas las especialidades</option>
@@ -833,7 +838,7 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">👨‍⚕️ Profesional</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">????? Profesional</label>
                         <select @change="kanbanBoard?.aplicarFiltro('profesional', $event.target.value)"
                                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500">
                             <option value="">Todos los profesionales</option>
@@ -850,7 +855,7 @@
         </div>
 
         </div>
-        <!-- Fin del sistema de pestañas -->
+        <!-- Fin del sistema de pesta�as -->
     </div>
 
     <!-- Modal de Detalle de Reporte -->
@@ -865,7 +870,7 @@
                 <!-- Header -->
                 <div class="sticky top-0 bg-gradient-to-r from-green-500 to-green-600 px-6 py-4 flex justify-between items-center">
                     <div>
-                        <h3 class="text-xl font-bold text-white">📄 Detalle Completo del Reporte</h3>
+                        <h3 class="text-xl font-bold text-white">?? Detalle Completo del Reporte</h3>
                         <p class="text-green-100 text-sm" x-show="reporteDetalle" x-text="'Solicitud #' + reporteDetalle.solicitud_id"></p>
                     </div>
                     <button @click="cerrarModalReporte()" class="text-white hover:text-gray-200">
@@ -877,30 +882,30 @@
 
                 <!-- Body -->
                 <div x-show="reporteDetalle" class="p-6 space-y-6">
-                    <!-- Información General -->
+                    <!-- Informaci�n General -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Datos del Paciente -->
                         <div class="bg-blue-50 rounded-lg p-4">
                             <h4 class="font-bold text-gray-800 mb-3 flex items-center">
-                                <span class="text-2xl mr-2">👤</span> Paciente
+                                <span class="text-2xl mr-2">??</span> Paciente
                             </h4>
                             <div class="space-y-2 text-sm">
                                 <p><span class="font-semibold">Nombre:</span> <span x-text="reporteDetalle.paciente?.nombre"></span></p>
                                 <p><span class="font-semibold">Email:</span> <span x-text="reporteDetalle.paciente?.email"></span></p>
-                                <p><span class="font-semibold">Teléfono:</span> <span x-text="reporteDetalle.paciente?.telefono"></span></p>
+                                <p><span class="font-semibold">Tel�fono:</span> <span x-text="reporteDetalle.paciente?.telefono"></span></p>
                             </div>
                         </div>
 
                         <!-- Datos del Profesional -->
                         <div class="bg-green-50 rounded-lg p-4">
                             <h4 class="font-bold text-gray-800 mb-3 flex items-center">
-                                <span class="text-2xl mr-2">👨‍⚕️</span> Profesional
+                                <span class="text-2xl mr-2">?????</span> Profesional
                             </h4>
                             <div class="space-y-2 text-sm">
                                 <p><span class="font-semibold">Nombre:</span> <span x-text="reporteDetalle.profesional?.nombre"></span></p>
                                 <p><span class="font-semibold">Especialidad:</span> <span x-text="reporteDetalle.profesional?.especialidad"></span></p>
-                                <p><span class="font-semibold">Calificación:</span> 
-                                    <span class="text-yellow-500" x-text="'⭐ ' + (reporteDetalle.profesional?.puntuacion_promedio || 0)"></span>
+                                <p><span class="font-semibold">Calificaci�n:</span> 
+                                    <span class="text-yellow-500" x-text="'? ' + (reporteDetalle.profesional?.puntuacion_promedio || 0)"></span>
                                     <span class="text-gray-500 text-xs" x-text="'(' + (reporteDetalle.profesional?.total_calificaciones || 0) + ' evaluaciones)'"></span>
                                 </p>
                                 <p><span class="font-semibold">Servicios completados:</span> <span x-text="reporteDetalle.profesional?.servicios_completados || 0"></span></p>
@@ -908,10 +913,10 @@
                         </div>
                     </div>
 
-                    <!-- Información del Servicio -->
+                    <!-- Informaci�n del Servicio -->
                     <div class="bg-purple-50 rounded-lg p-4">
                         <h4 class="font-bold text-gray-800 mb-3 flex items-center">
-                            <span class="text-2xl mr-2">🏥</span> Servicio Prestado
+                            <span class="text-2xl mr-2">??</span> Servicio Prestado
                         </h4>
                         <div class="grid grid-cols-2 gap-4 text-sm">
                             <p><span class="font-semibold">Servicio:</span> <span x-text="reporteDetalle.servicio?.nombre"></span></p>
@@ -924,7 +929,7 @@
                     <!-- Reporte del Profesional -->
                     <div class="bg-yellow-50 rounded-lg p-4">
                         <h4 class="font-bold text-gray-800 mb-3 flex items-center">
-                            <span class="text-2xl mr-2">📋</span> Reporte del Profesional
+                            <span class="text-2xl mr-2">??</span> Reporte del Profesional
                         </h4>
                         <div class="space-y-3">
                             <div>
@@ -932,7 +937,7 @@
                                 <p class="text-sm text-gray-800 bg-white p-3 rounded border border-yellow-200" x-text="reporteDetalle.reporte_profesional || 'No proporcionado'"></p>
                             </div>
                             <div>
-                                <p class="font-semibold text-sm text-gray-700 mb-1">Diagnóstico / Conclusión:</p>
+                                <p class="font-semibold text-sm text-gray-700 mb-1">Diagn�stico / Conclusi�n:</p>
                                 <p class="text-sm text-gray-800 bg-white p-3 rounded border border-yellow-200" x-text="reporteDetalle.diagnostico || 'No proporcionado'"></p>
                             </div>
                             <div x-show="reporteDetalle.notas_adicionales">
@@ -942,15 +947,15 @@
                         </div>
                     </div>
 
-                    <!-- Calificación del Paciente -->
+                    <!-- Calificaci�n del Paciente -->
                     <div class="bg-pink-50 rounded-lg p-4">
                         <h4 class="font-bold text-gray-800 mb-3 flex items-center">
-                            <span class="text-2xl mr-2">⭐</span> Evaluación del Paciente
+                            <span class="text-2xl mr-2">?</span> Evaluaci�n del Paciente
                         </h4>
                         <template x-if="reporteDetalle.calificacion?.calificado">
                             <div class="space-y-3">
                                 <div class="flex items-center space-x-2">
-                                    <span class="text-3xl text-yellow-500">⭐</span>
+                                    <span class="text-3xl text-yellow-500">?</span>
                                     <span class="text-2xl font-bold text-gray-800" x-text="reporteDetalle.calificacion?.puntuacion + ' / 5'"></span>
                                 </div>
                                 <div x-show="reporteDetalle.calificacion?.comentario">
@@ -965,21 +970,21 @@
                         <template x-if="!reporteDetalle.calificacion?.calificado">
                             <div class="text-center py-4">
                                 <span class="inline-block px-4 py-2 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
-                                    ⚠️ El paciente aún no ha calificado este servicio
+                                    ?? El paciente a�n no ha calificado este servicio
                                 </span>
                             </div>
                         </template>
                     </div>
 
-                    <!-- Información Financiera -->
+                    <!-- Informaci�n Financiera -->
                     <div class="bg-indigo-50 rounded-lg p-4">
                         <h4 class="font-bold text-gray-800 mb-3 flex items-center">
-                            <span class="text-2xl mr-2">💰</span> Información Financiera
+                            <span class="text-2xl mr-2">??</span> Informaci�n Financiera
                         </h4>
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                             <div>
                                 <p class="font-semibold text-gray-700">Monto Total:</p>
-                                <p class="text-lg font-bold text-indigo-600" x-text="'$' + parseFloat(reporteDetalle.finanzas?.monto_total).toLocaleString('es-CO')"></p>
+                                <p class="text-lg font-bold text-teal-600" x-text="'$' + parseFloat(reporteDetalle.finanzas?.monto_total).toLocaleString('es-CO')"></p>
                             </div>
                             <div>
                                 <p class="font-semibold text-gray-700">Para Profesional:</p>
@@ -987,12 +992,12 @@
                             </div>
                             <div>
                                 <p class="font-semibold text-gray-700">Para Plataforma:</p>
-                                <p class="text-lg font-bold text-blue-600" x-text="'$' + parseFloat(reporteDetalle.finanzas?.monto_plataforma).toLocaleString('es-CO')"></p>
+                                <p class="text-lg font-bold text-teal-600" x-text="'$' + parseFloat(reporteDetalle.finanzas?.monto_plataforma).toLocaleString('es-CO')"></p>
                             </div>
                             <div>
                                 <p class="font-semibold text-gray-700">Estado Pago:</p>
                                 <p class="text-lg font-bold" :class="reporteDetalle.finanzas?.pagado ? 'text-green-600' : 'text-red-600'" 
-                                   x-text="reporteDetalle.finanzas?.pagado ? '✓ Pagado' : '✗ Pendiente'"></p>
+                                   x-text="reporteDetalle.finanzas?.pagado ? '? Pagado' : '? Pendiente'"></p>
                             </div>
                         </div>
                     </div>
@@ -1009,7 +1014,7 @@
         </div>
     </div>
 
-    <!-- Modal de Asignación -->
+    <!-- Modal de Asignaci�n -->
     <div x-show="modalAsignacionAbierto" 
          x-cloak
          class="fixed inset-0 z-50 overflow-y-auto" 
@@ -1021,8 +1026,8 @@
                 <!-- Header -->
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-2xl font-bold text-gray-900">
-                        <span x-show="solicitudSeleccionada?.servicio_tipo !== 'ambulancia'">🎯 Asignar Profesional</span>
-                        <span x-show="solicitudSeleccionada?.servicio_tipo === 'ambulancia'">🚑 Asignar Operador de Ambulancia</span>
+                        <span x-show="solicitudSeleccionada?.servicio_tipo !== 'ambulancia'">?? Asignar Profesional</span>
+                        <span x-show="solicitudSeleccionada?.servicio_tipo === 'ambulancia'">?? Asignar Operador de Ambulancia</span>
                     </h3>
                     <button @click="cerrarModalAsignacion()" class="text-gray-400 hover:text-gray-600 transition">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1031,10 +1036,10 @@
                     </button>
                 </div>
 
-                <!-- Información de la Solicitud -->
+                <!-- Informaci�n de la Solicitud -->
                 <div x-show="solicitudSeleccionada" class="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6 mb-6">
                     <h4 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                        <svg class="w-5 h-5 mr-2 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                        <svg class="w-5 h-5 mr-2 text-teal-600" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
                             <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path>
                         </svg>
@@ -1044,7 +1049,7 @@
                     <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                         <!-- Paciente -->
                         <div class="bg-white rounded-lg p-3 shadow-sm">
-                            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">👤 Paciente</p>
+                            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">?? Paciente</p>
                             <p class="font-bold text-gray-900" x-text="solicitudSeleccionada?.paciente_nombre + ' ' + solicitudSeleccionada?.paciente_apellido"></p>
                             <p class="text-sm text-gray-600 mt-1" x-text="solicitudSeleccionada?.paciente_telefono"></p>
                             <p class="text-sm text-gray-600" x-text="solicitudSeleccionada?.paciente_email"></p>
@@ -1052,57 +1057,57 @@
 
                         <!-- Servicio -->
                         <div class="bg-white rounded-lg p-3 shadow-sm">
-                            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">🏥 Servicio</p>
+                            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">?? Servicio</p>
                             <p class="font-bold text-gray-900" x-text="solicitudSeleccionada?.servicio_nombre"></p>
                             <p class="text-sm text-gray-600 mt-1" x-text="solicitudSeleccionada?.servicio_tipo"></p>
                         </div>
 
                         <!-- Especialidad -->
                         <div class="bg-white rounded-lg p-3 shadow-sm">
-                            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">⭐ Especialidad</p>
+                            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">? Especialidad</p>
                             <p class="font-bold text-gray-900" x-text="solicitudSeleccionada?.especialidad || 'General'"></p>
-                            <p class="text-xs text-gray-500 mt-1" x-show="!solicitudSeleccionada?.especialidad">Sin especialidad específica</p>
+                            <p class="text-xs text-gray-500 mt-1" x-show="!solicitudSeleccionada?.especialidad">Sin especialidad espec�fica</p>
                         </div>
 
                         <!-- Fecha y Hora -->
                         <div class="bg-white rounded-lg p-3 shadow-sm">
-                            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">📅 Fecha</p>
+                            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">?? Fecha</p>
                             <p class="font-bold text-gray-900" x-text="new Date(solicitudSeleccionada?.fecha_programada).toLocaleDateString('es-CO', {weekday: 'short', day: 'numeric', month: 'short'})"></p>
-                            <p class="text-sm text-gray-600 mt-1" x-text="solicitudSeleccionada?.hora_programada || 'Sin hora específica'"></p>
+                            <p class="text-sm text-gray-600 mt-1" x-text="solicitudSeleccionada?.hora_programada || 'Sin hora espec�fica'"></p>
                         </div>
 
                         <!-- Modalidad -->
                         <div class="bg-white rounded-lg p-3 shadow-sm">
-                            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">📍 Modalidad</p>
+                            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">?? Modalidad</p>
                             <p class="font-bold text-gray-900" x-text="solicitudSeleccionada?.modalidad === 'domicilio' ? 'A domicilio' : solicitudSeleccionada?.modalidad === 'virtual' ? 'Virtual' : 'Consultorio'"></p>
                         </div>
 
                         <!-- Monto -->
                         <div class="bg-white rounded-lg p-3 shadow-sm">
-                            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">💰 Monto</p>
+                            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">?? Monto</p>
                             <p class="font-bold text-green-600 text-lg" x-text="'$' + parseFloat(solicitudSeleccionada?.monto_total || 0).toLocaleString('es-CO')"></p>
                         </div>
                     </div>
 
-                    <!-- Dirección y Observaciones -->
+                    <!-- Direcci�n y Observaciones -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <div class="bg-white rounded-lg p-3 shadow-sm" x-show="solicitudSeleccionada?.direccion_servicio">
-                            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">🏠 Dirección</p>
+                            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">?? Direcci�n</p>
                             <p class="text-sm text-gray-900" x-text="solicitudSeleccionada?.direccion_servicio || 'No especificada'"></p>
                         </div>
                         
                         <div class="bg-white rounded-lg p-3 shadow-sm" x-show="solicitudSeleccionada?.observaciones">
-                            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">📝 Observaciones</p>
+                            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">?? Observaciones</p>
                             <p class="text-sm text-gray-900" x-text="solicitudSeleccionada?.observaciones || 'Sin observaciones'"></p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Información de filtrado -->
+                <!-- Informaci�n de filtrado -->
                 <div x-show="solicitudSeleccionada?.especialidad_solicitada && solicitudSeleccionada?.servicio_tipo !== 'ambulancia'" 
                      class="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
                     <div class="flex items-start">
-                        <svg class="w-5 h-5 text-blue-600 mt-0.5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <svg class="w-5 h-5 text-teal-600 mt-0.5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
                         </svg>
                         <div>
@@ -1110,7 +1115,7 @@
                                 Filtrado por especialidad: <span class="font-bold" x-text="solicitudSeleccionada?.especialidad_solicitada"></span>
                             </p>
                             <p class="text-xs text-blue-700 mt-1">
-                                Mostrando solo profesionales con esta especialidad, ordenados por calificación
+                                Mostrando solo profesionales con esta especialidad, ordenados por calificaci�n
                             </p>
                         </div>
                     </div>
@@ -1119,8 +1124,8 @@
                 <!-- Lista de Profesionales -->
                 <div class="mb-6">
                     <h4 class="text-lg font-semibold text-gray-800 mb-4">
-                        <span x-show="solicitudSeleccionada?.servicio_tipo !== 'ambulancia'">👨‍⚕️ Profesionales Disponibles</span>
-                        <span x-show="solicitudSeleccionada?.servicio_tipo === 'ambulancia'">🚑 Operadores Disponibles</span>
+                        <span x-show="solicitudSeleccionada?.servicio_tipo !== 'ambulancia'">????? Profesionales Disponibles</span>
+                        <span x-show="solicitudSeleccionada?.servicio_tipo === 'ambulancia'">?? Operadores Disponibles</span>
                     </h4>
                     
                     <div x-show="loadingProfesionales" class="flex justify-center py-8">
@@ -1140,7 +1145,7 @@
 
                         <template x-for="prof in profesionalesDisponibles" :key="prof.id">
                             <div @click="seleccionarProfesional(prof)" 
-                                 :class="profesionalSeleccionado?.id === prof.id ? 'border-blue-500 bg-blue-50 shadow-lg' : 'border-gray-200 hover:border-blue-300 hover:shadow-md'"
+                                 :class="profesionalSeleccionado?.id === prof.id ? 'border-teal-500 bg-blue-50 shadow-lg' : 'border-gray-200 hover:border-blue-300 hover:shadow-md'"
                                  class="border-2 rounded-xl p-5 cursor-pointer transition-all duration-200">
                                 <div class="flex items-start justify-between">
                                     <div class="flex-1">
@@ -1153,36 +1158,36 @@
                                             <div class="flex-1">
                                                 <div class="flex items-center gap-2 mb-1">
                                                     <h5 class="text-xl font-bold text-gray-900" x-text="prof.nombre + ' ' + prof.apellido"></h5>
-                                                    <span x-show="prof.tipo_profesional === 'ambulancia'" class="px-2 py-1 text-xs font-semibold bg-red-100 text-red-800 rounded-full">🚑 OPERADOR</span>
-                                                    <span x-show="prof.tipo_profesional === 'medico'" class="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">👨‍⚕️ MÉDICO</span>
-                                                    <span x-show="prof.tipo_profesional === 'enfermera'" class="px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">💉 ENFERMERA</span>
-                                                    <span x-show="prof.tipo_profesional === 'veterinario'" class="px-2 py-1 text-xs font-semibold bg-purple-100 text-purple-800 rounded-full">🐾 VETERINARIO</span>
-                                                    <span x-show="prof.tipo_profesional === 'laboratorio'" class="px-2 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded-full">🔬 LAB</span>
+                                                    <span x-show="prof.tipo_profesional === 'ambulancia'" class="px-2 py-1 text-xs font-semibold bg-red-100 text-red-800 rounded-full">?? OPERADOR</span>
+                                                    <span x-show="prof.tipo_profesional === 'medico'" class="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">????? M�DICO</span>
+                                                    <span x-show="prof.tipo_profesional === 'enfermera'" class="px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">?? ENFERMERA</span>
+                                                    <span x-show="prof.tipo_profesional === 'veterinario'" class="px-2 py-1 text-xs font-semibold bg-purple-100 text-purple-800 rounded-full">?? VETERINARIO</span>
+                                                    <span x-show="prof.tipo_profesional === 'laboratorio'" class="px-2 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded-full">?? LAB</span>
                                                 </div>
-                                                <p class="text-sm font-medium text-blue-600 mb-1" x-text="prof.especialidad || 'Especialidad no especificada'"></p>
+                                                <p class="text-sm font-medium text-teal-600 mb-1" x-text="prof.especialidad || 'Especialidad no especificada'"></p>
                                                 <p class="text-xs text-gray-500" x-text="prof.telefono"></p>
                                             </div>
                                         </div>
                                         <div class="mt-4 grid grid-cols-3 gap-3">
                                             <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 border border-yellow-200 rounded-lg p-3 text-center">
                                                 <div class="flex items-center justify-center space-x-1 mb-1">
-                                                    <span class="text-yellow-500 text-lg">⭐</span>
+                                                    <span class="text-yellow-500 text-lg">?</span>
                                                     <span class="text-2xl font-bold text-yellow-700" x-text="parseFloat(prof.puntuacion_promedio || 0).toFixed(1)"></span>
                                                 </div>
-                                                <p class="text-xs font-medium text-yellow-700" x-text="(prof.total_calificaciones || 0) + ' reseñas'"></p>
+                                                <p class="text-xs font-medium text-yellow-700" x-text="(prof.total_calificaciones || 0) + ' rese�as'"></p>
                                             </div>
                                             <div class="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-lg p-3 text-center">
                                                 <p class="text-2xl font-bold text-green-700 mb-1" x-text="prof.servicios_completados || 0"></p>
                                                 <p class="text-xs font-medium text-green-700">Completados</p>
                                             </div>
                                             <div class="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-3 text-center">
-                                                <p class="text-sm font-bold text-blue-700" x-text="prof.ciudad || 'Bogotá'"></p>
-                                                <p class="text-xs font-medium text-blue-700">Ubicación</p>
+                                                <p class="text-sm font-bold text-blue-700" x-text="prof.ciudad || 'Bogot�'"></p>
+                                                <p class="text-xs font-medium text-blue-700">Ubicaci�n</p>
                                             </div>
                                         </div>
                                     </div>
                                     <div x-show="profesionalSeleccionado?.id === prof.id" class="ml-4">
-                                        <svg class="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <svg class="w-8 h-8 text-teal-600" fill="currentColor" viewBox="0 0 20 20">
                                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                                         </svg>
                                     </div>
@@ -1192,15 +1197,15 @@
                     </div>
                 </div>
 
-                <!-- Motivo de Asignación -->
+                <!-- Motivo de Asignaci�n -->
                 <div class="mb-6">
                     <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Motivo de asignación (opcional)
+                        Motivo de asignaci�n (opcional)
                     </label>
                     <textarea x-model="motivoAsignacion" 
                               rows="3" 
-                              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              placeholder="Ej: Mejor calificado en cardiología, disponibilidad confirmada..."></textarea>
+                              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                              placeholder="Ej: Mejor calificado en cardiolog�a, disponibilidad confirmada..."></textarea>
                 </div>
 
                 <!-- Botones -->
@@ -1211,9 +1216,9 @@
                     </button>
                     <button @click="confirmarAsignacion()" 
                             :disabled="!profesionalSeleccionado || asignando"
-                            :class="!profesionalSeleccionado || asignando ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'"
-                            class="px-6 py-2 bg-blue-600 text-white rounded-lg transition font-medium">
-                        <span x-show="!asignando">✅ Confirmar Asignación</span>
+                            :class="!profesionalSeleccionado || asignando ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'"
+                            class="px-6 py-2 gradient-bg text-white rounded-lg transition font-medium">
+                        <span x-show="!asignando">? Confirmar Asignaci�n</span>
                         <span x-show="asignando">Asignando...</span>
                     </button>
                 </div>
@@ -1233,7 +1238,7 @@
                 <!-- Header -->
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-2xl font-bold text-gray-900 flex items-center">
-                        <svg class="w-7 h-7 mr-2 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                        <svg class="w-7 h-7 mr-2 text-teal-600" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
                             <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path>
                         </svg>
@@ -1253,7 +1258,7 @@
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-sm opacity-90">Estado Actual</p>
-                                <p class="text-2xl font-bold mt-1" x-text="solicitudDetalle?.estado === 'asignado' ? '✅ Asignado' : solicitudDetalle?.estado === 'en_proceso' ? '⚡ En Proceso' : solicitudDetalle?.estado === 'completado' ? '✔️ Completado' : solicitudDetalle?.estado"></p>
+                                <p class="text-2xl font-bold mt-1" x-text="solicitudDetalle?.estado === 'asignado' ? '? Asignado' : solicitudDetalle?.estado === 'en_proceso' ? '? En Proceso' : solicitudDetalle?.estado === 'completado' ? '?? Completado' : solicitudDetalle?.estado"></p>
                             </div>
                             <div class="text-right">
                                 <p class="text-sm opacity-90">Monto Total</p>
@@ -1262,10 +1267,10 @@
                         </div>
                     </div>
 
-                    <!-- Información del Paciente -->
+                    <!-- Informaci�n del Paciente -->
                     <div class="bg-gray-50 rounded-xl p-6">
                         <h4 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                            <span class="text-2xl mr-2">👤</span> Información del Paciente
+                            <span class="text-2xl mr-2">??</span> Informaci�n del Paciente
                         </h4>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
@@ -1277,7 +1282,7 @@
                                 <p class="text-gray-900 font-medium mt-1" x-text="solicitudDetalle?.paciente_documento || 'No especificado'"></p>
                             </div>
                             <div>
-                                <p class="text-xs text-gray-500 uppercase font-semibold">Teléfono</p>
+                                <p class="text-xs text-gray-500 uppercase font-semibold">Tel�fono</p>
                                 <p class="text-gray-900 font-medium mt-1" x-text="solicitudDetalle?.paciente_telefono"></p>
                             </div>
                             <div>
@@ -1287,10 +1292,10 @@
                         </div>
                     </div>
 
-                    <!-- Información del Profesional -->
+                    <!-- Informaci�n del Profesional -->
                     <div x-show="solicitudDetalle?.profesional_nombre" class="bg-blue-50 rounded-xl p-6">
                         <h4 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                            <span class="text-2xl mr-2">👨‍⚕️</span> Profesional Asignado
+                            <span class="text-2xl mr-2">?????</span> Profesional Asignado
                         </h4>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
@@ -1302,13 +1307,13 @@
                                 <p class="text-gray-900 font-medium mt-1" x-text="solicitudDetalle?.profesional_especialidad || 'General'"></p>
                             </div>
                             <div>
-                                <p class="text-xs text-gray-500 uppercase font-semibold">Teléfono</p>
+                                <p class="text-xs text-gray-500 uppercase font-semibold">Tel�fono</p>
                                 <p class="text-gray-900 font-medium mt-1" x-text="solicitudDetalle?.profesional_telefono"></p>
                             </div>
                             <div>
-                                <p class="text-xs text-gray-500 uppercase font-semibold">Calificación</p>
+                                <p class="text-xs text-gray-500 uppercase font-semibold">Calificaci�n</p>
                                 <p class="text-gray-900 font-medium mt-1 flex items-center">
-                                    ⭐ <span x-text="solicitudDetalle?.calificacion_promedio"></span> / 5.0
+                                    ? <span x-text="solicitudDetalle?.calificacion_promedio"></span> / 5.0
                                 </p>
                             </div>
                         </div>
@@ -1317,7 +1322,7 @@
                     <!-- Detalles del Servicio -->
                     <div class="bg-green-50 rounded-xl p-6">
                         <h4 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                            <span class="text-2xl mr-2">🏥</span> Detalles del Servicio
+                            <span class="text-2xl mr-2">??</span> Detalles del Servicio
                         </h4>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
@@ -1334,7 +1339,7 @@
                             </div>
                             <div>
                                 <p class="text-xs text-gray-500 uppercase font-semibold">Modalidad</p>
-                                <p class="text-gray-900 font-medium mt-1" x-text="solicitudDetalle?.modalidad === 'traslado' ? '🚑 Traslado' : solicitudDetalle?.modalidad === 'domicilio' ? '🏠 A Domicilio' : solicitudDetalle?.modalidad === 'virtual' ? '💻 Virtual' : '🏢 Consultorio'"></p>
+                                <p class="text-gray-900 font-medium mt-1" x-text="solicitudDetalle?.modalidad === 'traslado' ? '?? Traslado' : solicitudDetalle?.modalidad === 'domicilio' ? '?? A Domicilio' : solicitudDetalle?.modalidad === 'virtual' ? '?? Virtual' : '?? Consultorio'"></p>
                             </div>
                             <div class="col-span-2">
                                 <p class="text-xs text-gray-500 uppercase font-semibold">Fecha y Hora Programada</p>
@@ -1346,18 +1351,18 @@
                         </div>
                     </div>
 
-                    <!-- Dirección y Observaciones -->
+                    <!-- Direcci�n y Observaciones -->
                     <div class="grid grid-cols-1 gap-4">
                         <div x-show="solicitudDetalle?.direccion_servicio" class="bg-yellow-50 rounded-xl p-6">
                             <h4 class="text-sm font-bold text-gray-900 mb-2 flex items-center">
-                                <span class="text-xl mr-2">📍</span> Dirección del Servicio
+                                <span class="text-xl mr-2">??</span> Direcci�n del Servicio
                             </h4>
                             <p class="text-gray-900" x-text="solicitudDetalle?.direccion_servicio"></p>
                         </div>
                         
                         <div x-show="solicitudDetalle?.observaciones" class="bg-purple-50 rounded-xl p-6">
                             <h4 class="text-sm font-bold text-gray-900 mb-2 flex items-center">
-                                <span class="text-xl mr-2">📝</span> Observaciones del Paciente
+                                <span class="text-xl mr-2">??</span> Observaciones del Paciente
                             </h4>
                             <p class="text-gray-900" x-text="solicitudDetalle?.observaciones"></p>
                         </div>
@@ -1385,7 +1390,7 @@
             <div class="relative w-full max-w-4xl bg-white rounded-2xl shadow-xl">
                 <!-- Header -->
                 <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-indigo-500 to-purple-600">
-                    <h3 class="text-2xl font-bold text-white" x-text="profesionalEditando ? '✏️ Editar Profesional' : '➕ Nuevo Profesional'"></h3>
+                    <h3 class="text-2xl font-bold text-white" x-text="profesionalEditando ? '?? Editar Profesional' : '? Nuevo Profesional'"></h3>
                     <button @click="cerrarModalProfesional()" class="text-white hover:text-gray-200 transition">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -1395,10 +1400,10 @@
 
                 <!-- Body -->
                 <form @submit.prevent="guardarProfesional()" class="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
-                    <!-- Información Personal -->
+                    <!-- Informaci�n Personal -->
                     <div class="bg-gray-50 rounded-lg p-4">
                         <h4 class="font-bold text-gray-800 mb-4 flex items-center">
-                            <span class="text-lg mr-2">👤</span> Información Personal
+                            <span class="text-lg mr-2">??</span> Informaci�n Personal
                         </h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -1411,7 +1416,7 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Apellidos *</label>
                                 <input type="text" x-model="formProfesional.apellido" required
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                                       placeholder="García López">
+                                       placeholder="Garc�a L�pez">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
@@ -1422,20 +1427,20 @@
                                 <p class="text-xs text-gray-500 mt-1" x-show="profesionalEditando">El email no se puede modificar</p>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Contraseña <span x-show="!profesionalEditando" class="text-red-500">*</span></label>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Contrase�a <span x-show="!profesionalEditando" class="text-red-500">*</span></label>
                                 <input type="password" x-model="formProfesional.password" 
                                        :required="!profesionalEditando"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                                       placeholder="Mínimo 6 caracteres">
-                                <p class="text-xs text-gray-500 mt-1" x-show="profesionalEditando">Dejar vacío para mantener la actual</p>
+                                       placeholder="M�nimo 6 caracteres">
+                                <p class="text-xs text-gray-500 mt-1" x-show="profesionalEditando">Dejar vac�o para mantener la actual</p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Información Profesional -->
+                    <!-- Informaci�n Profesional -->
                     <div class="bg-blue-50 rounded-lg p-4">
                         <h4 class="font-bold text-gray-800 mb-4 flex items-center">
-                            <span class="text-lg mr-2">🩺</span> Información Profesional
+                            <span class="text-lg mr-2">??</span> Informaci�n Profesional
                         </h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -1444,29 +1449,29 @@
                                         @change="formProfesional.especialidad = ''"
                                         class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
                                     <option value="">Seleccione...</option>
-                                    <option value="medico">Médico</option>
+                                    <option value="medico">M�dico</option>
                                     <option value="enfermera">Enfermera</option>
                                     <option value="veterinario">Veterinario</option>
-                                    <option value="laboratorio">Técnico de Laboratorio</option>
+                                    <option value="laboratorio">T�cnico de Laboratorio</option>
                                     <option value="ambulancia">Operador de Ambulancia</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Profesión / Título *</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Profesi�n / T�tulo *</label>
                                 <input type="text" x-model="formProfesional.profesion" required
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                                       placeholder="Ej: Médico Cirujano, Enfermera Jefe">
+                                       placeholder="Ej: M�dico Cirujano, Enfermera Jefe">
                             </div>
                             <div x-show="formProfesional.tipo_profesional === 'medico'">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Especialidad Médica *</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Especialidad M�dica *</label>
                                 <input type="text" x-model="formProfesional.especialidad" 
                                        :required="formProfesional.tipo_profesional === 'medico'"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                                       placeholder="Ej: Cardiología, Pediatría, Medicina General">
-                                <p class="text-xs text-gray-500 mt-1">Será visible para los pacientes al buscar</p>
+                                       placeholder="Ej: Cardiolog�a, Pediatr�a, Medicina General">
+                                <p class="text-xs text-gray-500 mt-1">Ser� visible para los pacientes al buscar</p>
                             </div>
                             <div x-show="formProfesional.tipo_profesional !== 'medico' && formProfesional.tipo_profesional !== ''">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Área/Especialidad</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">�rea/Especialidad</label>
                                 <input type="text" x-model="formProfesional.especialidad"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                                        placeholder="Ej: Cuidados Intensivos, Emergencias">
@@ -1477,29 +1482,29 @@
                     <!-- Contacto -->
                     <div class="bg-green-50 rounded-lg p-4">
                         <h4 class="font-bold text-gray-800 mb-4 flex items-center">
-                            <span class="text-lg mr-2">📱</span> Información de Contacto
+                            <span class="text-lg mr-2">??</span> Informaci�n de Contacto
                         </h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono/WhatsApp *</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Tel�fono/WhatsApp *</label>
                                 <input type="tel" x-model="formProfesional.telefono_whatsapp" required
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                                        placeholder="+57 300 1234567">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono Adicional</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Tel�fono Adicional</label>
                                 <input type="tel" x-model="formProfesional.telefono"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                                        placeholder="+57 601 1234567">
                             </div>
                             <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Dirección Residencial</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Direcci�n Residencial</label>
                                 <input type="text" x-model="formProfesional.direccion"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                                        placeholder="Calle 123 #45-67, Apto 801">
                             </div>
                             <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Dirección Consultorio/Oficina</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Direcci�n Consultorio/Oficina</label>
                                 <input type="text" x-model="formProfesional.direccion_consultorio"
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                                        placeholder="Carrera 10 #20-30, Consultorio 201">
@@ -1510,31 +1515,31 @@
                     <!-- Documentos -->
                     <div class="bg-purple-50 rounded-lg p-4">
                         <h4 class="font-bold text-gray-800 mb-4 flex items-center">
-                            <span class="text-lg mr-2">📄</span> Documentos y Archivos
+                            <span class="text-lg mr-2">??</span> Documentos y Archivos
                         </h4>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Hoja de Vida Digital (PDF)</label>
                             <div class="flex items-center gap-3">
                                 <input type="file" @change="manejarArchivoHojaVida($event)" accept=".pdf"
                                        class="flex-1 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-                                <span x-show="formProfesional.hoja_vida_url" class="text-xs text-green-600">✓ Archivo cargado</span>
+                                <span x-show="formProfesional.hoja_vida_url" class="text-xs text-green-600">? Archivo cargado</span>
                             </div>
-                            <p class="text-xs text-gray-500 mt-1">Formato: PDF. Tamaño máximo: 5MB</p>
+                            <p class="text-xs text-gray-500 mt-1">Formato: PDF. Tama�o m�ximo: 5MB</p>
                         </div>
                     </div>
 
                     <!-- Estado -->
                     <div class="bg-yellow-50 rounded-lg p-4">
                         <h4 class="font-bold text-gray-800 mb-4 flex items-center">
-                            <span class="text-lg mr-2">⚙️</span> Estado del Profesional
+                            <span class="text-lg mr-2">??</span> Estado del Profesional
                         </h4>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Estado *</label>
                             <select x-model="formProfesional.estado" required
                                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                                <option value="activo">✅ Activo - Puede recibir solicitudes</option>
-                                <option value="inactivo">⏸️ Inactivo - No recibe solicitudes</option>
-                                <option value="bloqueado">🚫 Bloqueado - Sin acceso al sistema</option>
+                                <option value="activo">? Activo - Puede recibir solicitudes</option>
+                                <option value="inactivo">?? Inactivo - No recibe solicitudes</option>
+                                <option value="bloqueado">?? Bloqueado - Sin acceso al sistema</option>
                             </select>
                         </div>
                     </div>
@@ -1546,8 +1551,8 @@
                             Cancelar
                         </button>
                         <button type="submit" :disabled="guardandoProfesional"
-                                class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed">
-                            <span x-show="!guardandoProfesional" x-text="profesionalEditando ? '💾 Guardar Cambios' : '➕ Crear Profesional'"></span>
+                                class="px-6 py-2 gradient-bg text-white rounded-lg hover:opacity-90 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span x-show="!guardandoProfesional" x-text="profesionalEditando ? '?? Guardar Cambios' : '? Crear Profesional'"></span>
                             <span x-show="guardandoProfesional">Guardando...</span>
                         </button>
                     </div>
@@ -1574,7 +1579,7 @@
                 loading: true,
                 notificacionesAbiertas: false,
                 
-                // Modal de asignación
+                // Modal de asignaci�n
                 modalAsignacionAbierto: false,
                 solicitudSeleccionada: {
                     id: null,
@@ -1665,7 +1670,7 @@
                     finanzas: { monto_total: 0, monto_profesional: 0, monto_plataforma: 0, pagado: false }
                 },
 
-                // Gestión de Profesionales
+                // Gesti�n de Profesionales
                 profesionales: [],
                 loadingProfesionales: false,
                 filtrosProfesionales: {
@@ -1693,7 +1698,7 @@
                     estado: 'activo'
                 },
 
-                // Variables para gráficas
+                // Variables para gr�ficas
                 solicitudesChartInstance: null,
                 serviciosChartInstance: null,
 
@@ -1702,7 +1707,7 @@
                 kanbanBoard: null,
 
                 async init() {
-                    // Verificar autenticación
+                    // Verificar autenticaci�n
                     const token = localStorage.getItem('token');
                     if (!token) {
                         window.location.href = BASE_URL + '/login';
@@ -1755,12 +1760,12 @@
                             this.inicializarGraficas();
                         }
                     } catch (error) {
-                        console.error('Error al cargar estadísticas:', error);
+                        console.error('Error al cargar estad�sticas:', error);
                     }
                 },
 
                 inicializarGraficas() {
-                    // Destruir gráficas existentes antes de crear nuevas
+                    // Destruir gr�ficas existentes antes de crear nuevas
                     if (this.solicitudesChartInstance) {
                         this.solicitudesChartInstance.destroy();
                     }
@@ -1768,13 +1773,13 @@
                         this.serviciosChartInstance.destroy();
                     }
 
-                    // Gráfica de Solicitudes por Día
+                    // Gr�fica de Solicitudes por D�a
                     const ctx1 = document.getElementById('solicitudesChart');
                     if (ctx1) {
                         this.solicitudesChartInstance = new Chart(ctx1, {
                             type: 'line',
                             data: {
-                                labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+                                labels: ['Lun', 'Mar', 'Mi�', 'Jue', 'Vie', 'S�b', 'Dom'],
                                 datasets: [{
                                     label: 'Solicitudes',
                                     data: [12, 19, 15, 25, 22, 18, 10],
@@ -1804,13 +1809,13 @@
                         });
                     }
 
-                    // Gráfica de Servicios
+                    // Gr�fica de Servicios
                     const ctx2 = document.getElementById('serviciosChart');
                     if (ctx2) {
                         this.serviciosChartInstance = new Chart(ctx2, {
                             type: 'doughnut',
                             data: {
-                                labels: ['Médico', 'Enfermería', 'Veterinario', 'Laboratorio', 'Ambulancia'],
+                                labels: ['M�dico', 'Enfermer�a', 'Veterinario', 'Laboratorio', 'Ambulancia'],
                                 datasets: [{
                                     data: [35, 25, 20, 12, 8],
                                     backgroundColor: [
@@ -1920,7 +1925,7 @@
                 },
 
                 async aprobarPago(solicitudId) {
-                    this.showToast('Procesando aprobación de pago...', 'info');
+                    this.showToast('Procesando aprobaci�n de pago...', 'info');
 
                     try {
                         const token = localStorage.getItem('token');
@@ -1933,7 +1938,7 @@
                         });
                         
                         if (response.ok) {
-                            this.showToast('✅ Pago aprobado. La solicitud está lista para asignar un profesional.', 'success');
+                            this.showToast('? Pago aprobado. La solicitud est� lista para asignar un profesional.', 'success');
                             await this.cargarSolicitudesPendientesPago();
                             await this.cargarSolicitudes();
                         } else {
@@ -1947,7 +1952,7 @@
                 },
 
                 async rechazarPago(solicitudId) {
-                    const motivo = prompt('¿Por qué rechazas este pago?');
+                    const motivo = prompt('�Por qu� rechazas este pago?');
                     if (!motivo) return;
 
                     this.showToast('Procesando rechazo de pago...', 'info');
@@ -1964,7 +1969,7 @@
                         });
                         
                         if (response.ok) {
-                            this.showToast('❌ Pago rechazado. Se notificará al paciente.', 'warning');
+                            this.showToast('? Pago rechazado. Se notificar� al paciente.', 'warning');
                             await this.cargarSolicitudesPendientesPago();
                         } else {
                             const error = await response.json();
@@ -1996,9 +2001,9 @@
                 },
 
                 async abrirModalAsignacion(solicitud) {
-                    console.log('📋 Solicitud completa:', solicitud);
-                    console.log('🔍 servicio_id:', solicitud.servicio_id);
-                    console.log('🔍 especialidad_solicitada:', solicitud.especialidad_solicitada);
+                    console.log('?? Solicitud completa:', solicitud);
+                    console.log('?? servicio_id:', solicitud.servicio_id);
+                    console.log('?? especialidad_solicitada:', solicitud.especialidad_solicitada);
                     
                     this.solicitudSeleccionada = solicitud;
                     this.modalAsignacionAbierto = true;
@@ -2028,30 +2033,30 @@
                             }
                         });
                         
-                        console.log('✅ Response recibida');
+                        console.log('? Response recibida');
                         console.log('Response status:', response.status);
                         console.log('Response ok:', response.ok);
                         
                         if (response.ok) {
-                            console.log('📥 Parseando JSON...');
+                            console.log('?? Parseando JSON...');
                             const data = await response.json();
-                            console.log('✅ JSON parseado exitosamente');
+                            console.log('? JSON parseado exitosamente');
                             console.log('Profesionales en data:', data.profesionales?.length || 0);
                             
                             if (data.profesionales && Array.isArray(data.profesionales)) {
                                 this.profesionalesDisponibles = data.profesionales;
                                 console.log('Profesionales cargados:', this.profesionalesDisponibles.length);
                             } else {
-                                console.error('❌ data.profesionales no es un array:', data);
+                                console.error('? data.profesionales no es un array:', data);
                                 this.profesionalesDisponibles = [];
                             }
                         } else {
                             const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
-                            console.error('❌ Error en respuesta:', errorData);
+                            console.error('? Error en respuesta:', errorData);
                             this.profesionalesDisponibles = [];
                         }
                     } catch (error) {
-                        console.error('💥 Error CATCH al cargar profesionales:');
+                        console.error('?? Error CATCH al cargar profesionales:');
                         console.error('Error type:', error.constructor.name);
                         console.error('Error message:', error.message);
                         console.error('Error stack:', error.stack);
@@ -2099,7 +2104,7 @@
                         }
                     } catch (error) {
                         console.error('Error al asignar profesional:', error);
-                        this.showToast('Error al procesar la asignación', 'error');
+                        this.showToast('Error al procesar la asignaci�n', 'error');
                     } finally {
                         this.asignando = false;
                     }
@@ -2147,7 +2152,7 @@
                         }
                     } catch (error) {
                         console.error('Error al cargar reportes:', error);
-                        this.showToast('Error de conexión al cargar reportes', 'error');
+                        this.showToast('Error de conexi�n al cargar reportes', 'error');
                     } finally {
                         this.loadingReportes = false;
                     }
@@ -2172,7 +2177,7 @@
                         }
                     } catch (error) {
                         console.error('Error al cargar detalle del reporte:', error);
-                        this.showToast('Error de conexión', 'error');
+                        this.showToast('Error de conexi�n', 'error');
                     }
                 },
 
@@ -2194,7 +2199,7 @@
                 },
 
                 // ============================================
-                // FUNCIONES DE GESTIÓN DE PROFESIONALES
+                // FUNCIONES DE GESTI�N DE PROFESIONALES
                 // ============================================
 
                 async cargarListaProfesionales() {
@@ -2231,7 +2236,7 @@
                         }
                     } catch (error) {
                         console.error('Error al cargar profesionales:', error);
-                        this.showToast('Error de conexión', 'error');
+                        this.showToast('Error de conexi�n', 'error');
                     } finally {
                         this.loadingProfesionales = false;
                     }
@@ -2290,7 +2295,7 @@
                         // Preparar datos
                         const data = { ...this.formProfesional };
                         if (this.profesionalEditando && !data.password) {
-                            delete data.password; // No actualizar contraseña si está vacía
+                            delete data.password; // No actualizar contrase�a si est� vac�a
                         }
                         
                         const response = await fetch(url, {
@@ -2313,7 +2318,7 @@
                         }
                     } catch (error) {
                         console.error('Error al guardar profesional:', error);
-                        this.showToast('Error de conexión', 'error');
+                        this.showToast('Error de conexi�n', 'error');
                     } finally {
                         this.guardandoProfesional = false;
                     }
@@ -2321,7 +2326,7 @@
 
                 async cambiarEstadoProfesional(profesional) {
                     const nuevoEstado = profesional.estado === 'activo' ? 'inactivo' : 'activo';
-                    const confirmar = confirm(`¿Estás seguro de ${nuevoEstado === 'activo' ? 'activar' : 'desactivar'} a ${profesional.nombre} ${profesional.apellido}?`);
+                    const confirmar = confirm(`�Est�s seguro de ${nuevoEstado === 'activo' ? 'activar' : 'desactivar'} a ${profesional.nombre} ${profesional.apellido}?`);
                     
                     if (!confirmar) return;
                     
@@ -2344,7 +2349,7 @@
                         }
                     } catch (error) {
                         console.error('Error:', error);
-                        this.showToast('Error de conexión', 'error');
+                        this.showToast('Error de conexi�n', 'error');
                     }
                 },
 
@@ -2362,7 +2367,7 @@
                             return;
                         }
                         
-                        // Aquí deberías implementar la carga al servidor
+                        // Aqu� deber�as implementar la carga al servidor
                         // Por ahora, solo guardamos el nombre
                         this.formProfesional.hoja_vida_url = file.name;
                         this.showToast('Archivo listo para subir', 'info');
@@ -2394,7 +2399,7 @@
                     // Esperar a que el DOM se actualice
                     await this.$nextTick();
                     
-                    // Cargar profesionales y especialidades si no están cargados
+                    // Cargar profesionales y especialidades si no est�n cargados
                     if (this.profesionales.length === 0) {
                         await this.cargarListaProfesionales();
                     }
@@ -2411,7 +2416,7 @@
                             await this.kanbanBoard.cargarSolicitudes();
                         }
                     } else {
-                        console.error('KanbanBoard no está cargado');
+                        console.error('KanbanBoard no est� cargado');
                         this.showToast('Error al cargar vista Kanban', 'error');
                     }
                 },
@@ -2430,7 +2435,7 @@
     document.body.setAttribute('x-data', 'adminDashboard()');
     </script>
 
-    <!-- Alpine.js - se carga DESPUÉS de definir adminDashboard y aplicar x-data -->
+    <!-- Alpine.js - se carga DESPU�S de definir adminDashboard y aplicar x-data -->
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <!-- Toast Notifications -->

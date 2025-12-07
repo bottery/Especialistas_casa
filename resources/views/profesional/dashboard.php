@@ -1,11 +1,13 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Especialista - Especialistas en Casa</title>
+    <title>Dashboard Especialista - VitaHome</title>
+    <link rel="icon" type="image/svg+xml" href="<?= asset('/images/vitahome-icon.svg') ?>">
     <script>const BASE_URL = '<?= rtrim(BASE_URL, "/") ?>';</script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="<?= url('/css/vitahome-brand.css') ?>">
     <link rel="stylesheet" href="<?= url('/css/skeleton.css') ?>">
     <link rel="stylesheet" href="<?= url('/css/breadcrumbs.css') ?>">
     <link rel="stylesheet" href="<?= url('/css/progress.css') ?>">
@@ -13,6 +15,10 @@
     <script src="<?= asset('/js/dark-mode.js') ?>"></script>
     <script src="<?= asset('/js/keyboard-shortcuts.js') ?>"></script>
     <script src="<?= asset('/js/confirmation-modal.js') ?>"></script>
+    <style>
+        .gradient-bg { background: linear-gradient(135deg, #14b8a6 0%, #1e3a5f 100%); }
+        .gradient-text { background: linear-gradient(135deg, #14b8a6 0%, #1e3a5f 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    </style>
 <script>
 window.profesionalDashboard = function() {
     return {
@@ -45,12 +51,12 @@ window.profesionalDashboard = function() {
             notas: ''
         },
         
-        // Filtros y búsqueda
+        // Filtros y b�squeda
         searchQuery: '',
         filterModalidad: '',
         filterFecha: '',
         
-        // Paginación
+        // Paginaci�n
         itemsPorPagina: 5,
         paginaActual: 1,
 
@@ -76,7 +82,7 @@ window.profesionalDashboard = function() {
             try {
                 const token = localStorage.getItem('token');
                 
-                // Cargar estadísticas
+                // Cargar estad�sticas
                 const statsResponse = await fetch(BASE_URL + '/api/profesional/stats', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -127,16 +133,16 @@ window.profesionalDashboard = function() {
                 console.log(`Solicitud ${solicitud.id}: estado="${estado}"`);
                 
                 if (estado === 'asignado') {
-                    console.log('  ✓ Agregada a PENDIENTES');
+                    console.log('  ? Agregada a PENDIENTES');
                     this.solicitudesPendientes.push(solicitud);
                 } else if (estado === 'en_proceso') {
-                    console.log('  ✓ Agregada a ACTIVAS');
+                    console.log('  ? Agregada a ACTIVAS');
                     this.solicitudesActivas.push(solicitud);
                 } else if (estado === 'completado') {
-                    console.log('  ✓ Agregada a COMPLETADAS');
+                    console.log('  ? Agregada a COMPLETADAS');
                     this.solicitudesCompletadas.push(solicitud);
                 } else {
-                    console.log(`  ✗ Estado no reconocido: "${estado}"`);
+                    console.log(`  ? Estado no reconocido: "${estado}"`);
                 }
             }
             
@@ -183,8 +189,8 @@ window.profesionalDashboard = function() {
 
         async aceptarSolicitud(solicitudId) {
             const result = await ConfirmModal.show({
-                title: '¿Aceptar solicitud?',
-                message: '¿Deseas aceptar esta solicitud y comprometerte a realizarla?',
+                title: '�Aceptar solicitud?',
+                message: '�Deseas aceptar esta solicitud y comprometerte a realizarla?',
                 confirmText: 'Aceptar',
                 cancelText: 'Cancelar',
                 type: 'info'
@@ -206,7 +212,7 @@ window.profesionalDashboard = function() {
                 const data = await response.json();
                 
                 if (response.ok) {
-                    alert('✅ Solicitud aceptada exitosamente');
+                    alert('? Solicitud aceptada exitosamente');
                     await this.cargarDatos();
                 } else {
                     alert(data.message || 'Error al aceptar la solicitud');
@@ -255,8 +261,8 @@ window.profesionalDashboard = function() {
 
         async iniciarServicio(solicitudId) {
             const result = await ConfirmModal.show({
-                title: '¿Iniciar servicio?',
-                message: '¿Confirmas que vas a iniciar este servicio ahora?',
+                title: '�Iniciar servicio?',
+                message: '�Confirmas que vas a iniciar este servicio ahora?',
                 confirmText: 'Iniciar',
                 cancelText: 'Cancelar',
                 type: 'info'
@@ -278,7 +284,7 @@ window.profesionalDashboard = function() {
                 const data = await response.json();
                 
                 if (response.ok) {
-                    alert('✅ Servicio iniciado');
+                    alert('? Servicio iniciado');
                     await this.cargarDatos();
                 } else {
                     alert(data.message || 'Error al iniciar el servicio');
@@ -300,11 +306,11 @@ window.profesionalDashboard = function() {
         async enviarCompletarServicio() {
             // Validar campos requeridos
             if (!this.formCompletar.reporte.trim()) {
-                alert('⚠️ El reporte del servicio es obligatorio');
+                alert('?? El reporte del servicio es obligatorio');
                 return;
             }
             if (!this.formCompletar.diagnostico.trim()) {
-                alert('⚠️ El diagnóstico o conclusión es obligatorio');
+                alert('?? El diagn�stico o conclusi�n es obligatorio');
                 return;
             }
 
@@ -323,7 +329,7 @@ window.profesionalDashboard = function() {
                 const data = await response.json();
                 
                 if (response.ok) {
-                    alert('✅ Servicio completado exitosamente');
+                    alert('? Servicio completado exitosamente');
                     this.cerrarModalCompletar();
                     await this.cargarDatos();
                 } else {
@@ -435,13 +441,13 @@ window.profesionalDashboard = function() {
 
         getEstadoTexto(estado) {
             const textos = {
-                'pendiente': '⏳ Pendiente',
-                'asignado': '📌 Asignado',
-                'confirmada': '✅ Confirmada',
-                'en_proceso': '🔄 En Proceso',
-                'completado': '✔️ Completado',
-                'cancelado': '❌ Cancelado',
-                'rechazada': '❌ Rechazada'
+                'pendiente': '? Pendiente',
+                'asignado': '?? Asignado',
+                'confirmada': '? Confirmada',
+                'en_proceso': '?? En Proceso',
+                'completado': '?? Completado',
+                'cancelado': '? Cancelado',
+                'rechazada': '? Rechazada'
             };
             return textos[estado] || estado;
         },
@@ -515,7 +521,7 @@ window.profesionalDashboard = function() {
                         </svg>
                     </button>
                     
-                    <button @click="logout()" class="text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition" title="Cerrar sesión">
+                    <button @click="logout()" class="text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition" title="Cerrar sesi�n">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                         </svg>
@@ -538,14 +544,14 @@ window.profesionalDashboard = function() {
             <div class="breadcrumb-item active">Dashboard Especialista</div>
         </nav>
 
-        <!-- Skeletons para estadísticas -->
+        <!-- Skeletons para estad�sticas -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" x-show="loading">
             <div class="skeleton-stat-card"></div>
             <div class="skeleton-stat-card"></div>
             <div class="skeleton-stat-card"></div>
         </div>
 
-        <!-- Tarjetas de estadísticas -->
+        <!-- Tarjetas de estad�sticas -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" x-show="!loading">
             <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-yellow-500">
                 <div class="flex items-center justify-between">
@@ -568,7 +574,7 @@ window.profesionalDashboard = function() {
                         <p class="text-3xl font-bold text-gray-900 mt-2" x-text="stats.solicitudesEnProgreso">0</p>
                     </div>
                     <div class="bg-blue-100 p-3 rounded-full">
-                        <svg class="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                        <svg class="w-8 h-8 text-teal-600" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
                         </svg>
                     </div>
@@ -590,7 +596,7 @@ window.profesionalDashboard = function() {
             </div>
         </div>
 
-        <!-- Barra de búsqueda y filtros -->
+        <!-- Barra de b�squeda y filtros -->
         <div class="bg-white rounded-lg shadow-sm p-4 mb-6" x-show="!loading">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div class="md:col-span-2">
@@ -598,7 +604,7 @@ window.profesionalDashboard = function() {
                         <input 
                             type="text" 
                             x-model="searchQuery" 
-                            placeholder="Buscar por paciente, servicio, descripción..."
+                            placeholder="Buscar por paciente, servicio, descripci�n..."
                             class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
                         >
                         <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -648,7 +654,7 @@ window.profesionalDashboard = function() {
                         <span x-show="solicitudesPendientes.length > 0" class="ml-2 bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-semibold" x-text="solicitudesPendientes.length"></span>
                     </button>
                     <button @click="activeTab = 'activas'" 
-                            :class="activeTab === 'activas' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                            :class="activeTab === 'activas' ? 'border-blue-500 text-teal-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
                             class="py-4 px-6 border-b-2 font-medium text-sm transition-colors">
                         Activas
                         <span x-show="solicitudesActivas.length > 0" class="ml-2 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-semibold" x-text="solicitudesActivas.length"></span>
@@ -677,7 +683,7 @@ window.profesionalDashboard = function() {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
                 <h3 class="mt-2 text-sm font-medium text-gray-900">Sin solicitudes pendientes</h3>
-                <p class="mt-1 text-sm text-gray-500">No tienes solicitudes esperando tu aceptación</p>
+                <p class="mt-1 text-sm text-gray-500">No tienes solicitudes esperando tu aceptaci�n</p>
             </div>
 
             <div class="grid gap-6">
@@ -708,11 +714,11 @@ window.profesionalDashboard = function() {
                                     <span class="text-green-600 font-semibold" x-text="formatMonto(solicitud.monto_total)"></span>
                                 </p>
                                 <p x-show="solicitud.sintomas" class="text-sm text-gray-600 mt-2">
-                                    <span class="font-medium">Síntomas:</span> 
+                                    <span class="font-medium">S�ntomas:</span> 
                                     <span x-text="solicitud.sintomas"></span>
                                 </p>
                                 <p x-show="solicitud.direccion_servicio" class="text-sm text-gray-600 mt-1">
-                                    <span class="font-medium">📍 Dirección:</span> 
+                                    <span class="font-medium">?? Direcci�n:</span> 
                                     <span x-text="solicitud.direccion_servicio"></span>
                                 </p>
                             </div>
@@ -721,21 +727,21 @@ window.profesionalDashboard = function() {
                         <div class="flex gap-3 pt-4 border-t">
                             <button @click="aceptarSolicitud(solicitud.id)" 
                                     class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-medium">
-                                ✅ Aceptar
+                                ? Aceptar
                             </button>
                             <button @click="rechazarSolicitud(solicitud.id)" 
                                     class="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition font-medium">
-                                ❌ Rechazar
+                                ? Rechazar
                             </button>
                             <button @click="verDetalle(solicitud)" 
                                     class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-                                👁️ Ver
+                                ??? Ver
                             </button>
                         </div>
                     </div>
                 </template>
 
-                <!-- Paginación -->
+                <!-- Paginaci�n -->
                 <div x-show="totalPaginas > 1" class="flex justify-center mt-6 pt-4 border-t border-gray-200">
                     <div class="flex items-center space-x-2">
                         <button 
@@ -744,10 +750,10 @@ window.profesionalDashboard = function() {
                             :class="paginaActual === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'"
                             class="px-3 py-2 border border-gray-300 rounded-lg text-sm"
                         >
-                            ←
+                            ?
                         </button>
                         <span class="text-sm text-gray-600">
-                            Página <span x-text="paginaActual"></span> de <span x-text="totalPaginas"></span>
+                            P�gina <span x-text="paginaActual"></span> de <span x-text="totalPaginas"></span>
                         </span>
                         <button 
                             @click="cambiarPagina(paginaActual + 1)"
@@ -755,7 +761,7 @@ window.profesionalDashboard = function() {
                             :class="paginaActual === totalPaginas ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'"
                             class="px-3 py-2 border border-gray-300 rounded-lg text-sm"
                         >
-                            →
+                            ?
                         </button>
                     </div>
                 </div>
@@ -792,7 +798,7 @@ window.profesionalDashboard = function() {
                                     <span x-text="formatDate(solicitud.fecha_programada)"></span>
                                 </p>
                                 <p x-show="solicitud.direccion_servicio" class="text-sm text-gray-600 mt-1">
-                                    <span class="font-medium">📍</span> 
+                                    <span class="font-medium">??</span> 
                                     <span x-text="solicitud.direccion_servicio"></span>
                                 </p>
                             </div>
@@ -802,11 +808,11 @@ window.profesionalDashboard = function() {
                             <button x-show="solicitud.estado === 'en_proceso'" 
                                     @click="completarServicio(solicitud.id)" 
                                     class="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-medium">
-                                ✔️ Completar Servicio
+                                ?? Completar Servicio
                             </button>
                             <button @click="verDetalle(solicitud)" 
                                     class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-                                👁️ Ver Detalles
+                                ??? Ver Detalles
                             </button>
                         </div>
                         </div>
@@ -822,7 +828,7 @@ window.profesionalDashboard = function() {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
                 <h3 class="mt-2 text-sm font-medium text-gray-900">Sin historial</h3>
-                <p class="mt-1 text-sm text-gray-500">Aún no has completado ningún servicio</p>
+                <p class="mt-1 text-sm text-gray-500">A�n no has completado ning�n servicio</p>
             </div>
 
             <div class="grid gap-4">
@@ -838,7 +844,7 @@ window.profesionalDashboard = function() {
                             </div>
                             <div class="text-right">
                                 <p class="text-sm font-semibold text-green-600" x-text="formatMonto(solicitud.monto_total)"></p>
-                                <span class="text-xs text-gray-500">✔️ Completada</span>
+                                <span class="text-xs text-gray-500">?? Completada</span>
                             </div>
                         </div>
                     </div>
@@ -875,9 +881,9 @@ window.profesionalDashboard = function() {
                 </div>
 
                 <div class="space-y-4" x-show="solicitudDetalle">
-                    <!-- Información del Servicio -->
+                    <!-- Informaci�n del Servicio -->
                     <div class="bg-gray-50 rounded-lg p-4">
-                        <h3 class="font-semibold text-gray-900 mb-3">📋 Información del Servicio</h3>
+                        <h3 class="font-semibold text-gray-900 mb-3">?? Informaci�n del Servicio</h3>
                         <div class="grid grid-cols-2 gap-3 text-sm">
                             <div>
                                 <p class="text-gray-500">Servicio</p>
@@ -898,16 +904,16 @@ window.profesionalDashboard = function() {
                         </div>
                     </div>
 
-                    <!-- Información del Paciente -->
+                    <!-- Informaci�n del Paciente -->
                     <div class="bg-gray-50 rounded-lg p-4">
-                        <h3 class="font-semibold text-gray-900 mb-3">👤 Información del Paciente</h3>
+                        <h3 class="font-semibold text-gray-900 mb-3">?? Informaci�n del Paciente</h3>
                         <div class="grid grid-cols-2 gap-3 text-sm">
                             <div>
                                 <p class="text-gray-500">Nombre</p>
                                 <p class="font-medium" x-text="solicitudDetalle?.paciente_nombre + ' ' + solicitudDetalle?.paciente_apellido"></p>
                             </div>
                             <div>
-                                <p class="text-gray-500">Teléfono</p>
+                                <p class="text-gray-500">Tel�fono</p>
                                 <p class="font-medium" x-text="solicitudDetalle?.paciente_telefono || 'No especificado'"></p>
                             </div>
                             <div class="col-span-2">
@@ -919,7 +925,7 @@ window.profesionalDashboard = function() {
 
                     <!-- Detalles de la Cita -->
                     <div class="bg-gray-50 rounded-lg p-4">
-                        <h3 class="font-semibold text-gray-900 mb-3">📅 Detalles de la Cita</h3>
+                        <h3 class="font-semibold text-gray-900 mb-3">?? Detalles de la Cita</h3>
                         <div class="grid grid-cols-2 gap-3 text-sm">
                             <div>
                                 <p class="text-gray-500">Fecha Programada</p>
@@ -930,18 +936,18 @@ window.profesionalDashboard = function() {
                                 <p class="font-medium" x-text="solicitudDetalle?.hora_programada"></p>
                             </div>
                             <div class="col-span-2" x-show="solicitudDetalle?.direccion_servicio">
-                                <p class="text-gray-500">Dirección</p>
+                                <p class="text-gray-500">Direcci�n</p>
                                 <p class="font-medium" x-text="solicitudDetalle?.direccion_servicio"></p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Síntomas / Observaciones -->
+                    <!-- S�ntomas / Observaciones -->
                     <div class="bg-gray-50 rounded-lg p-4" x-show="solicitudDetalle?.sintomas || solicitudDetalle?.observaciones">
-                        <h3 class="font-semibold text-gray-900 mb-3">📝 Información Adicional</h3>
+                        <h3 class="font-semibold text-gray-900 mb-3">?? Informaci�n Adicional</h3>
                         <div class="space-y-3 text-sm">
                             <div x-show="solicitudDetalle?.sintomas">
-                                <p class="text-gray-500">Síntomas</p>
+                                <p class="text-gray-500">S�ntomas</p>
                                 <p class="font-medium" x-text="solicitudDetalle?.sintomas"></p>
                             </div>
                             <div x-show="solicitudDetalle?.observaciones">
@@ -953,7 +959,7 @@ window.profesionalDashboard = function() {
 
                     <!-- Estado Actual -->
                     <div class="bg-gray-50 rounded-lg p-4">
-                        <h3 class="font-semibold text-gray-900 mb-3">📊 Estado</h3>
+                        <h3 class="font-semibold text-gray-900 mb-3">?? Estado</h3>
                         <div class="flex items-center gap-2">
                             <span class="px-3 py-1 rounded-full text-xs font-semibold"
                                   :class="{
@@ -990,7 +996,7 @@ window.profesionalDashboard = function() {
                 <!-- Header -->
                 <div class="flex justify-between items-center mb-6">
                     <div>
-                        <h2 class="text-2xl font-bold text-gray-900">✅ Completar Servicio</h2>
+                        <h2 class="text-2xl font-bold text-gray-900">? Completar Servicio</h2>
                         <p class="text-sm text-gray-600 mt-1">
                             Servicio: <span x-text="solicitudACompletar?.servicio_nombre" class="font-medium"></span>
                         </p>
@@ -1011,43 +1017,43 @@ window.profesionalDashboard = function() {
                     <!-- Reporte del Servicio (OBLIGATORIO) -->
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            📋 Reporte del Servicio <span class="text-red-500">*</span>
+                            ?? Reporte del Servicio <span class="text-red-500">*</span>
                         </label>
                         <textarea 
                             x-model="formCompletar.reporte"
                             rows="5"
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                            placeholder="Describe detalladamente el servicio prestado, procedimientos realizados, hallazgos relevantes...&#10;&#10;Ejemplo: Se realizó consulta general. El paciente presentó síntomas de gripe común. Se examinaron vías respiratorias, temperatura y presión arterial. Todos los signos vitales dentro de parámetros normales..."
+                            placeholder="Describe detalladamente el servicio prestado, procedimientos realizados, hallazgos relevantes...&#10;&#10;Ejemplo: Se realiz� consulta general. El paciente present� s�ntomas de gripe com�n. Se examinaron v�as respiratorias, temperatura y presi�n arterial. Todos los signos vitales dentro de par�metros normales..."
                         ></textarea>
-                        <p class="text-xs text-gray-500 mt-1">Este reporte será visible para el paciente y la plataforma</p>
+                        <p class="text-xs text-gray-500 mt-1">Este reporte ser� visible para el paciente y la plataforma</p>
                     </div>
 
-                    <!-- Diagnóstico o Conclusiones (OBLIGATORIO) -->
+                    <!-- Diagn�stico o Conclusiones (OBLIGATORIO) -->
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            🩺 Diagnóstico / Conclusiones <span class="text-red-500">*</span>
+                            ?? Diagn�stico / Conclusiones <span class="text-red-500">*</span>
                         </label>
                         <textarea 
                             x-model="formCompletar.diagnostico"
                             rows="4"
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                            placeholder="Diagnóstico médico o conclusiones profesionales...&#10;&#10;Ejemplo: Diagnóstico: Rinofaringitis aguda (Gripe común)&#10;&#10;Evolución esperada: Mejoría en 5-7 días con el tratamiento indicado."
+                            placeholder="Diagn�stico m�dico o conclusiones profesionales...&#10;&#10;Ejemplo: Diagn�stico: Rinofaringitis aguda (Gripe com�n)&#10;&#10;Evoluci�n esperada: Mejor�a en 5-7 d�as con el tratamiento indicado."
                         ></textarea>
-                        <p class="text-xs text-gray-500 mt-1">Diagnóstico final o conclusiones del servicio</p>
+                        <p class="text-xs text-gray-500 mt-1">Diagn�stico final o conclusiones del servicio</p>
                     </div>
 
                     <!-- Notas Adicionales (OPCIONAL) -->
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            📝 Notas Adicionales (Opcional)
+                            ?? Notas Adicionales (Opcional)
                         </label>
                         <textarea 
                             x-model="formCompletar.notas"
                             rows="3"
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                            placeholder="Recomendaciones, medicamentos recetados, indicaciones de seguimiento...&#10;&#10;Ejemplo:&#10;- Paracetamol 500mg cada 8 horas por 5 días&#10;- Abundantes líquidos&#10;- Reposo relativo&#10;- Control en 7 días si persisten síntomas"
+                            placeholder="Recomendaciones, medicamentos recetados, indicaciones de seguimiento...&#10;&#10;Ejemplo:&#10;- Paracetamol 500mg cada 8 horas por 5 d�as&#10;- Abundantes l�quidos&#10;- Reposo relativo&#10;- Control en 7 d�as si persisten s�ntomas"
                         ></textarea>
-                        <p class="text-xs text-gray-500 mt-1">Información adicional, recetas, recomendaciones</p>
+                        <p class="text-xs text-gray-500 mt-1">Informaci�n adicional, recetas, recomendaciones</p>
                     </div>
 
                     <!-- Aviso Importante -->
@@ -1060,7 +1066,7 @@ window.profesionalDashboard = function() {
                             </div>
                             <div class="ml-3">
                                 <p class="text-sm text-yellow-700">
-                                    <strong>Importante:</strong> Una vez completado el servicio, el paciente podrá ver este reporte y calificar tu atención. Asegúrate de incluir toda la información relevante.
+                                    <strong>Importante:</strong> Una vez completado el servicio, el paciente podr� ver este reporte y calificar tu atenci�n. Aseg�rate de incluir toda la informaci�n relevante.
                                 </p>
                             </div>
                         </div>
@@ -1071,14 +1077,14 @@ window.profesionalDashboard = function() {
                 <div class="mt-8 flex gap-3">
                     <button @click="cerrarModalCompletar()" 
                             class="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium">
-                        ❌ Cancelar
+                        ? Cancelar
                     </button>
                     <button @click="enviarCompletarServicio()" 
                             :disabled="loading"
                             :class="loading ? 'opacity-50 cursor-not-allowed' : ''"
                             class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium">
-                        <span x-show="!loading">✅ Completar Servicio</span>
-                        <span x-show="loading">⏳ Procesando...</span>
+                        <span x-show="!loading">? Completar Servicio</span>
+                        <span x-show="loading">? Procesando...</span>
                     </button>
                 </div>
             </div>

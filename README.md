@@ -1,6 +1,13 @@
-# 🏥 Especialistas en Casa
+# 🏥 VitaHome - Especialistas en Casa
 
-Sistema de gestión de servicios médicos especializados con PHP 8.2 y arquitectura MVC.
+<p align="center">
+  <img src="public/images/vitahome-icon.svg" alt="VitaHome Logo" width="120">
+</p>
+
+<p align="center">
+  <strong>Sistema de gestión de servicios médicos especializados a domicilio</strong><br>
+  PHP 8.2 • Arquitectura MVC • TailwindCSS • Alpine.js
+</p>
 
 ---
 
