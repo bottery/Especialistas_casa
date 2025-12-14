@@ -29,6 +29,10 @@
         .loading { text-align: center; padding: 20px; }
         .error { background: #fee; color: #c33; border: 1px solid #fcc; padding: 15px; margin-bottom: 20px; }
         .success { background: #efe; color: #3c3; border: 1px solid #cfc; padding: 15px; margin-bottom: 20px; }
+            .stat-card.warning { border-color: #f5c26b; background: linear-gradient(180deg,#fff8ed,#fff); }
+            .stat-card.warning .number { color: #b85b00; }
+            .payments-legend { font-size: 13px; color: #555; margin: 10px 0 20px; }
+            .payments-legend strong { color: #222; }
     </style>
 </head>
 <body>
@@ -103,6 +107,10 @@
                     <div class="number" id="stat-profesionales">0</div>
                 </div>
             </div>
+
+                <div class="payments-legend" id="payments-legend">
+                    <strong>Aclaración:</strong> <span id="legend-aprobados">Aprobados = en cuenta</span> · <span id="legend-pendientes">Pendientes = en espera de aprobación por el admin</span>
+                </div>
 
             <!-- Configuración de Pagos -->
             <div class="section">
@@ -281,7 +289,18 @@
             // Mostrar ingresos pendientes si existen
             const pendientes = Math.max(0, parseFloat(stats.ingresosPendientes) || 0);
             const pendEl = document.getElementById('stat-ingresos-pendientes');
-            if (pendEl) pendEl.textContent = '$' + formatNumber(pendientes);
+            if (pendEl) {
+                pendEl.textContent = '$' + formatNumber(pendientes);
+                // Resaltar tarjeta si hay pendientes
+                const card = pendEl.closest('.stat-card');
+                if (card) {
+                    if (pendientes > 0) {
+                        card.classList.add('warning');
+                    } else {
+                        card.classList.remove('warning');
+                    }
+                }
+            }
             setStatValue('stat-completadas', Math.max(0, parseInt(stats.solicitudesCompletadas) || 0));
             setStatValue('stat-pagos', Math.max(0, parseInt(stats.pagosHoy) || 0));
             setStatValue('stat-nuevos', Math.max(0, parseInt(stats.nuevosUsuariosHoy) || 0));
