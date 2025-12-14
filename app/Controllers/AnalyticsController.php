@@ -2,9 +2,10 @@
 
 namespace App\Controllers;
 
+use App\Core\BaseController;
 use App\Services\Database;
 
-class AnalyticsController
+class AnalyticsController extends BaseController
 {
     private $db;
 
@@ -98,21 +99,5 @@ class AnalyticsController
             ORDER BY fecha ASC
         ";
         return $this->db->select($query);
-    }
-
-    private function sendSuccess($data, int $status = 200): void
-    {
-        http_response_code($status);
-        header('Content-Type: application/json');
-        echo json_encode(array_merge(['success' => true], $data));
-        exit;
-    }
-
-    private function sendError(string $message, int $status = 400): void
-    {
-        http_response_code($status);
-        header('Content-Type: application/json');
-        echo json_encode(['success' => false, 'message' => $message]);
-        exit;
     }
 }

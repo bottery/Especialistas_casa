@@ -2,13 +2,14 @@
 
 namespace App\Controllers;
 
+use App\Core\BaseController;
 use App\Models\Usuario;
 use App\Services\Database;
 
 /**
  * Controlador para Super Administrador
  */
-class SuperAdminController
+class SuperAdminController extends BaseController
 {
     private $db;
     private $usuarioModel;
@@ -36,7 +37,9 @@ class SuperAdminController
             try { $stats['nuevosUsuariosHoy'] = $this->getNuevosUsuariosHoy(); } catch(\Exception $e) { $stats['nuevosUsuariosHoy'] = 0; }
             try { $stats['profesionalesActivos'] = $this->getProfesionalesActivos(); } catch(\Exception $e) { $stats['profesionalesActivos'] = 0; }
 
-            $this->sendSuccess(['stats' => $stats]);
+            // Devolver las métricas directamente en el objeto `data`
+            // para que la vista JS pueda leer `data.totalUsuarios`, etc.
+            $this->sendSuccess($stats);
         } catch (\Exception $e) {
             $this->sendError($e->getMessage() . ' - Line: ' . $e->getLine(), 500);
         }
@@ -221,13 +224,13 @@ class SuperAdminController
 
     private function getServiciosActivos(): int
     {
-        $result = $this->db->selectOne("SELECT COUNT(*) as total FROM servicios WHERE estado = 'activo'");
+        $result = $this->db->selectOne("SELECT COUNT(*) as total FROM servicios WHERE activo = 1");
         return (int) ($result['total'] ?? 0);
     }
 
     private function getSolicitudesPendientes(): int
     {
-        $result = $this->db->selectOne("SELECT COUNT(*) as total FROM solicitudes WHERE estado = 'pendiente'");
+        $result = $this->db->selectOne("SELECT COUNT(*) as total FROM solicitudes WHERE estado IN ('pendiente', 'pendiente_pago', 'asignado')");
         return (int) ($result['total'] ?? 0);
     }
 
@@ -236,7 +239,7 @@ class SuperAdminController
         $result = $this->db->selectOne("
             SELECT SUM(monto) as total 
             FROM pagos 
-            WHERE estado IN ('completado', 'aprobado') 
+            WHERE estado = 'aprobado' 
             AND MONTH(created_at) = MONTH(CURDATE())
             AND YEAR(created_at) = YEAR(CURDATE())
         ");
@@ -245,7 +248,7 @@ class SuperAdminController
 
     private function getSolicitudesCompletadas(): int
     {
-        $result = $this->db->selectOne("SELECT COUNT(*) as total FROM solicitudes WHERE estado = 'completada'");
+        $result = $this->db->selectOne("SELECT COUNT(*) as total FROM solicitudes WHERE estado IN ('completada', 'completado')");
         return (int) ($result['total'] ?? 0);
     }
 
@@ -516,24 +519,5 @@ class SuperAdminController
             error_log("Error al ver reporte: " . $e->getMessage());
             $this->sendError("Error al obtener el reporte", 500);
         }
-    }
-
-    private function sendSuccess($data, int $status = 200): void
-    {
-        http_response_code($status);
-        header('Content-Type: application/json');
-        echo json_encode(array_merge(['success' => true], $data));
-        exit;
-    }
-
-    private function sendError(string $message, int $status = 400): void
-    {
-        http_response_code($status);
-        header('Content-Type: application/json');
-        echo json_encode([
-            'success' => false,
-            'message' => $message
-        ]);
-        exit;
     }
 }

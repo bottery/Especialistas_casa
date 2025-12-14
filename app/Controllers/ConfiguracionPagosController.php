@@ -8,8 +8,9 @@ namespace App\Controllers;
 
 use App\Services\Database;
 use App\Middleware\AuthMiddleware;
+use App\Core\BaseController;
 
-class ConfiguracionPagosController
+class ConfiguracionPagosController extends BaseController
 {
     private $db;
     private $authMiddleware;
@@ -30,30 +31,6 @@ class ConfiguracionPagosController
         if (!$this->user) {
             exit;
         }
-    }
-
-    /**
-     * Enviar respuesta JSON de éxito
-     */
-    private function sendSuccess($data, int $code = 200): void
-    {
-        http_response_code($code);
-        header('Content-Type: application/json');
-        if (is_array($data) && !isset($data['success'])) {
-            echo json_encode(['success' => true, 'data' => $data]);
-        } else {
-            echo json_encode(array_merge(['success' => true], $data));
-        }
-    }
-
-    /**
-     * Enviar respuesta JSON de error
-     */
-    private function sendError(string $message, int $code = 400): void
-    {
-        http_response_code($code);
-        header('Content-Type: application/json');
-        echo json_encode(['success' => false, 'error' => $message, 'message' => $message]);
     }
 
     /**

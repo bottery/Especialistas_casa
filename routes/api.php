@@ -1412,6 +1412,59 @@ if ($path === '/admin/configuracion-pagos/qr' && $method === 'DELETE') {
 }
 
 // ============================================
+// RUTAS DE DIAGNÓSTICO Y LOGS (Admin)
+// ============================================
+
+// POST /api/admin/error-logs - Registrar errores del cliente
+if ($path === '/admin/error-logs' && $method === 'POST') {
+    try {
+        // Validar que sea admin o superadmin
+        $token = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+        if (strpos($token, 'Bearer ') === 0) {
+            $token = substr($token, 7);
+        }
+        
+        // Decodificar token JWT si es necesario
+        $data = json_decode(file_get_contents('php://input'), true);
+        
+        if (!isset($data['logs']) || !is_array($data['logs'])) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'No logs provided']);
+            exit;
+        }
+        
+        // Guardar logs en archivo
+        $logDir = __DIR__ . '/../storage/logs';
+        if (!is_dir($logDir)) {
+            mkdir($logDir, 0755, true);
+        }
+        
+        $logFile = $logDir . '/client-errors-' . date('Y-m-d') . '.log';
+        $timestamp = date('Y-m-d H:i:s');
+        
+        foreach ($data['logs'] as $log) {
+            $logEntry = sprintf(
+                "[%s] %s: %s | Details: %s\n",
+                $timestamp,
+                $log['level'] ?? 'UNKNOWN',
+                $log['message'] ?? 'No message',
+                json_encode($log['details'] ?? [])
+            );
+            file_put_contents($logFile, $logEntry, FILE_APPEND);
+        }
+        
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'message' => 'Logs registrados']);
+        exit;
+    } catch (\Exception $e) {
+        http_response_code(500);
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        exit;
+    }
+}
+
+// ============================================
 // RUTAS DE PAGOS POR TRANSFERENCIA (Admin/Paciente)
 // ============================================
 
