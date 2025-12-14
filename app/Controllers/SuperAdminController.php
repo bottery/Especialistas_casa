@@ -33,10 +33,15 @@ class SuperAdminController extends BaseController
             try { $stats['solicitudesPendientes'] = $this->getSolicitudesPendientes(); } catch(\Exception $e) { $stats['solicitudesPendientes'] = 0; }
             try { $stats['ingresosMes'] = $this->getIngresosMes(); } catch(\Exception $e) { $stats['ingresosMes'] = 0; }
             try { $stats['ingresosPendientes'] = $this->getIngresosPendientes(); } catch(\Exception $e) { $stats['ingresosPendientes'] = 0; }
+            // Estimado: lo que hay aprobado + lo que está pendiente (entrada esperada al mes)
+            $stats['ingresosEstimados'] = (float)($stats['ingresosMes'] ?? 0) + (float)($stats['ingresosPendientes'] ?? 0);
             try { $stats['solicitudesCompletadas'] = $this->getSolicitudesCompletadas(); } catch(\Exception $e) { $stats['solicitudesCompletadas'] = 0; }
             try { $stats['pagosHoy'] = $this->getPagosHoy(); } catch(\Exception $e) { $stats['pagosHoy'] = 0; }
             try { $stats['nuevosUsuariosHoy'] = $this->getNuevosUsuariosHoy(); } catch(\Exception $e) { $stats['nuevosUsuariosHoy'] = 0; }
             try { $stats['profesionalesActivos'] = $this->getProfesionalesActivos(); } catch(\Exception $e) { $stats['profesionalesActivos'] = 0; }
+
+            // Log values for debugging
+            error_log('[Dashboard Stats] ingresosMes=' . ($stats['ingresosMes'] ?? 'null') . ' ingresosPendientes=' . ($stats['ingresosPendientes'] ?? 'null'));
 
             // Devolver las métricas directamente en el objeto `data`
             // para que la vista JS pueda leer `data.totalUsuarios`, etc.
@@ -237,26 +242,27 @@ class SuperAdminController extends BaseController
 
     private function getIngresosMes(): float
     {
-        $result = $this->db->selectOne("\\
-            SELECT SUM(monto) as total 
+        $result = $this->db->selectOne(
+            "SELECT SUM(monto) as total 
             FROM pagos 
             WHERE estado = 'aprobado'
             AND MONTH(created_at) = MONTH(CURDATE())
-            AND YEAR(created_at) = YEAR(CURDATE())
-        ");
+            AND YEAR(created_at) = YEAR(CURDATE())"
+        );
         return (float) ($result['total'] ?? 0);
     }
 
     private function getIngresosPendientes(): float
     {
-        $result = $this->db->selectOne("\\
-            SELECT SUM(monto) as total 
-            FROM pagos 
-            WHERE estado = 'pendiente'
-            AND MONTH(created_at) = MONTH(CURDATE())
-            AND YEAR(created_at) = YEAR(CURDATE())
-        ");
-        return (float) ($result['total'] ?? 0);
+        $query = "SELECT SUM(monto) as total FROM pagos WHERE estado = 'pendiente' AND MONTH(created_at) = MONTH(CURDATE()) AND YEAR(created_at) = YEAR(CURDATE())";
+        try {
+            $result = $this->db->selectOne($query);
+            error_log('[getIngresosPendientes] query=' . $query . ' result=' . var_export($result, true));
+            return (float) ($result['total'] ?? 0);
+        } catch (\Exception $e) {
+            error_log('[getIngresosPendientes] error: ' . $e->getMessage());
+            return 0;
+        }
     }
 
     private function getSolicitudesCompletadas(): int

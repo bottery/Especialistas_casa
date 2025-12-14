@@ -91,6 +91,10 @@
                     <div class="number" id="stat-ingresos-pendientes">$0</div>
                 </div>
                 <div class="stat-card">
+                    <h3>Estimado Ingresos Mes</h3>
+                    <div class="number" id="stat-ingresos-estimado">$0</div>
+                </div>
+                <div class="stat-card">
                     <h3>Solicitudes Completadas</h3>
                     <div class="number" id="stat-completadas">0</div>
                 </div>
@@ -300,6 +304,12 @@
                         card.classList.remove('warning');
                     }
                 }
+            }
+            // Mostrar estimado (aprobados + pendientes)
+            const estimadoEl = document.getElementById('stat-ingresos-estimado');
+            if (estimadoEl) {
+                const estimado = Math.max(0, parseFloat(stats.ingresosEstimados) || (parseFloat(stats.ingresosMes)||0) + pendientes);
+                estimadoEl.textContent = '$' + formatNumber(estimado);
             }
             setStatValue('stat-completadas', Math.max(0, parseInt(stats.solicitudesCompletadas) || 0));
             setStatValue('stat-pagos', Math.max(0, parseInt(stats.pagosHoy) || 0));
