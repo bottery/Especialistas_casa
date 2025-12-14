@@ -56,6 +56,7 @@
     <main>
         <!-- Mensajes -->
         <div id="message-container"></div>
+        <pre id="raw-json" style="display:none; background:#fff; border:1px solid #ddd; padding:10px; margin:10px 0; white-space:pre-wrap; max-height:300px; overflow:auto;"></pre>
 
         <!-- Cargando -->
         <div id="loading" class="loading" style="display: none;">Cargando datos...</div>
@@ -80,6 +81,10 @@
                 <div class="stat-card">
                     <h3>Ingresos Mes</h3>
                     <div class="number" id="stat-ingresos">$0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Ingresos Pendientes</h3>
+                    <div class="number" id="stat-ingresos-pendientes">$0</div>
                 </div>
                 <div class="stat-card">
                     <h3>Solicitudes Completadas</h3>
@@ -223,6 +228,16 @@
 
                     const data = await response.json();
                     console.log('Datos recibidos:', data);
+                    try {
+                        const urlParams = new URLSearchParams(window.location.search);
+                        if (urlParams.get('debug') === '1') {
+                            const raw = document.getElementById('raw-json');
+                            raw.style.display = 'block';
+                            raw.textContent = JSON.stringify(data, null, 2);
+                        }
+                    } catch (e) {
+                        console.error('No se pudo mostrar debug JSON:', e);
+                    }
                     
                     // Intentar extraer stats de diferentes estructuras
                     if (data.data && typeof data.data === 'object') {
@@ -263,6 +278,10 @@
             setStatValue('stat-servicios', Math.max(0, parseInt(stats.serviciosActivos) || 0));
             setStatValue('stat-pendientes', Math.max(0, parseInt(stats.solicitudesPendientes) || 0));
             setStatValue('stat-ingresos', '$' + formatNumber(Math.max(0, parseFloat(stats.ingresosMes) || 0)));
+            // Mostrar ingresos pendientes si existen
+            const pendientes = Math.max(0, parseFloat(stats.ingresosPendientes) || 0);
+            const pendEl = document.getElementById('stat-ingresos-pendientes');
+            if (pendEl) pendEl.textContent = '$' + formatNumber(pendientes);
             setStatValue('stat-completadas', Math.max(0, parseInt(stats.solicitudesCompletadas) || 0));
             setStatValue('stat-pagos', Math.max(0, parseInt(stats.pagosHoy) || 0));
             setStatValue('stat-nuevos', Math.max(0, parseInt(stats.nuevosUsuariosHoy) || 0));
