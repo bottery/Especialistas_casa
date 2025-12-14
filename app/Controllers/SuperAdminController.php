@@ -236,11 +236,10 @@ class SuperAdminController extends BaseController
 
     private function getIngresosMes(): float
     {
-        $result = $this->db->selectOne("
+        $result = $this->db->selectOne("\
             SELECT SUM(monto) as total 
             FROM pagos 
-            WHERE estado = 'aprobado' 
-            AND MONTH(created_at) = MONTH(CURDATE())
+            WHERE MONTH(created_at) = MONTH(CURDATE())
             AND YEAR(created_at) = YEAR(CURDATE())
         ");
         return (float) ($result['total'] ?? 0);
