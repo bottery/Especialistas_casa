@@ -311,6 +311,16 @@ class PagosTransferenciaController
                 WHERE id = ?
             ");
             $stmt->execute([$solicitudId]);
+
+            // Marcar el/los pagos asociados como 'aprobado' (el admin confirma que el dinero está en la cuenta)
+            try {
+                $adminId = $this->user->id ?? null;
+                $updatePago = $this->db->prepare("UPDATE pagos SET estado = 'aprobado', aprobado_por = ?, fecha_aprobacion = NOW() WHERE solicitud_id = ?");
+                $updatePago->execute([$adminId, $solicitudId]);
+                error_log("[PagosTransferencia] Pago(s) para solicitud {$solicitudId} marcados como aprobado por " . ($adminId ?? 'unknown'));
+            } catch (\Exception $e) {
+                error_log("[PagosTransferencia] Error marcando pagos como aprobados: " . $e->getMessage());
+            }
             
             // Intentar crear notificación (opcional, no falla si hay error)
             try {
