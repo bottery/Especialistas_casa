@@ -32,6 +32,7 @@ class SuperAdminController extends BaseController
             try { $stats['serviciosActivos'] = $this->getServiciosActivos(); } catch(\Exception $e) { $stats['serviciosActivos'] = 0; }
             try { $stats['solicitudesPendientes'] = $this->getSolicitudesPendientes(); } catch(\Exception $e) { $stats['solicitudesPendientes'] = 0; }
             try { $stats['ingresosMes'] = $this->getIngresosMes(); } catch(\Exception $e) { $stats['ingresosMes'] = 0; }
+            try { $stats['ingresosPendientes'] = $this->getIngresosPendientes(); } catch(\Exception $e) { $stats['ingresosPendientes'] = 0; }
             try { $stats['solicitudesCompletadas'] = $this->getSolicitudesCompletadas(); } catch(\Exception $e) { $stats['solicitudesCompletadas'] = 0; }
             try { $stats['pagosHoy'] = $this->getPagosHoy(); } catch(\Exception $e) { $stats['pagosHoy'] = 0; }
             try { $stats['nuevosUsuariosHoy'] = $this->getNuevosUsuariosHoy(); } catch(\Exception $e) { $stats['nuevosUsuariosHoy'] = 0; }
@@ -236,10 +237,23 @@ class SuperAdminController extends BaseController
 
     private function getIngresosMes(): float
     {
-        $result = $this->db->selectOne("\
+        $result = $this->db->selectOne("\\
             SELECT SUM(monto) as total 
             FROM pagos 
-            WHERE MONTH(created_at) = MONTH(CURDATE())
+            WHERE estado = 'aprobado'
+            AND MONTH(created_at) = MONTH(CURDATE())
+            AND YEAR(created_at) = YEAR(CURDATE())
+        ");
+        return (float) ($result['total'] ?? 0);
+    }
+
+    private function getIngresosPendientes(): float
+    {
+        $result = $this->db->selectOne("\\
+            SELECT SUM(monto) as total 
+            FROM pagos 
+            WHERE estado = 'pendiente'
+            AND MONTH(created_at) = MONTH(CURDATE())
             AND YEAR(created_at) = YEAR(CURDATE())
         ");
         return (float) ($result['total'] ?? 0);
